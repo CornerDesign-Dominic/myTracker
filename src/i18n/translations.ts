@@ -21,8 +21,12 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     },
     tabs: {
       home: "Home",
+      calendar: "Kalender",
       allSubscriptions: "Alle Abos",
       stats: "Statistik",
+    },
+    calendar: {
+      title: "Kalender",
     },
     settings: {
       title: "Einstellungen",
@@ -135,8 +139,12 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     },
     tabs: {
       home: "Home",
+      calendar: "Calendar",
       allSubscriptions: "All subscriptions",
       stats: "Stats",
+    },
+    calendar: {
+      title: "Calendar",
     },
     settings: {
       title: "Settings",
@@ -248,8 +256,10 @@ export type TranslationKey =
   | "common.loading"
   | "common.none"
   | "tabs.home"
+  | "tabs.calendar"
   | "tabs.allSubscriptions"
   | "tabs.stats"
+  | "calendar.title"
   | "settings.title"
   | "settings.subtitle"
   | "settings.language"

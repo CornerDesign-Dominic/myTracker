@@ -1,13 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
+import { CalendarScreen } from "@/screens/CalendarScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
@@ -57,7 +57,19 @@ const TabsNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: t("tabs.home"),
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>•</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="grid-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarScreen}
+        options={{
+          tabBarLabel: t("tabs.calendar"),
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -65,7 +77,9 @@ const TabsNavigator = () => {
         component={AllSubscriptionsScreen}
         options={{
           tabBarLabel: t("tabs.allSubscriptions"),
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>•</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="albums-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -73,7 +87,9 @@ const TabsNavigator = () => {
         component={StatsScreen}
         options={{
           tabBarLabel: t("tabs.stats"),
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>•</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

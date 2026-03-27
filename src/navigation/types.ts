@@ -11,6 +11,7 @@ export type RootStackParamList = {
 
 export type RootTabParamList = {
   Home: undefined;
+  Calendar: undefined;
   AllSubscriptions: undefined;
   Stats: undefined;
 };
@@ -22,5 +23,10 @@ export type HomeTabScreenProps = CompositeScreenProps<
 
 export type AllSubscriptionsTabScreenProps = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList, "AllSubscriptions">,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+export type CalendarTabScreenProps = CompositeScreenProps<
+  BottomTabScreenProps<RootTabParamList, "Calendar">,
   NativeStackScreenProps<RootStackParamList>
 >;

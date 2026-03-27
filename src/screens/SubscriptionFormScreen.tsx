@@ -32,7 +32,7 @@ import {
   spacing,
 } from "@/theme";
 import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
-import { formatDate, isDateInputValid } from "@/utils/date";
+import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
 
@@ -71,7 +71,7 @@ const buildInitialState = (): SubscriptionInput => ({
   price: 0,
   currency: defaultCurrency,
   billingCycle: "monthly",
-  nextPaymentDate: new Date().toISOString().slice(0, 10),
+  nextPaymentDate: formatLocalDateInput(new Date()),
   status: "active",
   endDate: "",
   notes: "",
@@ -80,8 +80,7 @@ const buildInitialState = (): SubscriptionInput => ({
 const toCurrencyCode = (currency: "EUR" | "Dollar") => (currency === "EUR" ? "EUR" : "USD");
 
 const toDateValue = (value: string) => {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return parseLocalDateInput(value) ?? new Date();
 };
 
 const formatPriceInput = (value: string) => value.replace(",", ".");
@@ -317,7 +316,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     }
 
     if (activeField === "nextPaymentDate") {
-      updateField("nextPaymentDate", draftDate.toISOString().slice(0, 10));
+      updateField("nextPaymentDate", formatLocalDateInput(draftDate));
       closeSheet();
     }
   };

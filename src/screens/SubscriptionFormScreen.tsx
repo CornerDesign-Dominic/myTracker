@@ -62,6 +62,8 @@ type DateWheelProps<T extends string | number> = {
 const WHEEL_ITEM_HEIGHT = 44;
 const WHEEL_VISIBLE_ROWS = 5;
 const WHEEL_HEIGHT = WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_ROWS;
+const YEAR_RANGE_START = 2000;
+const YEAR_RANGE_END = 2045;
 
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
@@ -452,17 +454,17 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       })),
     [],
   );
-  const yearOptions = useMemo(() => {
-    const currentYear = draftDate.getFullYear();
-
-    return Array.from({ length: 41 }, (_, index) => {
-      const value = currentYear - 20 + index;
-      return {
-        label: String(value),
-        value,
-      };
-    });
-  }, [draftDate]);
+  const yearOptions = useMemo(
+    () =>
+      Array.from({ length: YEAR_RANGE_END - YEAR_RANGE_START + 1 }, (_, index) => {
+        const value = YEAR_RANGE_START + index;
+        return {
+          label: String(value),
+          value,
+        };
+      }),
+    [],
+  );
 
   const renderSelectOption = ({
     label,
@@ -625,30 +627,30 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         confirmLabel={t("common.save")}
         contentStyle={styles.dateSheetContent}
       >
-        <View style={[surfaces.panel, styles.datePickerWrap]}>
-            <View style={styles.dateSelectors}>
-              <DateWheel
-                label={language === "de" ? "Tag" : "Day"}
-                options={dayOptions}
-                selectedValue={draftDate.getDate()}
-                onChange={updateDraftDay}
-                colors={colors}
-              />
-              <DateWheel
-                label={language === "de" ? "Monat" : "Month"}
-                options={monthOptions}
-                selectedValue={draftDate.getMonth()}
-                onChange={updateDraftMonth}
-                colors={colors}
-              />
-              <DateWheel
-                label={language === "de" ? "Jahr" : "Year"}
-                options={yearOptions}
-                selectedValue={draftDate.getFullYear()}
-                onChange={updateDraftYear}
-                colors={colors}
-              />
-            </View>
+        <View style={styles.datePickerWrap}>
+          <View style={styles.dateSelectors}>
+            <DateWheel
+              label={language === "de" ? "Tag" : "Day"}
+              options={dayOptions}
+              selectedValue={draftDate.getDate()}
+              onChange={updateDraftDay}
+              colors={colors}
+            />
+            <DateWheel
+              label={language === "de" ? "Monat" : "Month"}
+              options={monthOptions}
+              selectedValue={draftDate.getMonth()}
+              onChange={updateDraftMonth}
+              colors={colors}
+            />
+            <DateWheel
+              label={language === "de" ? "Jahr" : "Year"}
+              options={yearOptions}
+              selectedValue={draftDate.getFullYear()}
+              onChange={updateDraftYear}
+              colors={colors}
+            />
+          </View>
         </View>
       </EditorSheet>
     </SafeAreaView>
@@ -738,7 +740,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.accentSoft,
     },
     datePickerWrap: {
-      padding: spacing.md,
+      paddingTop: spacing.sm,
     },
     dateSelectors: {
       flexDirection: "row",

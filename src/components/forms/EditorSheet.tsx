@@ -97,11 +97,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.overlay,
     },
     keyboardShell: {
+      flex: 1,
       justifyContent: "flex-end",
     },
     sheet: {
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
+      flexShrink: 1,
+      minHeight: 0,
       paddingTop: spacing.sm,
       paddingBottom: spacing.lg,
       gap: spacing.lg,
@@ -135,6 +138,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderColor: colors.border,
     },
     content: {
+      flexShrink: 1,
+      minHeight: 0,
       gap: spacing.md,
     },
     actions: {

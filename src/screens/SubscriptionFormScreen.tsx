@@ -1,6 +1,7 @@
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -103,7 +104,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const inputs = createInputStyles(colors);
   const defaultCategories = useMemo(() => DEFAULT_CATEGORIES[language], [language]);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
-  const { addCategory, getSuggestions } = useStoredCategories(defaultCategories);
+  const { addCategory, categories, getSuggestions } = useStoredCategories(defaultCategories);
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
     () => subscriptions.find((subscription) => subscription.id === route.params?.subscriptionId),
@@ -115,15 +116,17 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [draftText, setDraftText] = useState("");
   const [draftPrice, setDraftPrice] = useState("");
   const [draftDate, setDraftDate] = useState(new Date());
+  const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
 
-  const categorySuggestions = useMemo(
+  const categoryTemplates = useMemo(
     () =>
       activeField === "category"
-        ? getSuggestions(draftText).filter(
-            (category) => category.trim().toLocaleLowerCase() !== draftText.trim().toLocaleLowerCase(),
+        ? (draftText.trim() ? getSuggestions(draftText) : categories).filter(
+            (category) =>
+              category.trim().toLocaleLowerCase() !== draftText.trim().toLocaleLowerCase(),
           )
         : [],
-    [activeField, draftText, getSuggestions],
+    [activeField, categories, draftText, getSuggestions],
   );
 
   useEffect(() => {
@@ -190,6 +193,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     setActiveField(null);
     setDraftText("");
     setDraftPrice("");
+    setIsTemplateDropdownOpen(false);
   };
 
   const saveActiveField = () => {
@@ -295,32 +299,69 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       onConfirm={saveActiveField}
       confirmLabel={t("common.save")}
       cancelLabel={t("common.cancel")}
+      contentStyle={styles.categorySheetContent}
     >
       <TextInput
         value={draftText}
-        onChangeText={setDraftText}
+        onChangeText={(value) => {
+          setDraftText(value);
+          setIsTemplateDropdownOpen(false);
+        }}
         placeholderTextColor={colors.textMuted}
         autoFocus
         style={[inputs.input, styles.sheetInput]}
       />
-      {draftText.trim() && categorySuggestions.length ? (
+      <Pressable
+        style={[surfaces.subtlePanel, styles.templateDropdownTrigger]}
+        onPress={() => setIsTemplateDropdownOpen((current) => !current)}
+      >
+        <Text
+          style={[
+            typography.body,
+            styles.templateDropdownValue,
+            draftText ? styles.templateDropdownValueFilled : styles.templateDropdownValueEmpty,
+          ]}
+        >
+          {draftText || t("subscription.templates")}
+        </Text>
+        <Ionicons
+          name={isTemplateDropdownOpen ? "chevron-up-outline" : "chevron-down-outline"}
+          size={18}
+          color={colors.textSecondary}
+        />
+      </Pressable>
+      {isTemplateDropdownOpen ? (
         <View style={styles.categoryListWrap}>
           <View style={[surfaces.subtlePanel, styles.suggestionPanel]}>
             <FlatList
-              data={categorySuggestions}
+              data={categoryTemplates}
               keyExtractor={(item) => item}
+              style={styles.suggestionList}
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={
+                categoryTemplates.length ? undefined : styles.suggestionEmptyContent
+              }
               renderItem={({ item, index }) => (
                 <Pressable
                   style={[
                     styles.suggestionRow,
-                    index === categorySuggestions.length - 1 ? styles.suggestionRowLast : null,
+                    index === categoryTemplates.length - 1 ? styles.suggestionRowLast : null,
                   ]}
-                  onPress={() => setDraftText(item)}
+                  onPress={() => {
+                    setDraftText(item);
+                    setIsTemplateDropdownOpen(false);
+                  }}
                 >
                   <Text style={[typography.body, styles.suggestionText]}>{item}</Text>
                 </Pressable>
               )}
+              ListEmptyComponent={
+                <View style={styles.suggestionEmpty}>
+                  <Text style={[typography.secondary, styles.suggestionEmptyText]}>
+                    {t("subscription.noCategoryFound")}
+                  </Text>
+                </View>
+              }
             />
           </View>
         </View>
@@ -550,6 +591,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
       borderRadius: radius.md,
     },
+    categorySheetContent: {
+      gap: spacing.sm,
+    },
     notesInput: {
       minHeight: 140,
       color: colors.textPrimary,
@@ -612,11 +656,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     suggestionPanel: {
       padding: 0,
       overflow: "hidden",
-      flex: 1,
     },
     categoryListWrap: {
-      maxHeight: 280,
-      minHeight: 140,
+      maxHeight: 240,
+    },
+    suggestionList: {
+      maxHeight: 240,
     },
     suggestionRow: {
       minHeight: 52,
@@ -631,5 +676,36 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     suggestionText: {
       color: colors.textPrimary,
+    },
+    suggestionEmptyContent: {
+      flexGrow: 1,
+    },
+    suggestionEmpty: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+    },
+    suggestionEmptyText: {
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    templateDropdownTrigger: {
+      minHeight: 54,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    templateDropdownValue: {
+      flex: 1,
+    },
+    templateDropdownValueFilled: {
+      color: colors.textPrimary,
+    },
+    templateDropdownValueEmpty: {
+      color: colors.textSecondary,
     },
   });

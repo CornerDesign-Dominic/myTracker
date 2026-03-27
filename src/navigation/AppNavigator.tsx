@@ -1,9 +1,9 @@
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Text } from "react-native";
 
-import { colors } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
 import { SubscriptionDetailsScreen } from "@/screens/SubscriptionDetailsScreen";
@@ -14,27 +14,18 @@ import { RootStackParamList, RootTabParamList } from "./types";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const navigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: colors.background,
-    card: colors.surface,
-    border: colors.border,
-    primary: colors.primary,
-    text: colors.text,
-  },
-};
-
 const TabsNavigator = () => {
+  const { colors } = useAppTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.surface,
+          borderTopColor: colors.border,
         },
       }}
     >
@@ -43,7 +34,7 @@ const TabsNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>●</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>•</Text>,
         }}
       />
       <Tab.Screen
@@ -51,7 +42,7 @@ const TabsNavigator = () => {
         component={StatsScreen}
         options={{
           tabBarLabel: "Statistik",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>●</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16 }}>•</Text>,
         }}
       />
     </Tab.Navigator>
@@ -59,6 +50,8 @@ const TabsNavigator = () => {
 };
 
 export const AppNavigator = () => {
+  const { colors, navigationTheme } = useAppTheme();
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
@@ -67,9 +60,12 @@ export const AppNavigator = () => {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerTintColor: colors.text,
+          headerTintColor: colors.textPrimary,
           contentStyle: {
             backgroundColor: colors.background,
+          },
+          headerTitleStyle: {
+            color: colors.textPrimary,
           },
         }}
       >

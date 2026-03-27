@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface FormFieldProps {
   label: string;
@@ -21,6 +22,9 @@ export const FormField = ({
   multiline = false,
   helpText,
 }: FormFieldProps) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -28,7 +32,7 @@ export const FormField = ({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={colors.textSecondary}
         keyboardType={keyboardType}
         multiline={multiline}
         style={[styles.input, multiline ? styles.multilineInput : null]}
@@ -38,14 +42,15 @@ export const FormField = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   container: {
     gap: spacing.xs,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   input: {
     backgroundColor: colors.surface,
@@ -55,7 +60,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   multilineInput: {
     minHeight: 100,
@@ -63,6 +68,6 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
-});
+  });

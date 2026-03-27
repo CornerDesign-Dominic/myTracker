@@ -1,7 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
 import { formatCurrency } from "@/utils/currency";
@@ -10,6 +11,8 @@ import { formatDate } from "@/utils/date";
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
   const { subscriptions } = useSubscriptions();
   const subscription = subscriptions.find((item) => item.id === route.params.subscriptionId);
 
@@ -31,15 +34,24 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
       </View>
 
       <View style={styles.card}>
-        <InfoRow label="Status" value={subscription.status} />
-        <InfoRow label="Naechste Zahlung" value={formatDate(subscription.nextPaymentDate)} />
+        <InfoRow label="Status" value={subscription.status} colors={colors} />
+        <InfoRow
+          label="Naechste Zahlung"
+          value={formatDate(subscription.nextPaymentDate)}
+          colors={colors}
+        />
         <InfoRow
           label="Kuendigungsfrist"
           value={formatDate(subscription.cancellationDeadline)}
+          colors={colors}
         />
-        <InfoRow label="Laeuft ab am" value={formatDate(subscription.endDate)} />
-        <InfoRow label="Erstellt" value={formatDate(subscription.createdAt)} />
-        <InfoRow label="Aktualisiert" value={formatDate(subscription.updatedAt)} />
+        <InfoRow label="Laeuft ab am" value={formatDate(subscription.endDate)} colors={colors} />
+        <InfoRow label="Erstellt" value={formatDate(subscription.createdAt)} colors={colors} />
+        <InfoRow
+          label="Aktualisiert"
+          value={formatDate(subscription.updatedAt)}
+          colors={colors}
+        />
       </View>
 
       {subscription.notes ? (
@@ -63,14 +75,27 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   );
 };
 
-const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={styles.infoValue}>{value}</Text>
-  </View>
-);
+const InfoRow = ({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+}) => {
+  const styles = getStyles(colors);
 
-const styles = StyleSheet.create({
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+};
+
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -82,7 +107,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   heroCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.xs,
@@ -90,21 +115,21 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.accentText,
   },
   category: {
     fontSize: 15,
-    color: "#DBF1E9",
+    color: colors.accentSoft,
   },
   price: {
     marginTop: spacing.md,
     fontSize: 26,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.accentText,
   },
   cycle: {
     fontSize: 14,
-    color: "#DBF1E9",
+    color: colors.accentSoft,
   },
   card: {
     backgroundColor: colors.surface,
@@ -117,7 +142,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   infoRow: {
     flexDirection: "row",
@@ -126,18 +151,18 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   infoValue: {
     flex: 1,
     textAlign: "right",
     fontSize: 14,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   notes: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
     lineHeight: 21,
   },
   editButton: {
@@ -149,7 +174,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   editButtonText: {
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: "700",
   },
   emptyContainer: {
@@ -160,6 +185,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
-});
+  });

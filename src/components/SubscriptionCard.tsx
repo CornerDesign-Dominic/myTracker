@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { Subscription } from "@/types/subscription";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
@@ -12,18 +13,19 @@ interface SubscriptionCardProps {
   onCancel?: () => void;
 }
 
-const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
-  active: { label: "Aktiv", color: colors.success },
-  paused: { label: "Pausiert", color: colors.warning },
-  cancelled: { label: "Gekuendigt", color: colors.danger },
-};
-
 export const SubscriptionCard = ({
   subscription,
   onPress,
   onEdit,
   onCancel,
 }: SubscriptionCardProps) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
+  const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
+    active: { label: "Aktiv", color: colors.success },
+    paused: { label: "Pausiert", color: colors.warning },
+    cancelled: { label: "Gekuendigt", color: colors.danger },
+  };
   const status = statusMap[subscription.status];
 
   return (
@@ -77,7 +79,8 @@ export const SubscriptionCard = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -100,11 +103,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   category: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   badge: {
     alignSelf: "flex-start",
@@ -127,12 +130,12 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 12,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   metaValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   actions: {
     flexDirection: "row",
@@ -146,17 +149,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
   secondaryButton: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceSoft,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.accentText,
     fontWeight: "700",
   },
   secondaryButtonText: {
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: "700",
   },
-});
+  });

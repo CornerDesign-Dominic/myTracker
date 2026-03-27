@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface SegmentedOption<T extends string> {
   label: string;
@@ -20,6 +21,9 @@ export const SegmentedField = <T extends string>({
   onChange,
   options,
 }: SegmentedFieldProps<T>) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -44,14 +48,15 @@ export const SegmentedField = <T extends string>({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   container: {
     gap: spacing.xs,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   wrapper: {
     flexDirection: "row",
@@ -67,14 +72,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   activeOption: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   optionLabel: {
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   activeOptionLabel: {
-    color: "#FFFFFF",
+    color: colors.accentText,
   },
-});
+  });

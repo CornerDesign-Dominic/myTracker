@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface StatCardProps {
   label: string;
@@ -9,6 +10,8 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ label, value, tone = "default" }: StatCardProps) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
   const isAccent = tone === "accent";
 
   return (
@@ -19,7 +22,8 @@ export const StatCard = ({ label, value, tone = "default" }: StatCardProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   card: {
     flex: 1,
     minWidth: 120,
@@ -31,22 +35,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   accentCard: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   label: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   value: {
     fontSize: 24,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   accentLabel: {
-    color: "#DBF1E9",
+    color: colors.accentText,
   },
   accentValue: {
-    color: "#FFFFFF",
+    color: colors.accentText,
   },
-});
+  });

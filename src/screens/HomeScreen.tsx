@@ -5,12 +5,15 @@ import { EmptyState } from "@/components/EmptyState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatCard } from "@/components/StatCard";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { HomeTabScreenProps } from "@/navigation/types";
 import { formatCurrency } from "@/utils/currency";
 
 export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
+  const { colors, isDark } = useAppTheme();
+  const styles = getStyles(colors);
   const {
     subscriptions,
     metrics,
@@ -74,7 +77,13 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           <Text style={styles.toggleTitle}>Gekuendigte anzeigen</Text>
           <Text style={styles.toggleText}>Blende auslaufende oder beendete Abos ein.</Text>
         </View>
-        <Switch value={showCancelled} onValueChange={setShowCancelled} />
+        <Switch
+          value={showCancelled}
+          onValueChange={setShowCancelled}
+          thumbColor={showCancelled ? colors.accent : undefined}
+          trackColor={{ false: colors.border, true: colors.accentSoft }}
+          ios_backgroundColor={isDark ? colors.surfaceSoft : colors.border}
+        />
       </View>
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -115,7 +124,8 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -126,13 +136,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   addButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
   },
   addButtonText: {
-    color: "#FFFFFF",
+    color: colors.accentText,
     fontWeight: "700",
   },
   statsRow: {
@@ -157,21 +167,21 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   toggleText: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   list: {
     gap: spacing.md,
     paddingBottom: spacing.xl,
   },
   helperText: {
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   errorText: {
     color: colors.danger,
     fontSize: 14,
   },
-});
+  });

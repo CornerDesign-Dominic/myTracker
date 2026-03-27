@@ -5,7 +5,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { FormField } from "@/components/forms/FormField";
 import { SegmentedField } from "@/components/forms/SegmentedField";
 import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
 import { SubscriptionInput } from "@/types/subscription";
@@ -27,6 +28,8 @@ const buildInitialState = (): SubscriptionInput => ({
 });
 
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
@@ -208,7 +211,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -222,11 +226,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
     lineHeight: 21,
   },
   form: {
@@ -243,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
   secondaryButton: {
     backgroundColor: colors.surface,
@@ -251,11 +255,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.accentText,
     fontWeight: "700",
   },
   secondaryButtonText: {
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: "700",
   },
-});
+  });

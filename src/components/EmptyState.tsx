@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface EmptyStateProps {
   title: string;
@@ -8,6 +9,9 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({ title, description }: EmptyStateProps) => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -16,7 +20,8 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -28,11 +33,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   description: {
     fontSize: 14,
     lineHeight: 20,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
-});
+  });

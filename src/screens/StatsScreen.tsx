@@ -3,12 +3,15 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { EmptyState } from "@/components/EmptyState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatCard } from "@/components/StatCard";
-import { colors, radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 export const StatsScreen = () => {
+  const { colors } = useAppTheme();
+  const styles = getStyles(colors);
   const { metrics } = useSubscriptions();
   const maxCategoryValue = metrics.byCategory[0]?.monthlyTotal ?? 1;
 
@@ -104,7 +107,8 @@ export const StatsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -130,20 +134,20 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   highlightName: {
     fontSize: 24,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   highlightValue: {
     fontSize: 15,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   helperText: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   chartList: {
     gap: spacing.md,
@@ -158,23 +162,23 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   chartValue: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   chartTrack: {
     width: "100%",
     height: 10,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceSoft,
     overflow: "hidden",
   },
   chartFill: {
     height: "100%",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
   },
   paymentList: {
@@ -191,19 +195,19 @@ const styles = StyleSheet.create({
   paymentName: {
     fontSize: 15,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
   },
   paymentAmount: {
     fontSize: 15,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: "right",
   },
   paymentMeta: {
     fontSize: 13,
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
   paymentRight: {
     alignItems: "flex-end",
   },
-});
+  });

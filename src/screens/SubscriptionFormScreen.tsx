@@ -83,23 +83,6 @@ const toDateValue = (value: string) => {
 };
 
 const formatPriceInput = (value: string) => value.replace(",", ".");
-const formatDateHeadline = (value: Date, language: "de" | "en") =>
-  new Intl.DateTimeFormat(language, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(value);
-
-const formatDateMeta = (value: Date, language: "de" | "en") =>
-  new Intl.DateTimeFormat(language, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(value);
-const formatMonthLabel = (monthIndex: number, language: "de" | "en") =>
-  new Intl.DateTimeFormat(language, {
-    month: "long",
-  }).format(new Date(2024, monthIndex, 1));
 const daysInMonth = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
 const clampDay = (year: number, monthIndex: number, day: number) =>
   Math.min(day, daysInMonth(year, monthIndex));
@@ -453,8 +436,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     </EditorSheet>
   );
 
-  const datePreviewValue = useMemo(() => formatDateHeadline(draftDate, language), [draftDate, language]);
-  const datePreviewMeta = useMemo(() => formatDateMeta(draftDate, language), [draftDate, language]);
   const dayOptions = useMemo(
     () =>
       Array.from({ length: daysInMonth(draftDate.getFullYear(), draftDate.getMonth()) }, (_, index) => ({
@@ -466,10 +447,10 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const monthOptions = useMemo(
     () =>
       Array.from({ length: 12 }, (_, index) => ({
-        label: formatMonthLabel(index, language),
+        label: String(index + 1).padStart(2, "0"),
         value: index,
       })),
-    [language],
+    [],
   );
   const yearOptions = useMemo(() => {
     const currentYear = draftDate.getFullYear();
@@ -644,24 +625,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         confirmLabel={t("common.save")}
         contentStyle={styles.dateSheetContent}
       >
-        <View style={[surfaces.panel, styles.datePreviewCard]}>
-          <View style={styles.datePreviewHeader}>
-            <Text style={[typography.meta, styles.datePreviewLabel]}>
-              {t("subscription.formNextPaymentDate")}
-            </Text>
-            <View style={styles.datePreviewBadge}>
-              <Text style={[typography.meta, styles.datePreviewBadgeText]}>{datePreviewMeta}</Text>
-            </View>
-          </View>
-          <Text style={[typography.cardTitle, styles.datePreviewValue]}>
-            {datePreviewValue}
-          </Text>
-          <Text style={[typography.secondary, styles.datePreviewHelper]}>
-            {t("subscription.formNextPaymentDate")}
-          </Text>
-        </View>
-        <View style={[surfaces.subtlePanel, styles.datePickerWrap]}>
-          <View style={styles.datePickerFrame}>
+        <View style={[surfaces.panel, styles.datePickerWrap]}>
             <View style={styles.dateSelectors}>
               <DateWheel
                 label={language === "de" ? "Tag" : "Day"}
@@ -685,7 +649,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
                 colors={colors}
               />
             </View>
-          </View>
         </View>
       </EditorSheet>
     </SafeAreaView>
@@ -737,7 +700,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderRadius: radius.md,
     },
     dateSheetContent: {
-      gap: spacing.md,
+      gap: 0,
     },
     sheetList: {
       padding: 0,
@@ -774,46 +737,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderColor: colors.accent,
       backgroundColor: colors.accentSoft,
     },
-    datePreviewCard: {
-      gap: spacing.sm,
-      padding: spacing.lg,
-    },
-    datePreviewHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.sm,
-    },
-    datePreviewLabel: {
-      color: colors.textMuted,
-      textTransform: "uppercase",
-    },
-    datePreviewBadge: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xxs,
-      borderRadius: radius.pill,
-      backgroundColor: colors.accentSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    datePreviewBadgeText: {
-      color: colors.accent,
-    },
-    datePreviewValue: {
-      color: colors.textPrimary,
-      textTransform: "capitalize",
-    },
-    datePreviewHelper: {
-      color: colors.textSecondary,
-    },
     datePickerWrap: {
-      padding: spacing.sm,
-    },
-    datePickerFrame: {
-      borderRadius: radius.md,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.borderStrong,
       padding: spacing.md,
     },
     dateSelectors: {

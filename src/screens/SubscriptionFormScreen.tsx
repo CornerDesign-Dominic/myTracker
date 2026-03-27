@@ -1,7 +1,6 @@
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -16,6 +15,8 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { EditorSheet } from "@/components/forms/EditorSheet";
+import { FormRow } from "@/components/forms/FormRow";
 import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -27,9 +28,10 @@ import {
   createInputStyles,
   createScreenLayout,
   createSurfaceStyles,
+  radius,
   spacing,
 } from "@/theme";
-import { SubscriptionInput } from "@/types/subscription";
+import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
 import { formatDate, isDateInputValid } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
@@ -63,6 +65,8 @@ const toDateValue = (value: string) => {
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
+const formatPriceInput = (value: string) => value.replace(",", ".");
+
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -81,6 +85,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const [formState, setFormState] = useState<SubscriptionInput>(buildInitialState());
   const [activeField, setActiveField] = useState<EditableField>(null);
+  const [draftText, setDraftText] = useState("");
+  const [draftPrice, setDraftPrice] = useState("");
+  const [draftDate, setDraftDate] = useState(new Date());
 
   useEffect(() => {
     if (!existingSubscription) {
@@ -127,16 +134,53 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     return null;
   };
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS !== "ios") {
-      setActiveField(null);
-    }
+  const openTextSheet = (field: "name" | "category" | "notes") => {
+    setDraftText(String(formState[field] ?? ""));
+    setActiveField(field);
+  };
 
-    if (event.type === "dismissed" || !selectedDate) {
+  const openPriceSheet = () => {
+    setDraftPrice(formState.price ? String(formState.price) : "");
+    setActiveField("price");
+  };
+
+  const openDateSheet = () => {
+    setDraftDate(toDateValue(formState.nextPaymentDate));
+    setActiveField("nextPaymentDate");
+  };
+
+  const closeSheet = () => {
+    setActiveField(null);
+    setDraftText("");
+    setDraftPrice("");
+  };
+
+  const saveActiveField = () => {
+    if (activeField === "name" || activeField === "category" || activeField === "notes") {
+      updateField(activeField, draftText);
+      closeSheet();
       return;
     }
 
-    updateField("nextPaymentDate", selectedDate.toISOString().slice(0, 10));
+    if (activeField === "price") {
+      const nextPrice = Number(formatPriceInput(draftPrice));
+      updateField("price", Number.isFinite(nextPrice) ? nextPrice : 0);
+      closeSheet();
+      return;
+    }
+
+    if (activeField === "nextPaymentDate") {
+      updateField("nextPaymentDate", draftDate.toISOString().slice(0, 10));
+      closeSheet();
+    }
+  };
+
+  const handleDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (!selectedDate) {
+      return;
+    }
+
+    setDraftDate(selectedDate);
   };
 
   const handleSubmit = async () => {
@@ -165,56 +209,67 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     navigation.goBack();
   };
 
-  const renderTextEditor = (
-    field: "name" | "category" | "price",
-    keyboardType: "default" | "numeric" = "default",
-  ) => (
-    <TextInput
-      value={field === "price" ? String(formState.price || "") : String(formState[field] ?? "")}
-      onChangeText={(value) =>
-        field === "price"
-          ? updateField("price", Number(value.replace(",", ".")) || 0)
-          : updateField(field, value)
-      }
-      keyboardType={keyboardType}
-      placeholderTextColor={colors.textSecondary}
-      style={[inputs.input, styles.inlineInput]}
-      autoFocus
-    />
+  const formatPriceLabel = () => {
+    if (!formState.price) {
+      return t("subscription.optional");
+    }
+
+    return `${formState.price.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`;
+  };
+
+  const openBillingCycleSheet = () => setActiveField("billingCycle");
+  const openStatusSheet = () => setActiveField("status");
+
+  const selectBillingCycle = (value: BillingCycle) => {
+    updateField("billingCycle", value);
+    closeSheet();
+  };
+
+  const selectStatus = (value: SubscriptionStatus) => {
+    updateField("status", value);
+    closeSheet();
+  };
+
+  const renderTextSheet = (title: string, multiline = false) => (
+    <EditorSheet
+      visible={activeField === "name" || activeField === "category" || activeField === "notes"}
+      title={title}
+      onClose={closeSheet}
+      onConfirm={saveActiveField}
+      confirmLabel={t("common.save")}
+      cancelLabel={t("common.cancel")}
+    >
+      <TextInput
+        value={draftText}
+        onChangeText={setDraftText}
+        placeholder={title}
+        placeholderTextColor={colors.textMuted}
+        multiline={multiline}
+        autoFocus
+        style={[inputs.input, multiline ? styles.notesInput : styles.sheetInput]}
+        textAlignVertical={multiline ? "top" : "center"}
+      />
+    </EditorSheet>
   );
 
-  const renderRow = ({
-    field,
+  const renderSelectOption = ({
     label,
-    value,
-    editor,
+    active,
+    onPress,
+    isLast = false,
   }: {
-    field: Exclude<EditableField, "notes" | null>;
     label: string;
-    value: string;
-    editor: React.ReactNode;
-  }) => {
-    const isOpen = activeField === field;
-
-    return (
-      <View style={[styles.rowShell, isOpen ? styles.rowShellOpen : null]}>
-        <Pressable style={styles.row} onPress={() => setActiveField(isOpen ? null : field)}>
-          <Text style={[typography.body, styles.rowLabel]}>{label}</Text>
-          <View style={styles.rowRight}>
-            <Text style={[typography.secondary, styles.rowValue]} numberOfLines={1}>
-              {value}
-            </Text>
-            <Ionicons
-              name={isOpen ? "chevron-up-outline" : "chevron-forward-outline"}
-              size={18}
-              color={colors.textSecondary}
-            />
-          </View>
-        </Pressable>
-        {isOpen ? <View style={styles.rowEditor}>{editor}</View> : null}
-      </View>
-    );
-  };
+    active: boolean;
+    onPress: () => void;
+    isLast?: boolean;
+  }) => (
+    <Pressable style={[styles.selectRow, isLast ? styles.selectRowLast : null]} onPress={onPress}>
+      <Text style={[typography.body, styles.selectLabel, active ? styles.selectLabelActive : null]}>
+        {label}
+      </Text>
+      <View style={[styles.selectIndicator, active ? styles.selectIndicatorActive : null]} />
+    </Pressable>
+  );
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
@@ -223,142 +278,50 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
           {isEditing ? t("subscription.formEditTitle") : t("subscription.formCreateTitle")}
         </Text>
 
-        <View style={[surfaces.panel, styles.groupCard]}>
-          {renderRow({
-            field: "name",
-            label: t("subscription.name"),
-            value: formState.name || t("subscription.optional"),
-            editor: renderTextEditor("name"),
-          })}
-
-          {renderRow({
-            field: "category",
-            label: t("subscription.category"),
-            value: formState.category || t("subscription.optional"),
-            editor: renderTextEditor("category"),
-          })}
-
-          {renderRow({
-            field: "price",
-            label: t("subscription.price"),
-            value: formState.price ? String(formState.price) : "0",
-            editor: renderTextEditor("price", "numeric"),
-          })}
-
-          {renderRow({
-            field: "billingCycle",
-            label: t("subscription.formBillingCycle"),
-            value: t(`subscription.billing_${formState.billingCycle}`),
-            editor: (
-              <View style={styles.optionEditor}>
-                {billingCycleOptions.map((option) => {
-                  const isActive = formState.billingCycle === option.value;
-
-                  return (
-                    <Pressable
-                      key={option.value}
-                      style={[
-                        buttons.buttonBase,
-                        styles.optionButton,
-                        isActive ? styles.optionButtonActive : buttons.secondaryButton,
-                      ]}
-                      onPress={() => {
-                        updateField("billingCycle", option.value);
-                        setActiveField(null);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          typography.button,
-                          isActive ? styles.optionButtonTextActive : styles.optionButtonText,
-                        ]}
-                      >
-                        {t(option.labelKey)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ),
-          })}
-
-          {renderRow({
-            field: "nextPaymentDate",
-            label: t("subscription.formNextPaymentDate"),
-            value: formatDate(formState.nextPaymentDate),
-            editor: (
-              <DateTimePicker
-                value={toDateValue(formState.nextPaymentDate)}
-                mode="date"
-                display={Platform.OS === "ios" ? "inline" : "default"}
-                onChange={handleDateChange}
-              />
-            ),
-          })}
-
-          {renderRow({
-            field: "status",
-            label: t("subscription.status"),
-            value: t(`subscription.status_${formState.status}`),
-            editor: (
-              <View style={styles.optionEditor}>
-                {statusOptions.map((option) => {
-                  const isActive = formState.status === option.value;
-
-                  return (
-                    <Pressable
-                      key={option.value}
-                      style={[
-                        buttons.buttonBase,
-                        styles.optionButton,
-                        isActive ? styles.optionButtonActive : buttons.secondaryButton,
-                      ]}
-                      onPress={() => {
-                        updateField("status", option.value);
-                        setActiveField(null);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          typography.button,
-                          isActive ? styles.optionButtonTextActive : styles.optionButtonText,
-                        ]}
-                      >
-                        {t(option.labelKey)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ),
-          })}
+        <View style={[surfaces.panel, styles.cardGroup]}>
+          <FormRow
+            label={t("subscription.name")}
+            value={formState.name || t("subscription.optional")}
+            onPress={() => openTextSheet("name")}
+            isFirst
+          />
+          <FormRow
+            label={t("subscription.category")}
+            value={formState.category || t("subscription.optional")}
+            onPress={() => openTextSheet("category")}
+          />
+          <FormRow
+            label={t("subscription.price")}
+            value={formatPriceLabel()}
+            onPress={openPriceSheet}
+          />
+          <FormRow
+            label={t("subscription.formBillingCycle")}
+            value={t(`subscription.billing_${formState.billingCycle}`)}
+            onPress={openBillingCycleSheet}
+          />
+          <FormRow
+            label={t("subscription.formNextPaymentDate")}
+            value={formatDate(formState.nextPaymentDate)}
+            onPress={openDateSheet}
+          />
+          <FormRow
+            label={t("subscription.status")}
+            value={t(`subscription.status_${formState.status}`)}
+            onPress={openStatusSheet}
+            isLast
+          />
         </View>
 
         <View style={[surfaces.subtlePanel, styles.notesCard]}>
-          <Pressable style={styles.row} onPress={() => setActiveField(activeField === "notes" ? null : "notes")}>
-            <Text style={[typography.body, styles.rowLabel]}>{t("subscription.notes")}</Text>
-            <View style={styles.rowRight}>
-              <Text style={[typography.secondary, styles.rowValue]} numberOfLines={1}>
-                {formState.notes?.trim() || t("subscription.optional")}
-              </Text>
-              <Ionicons
-                name={activeField === "notes" ? "chevron-up-outline" : "chevron-forward-outline"}
-                size={18}
-                color={colors.textSecondary}
-              />
-            </View>
-          </Pressable>
-          {activeField === "notes" ? (
-            <TextInput
-              value={formState.notes ?? ""}
-              onChangeText={(value) => updateField("notes", value)}
-              placeholder={t("subscription.optional")}
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              style={[inputs.input, styles.notesInput]}
-              autoFocus
-            />
-          ) : null}
+          <FormRow
+            label={t("subscription.notes")}
+            value={formState.notes?.trim() || t("subscription.optional")}
+            onPress={() => openTextSheet("notes")}
+            isFirst
+            isLast
+            multilineValue
+          />
         </View>
 
         <View style={styles.actions}>
@@ -378,6 +341,100 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      {activeField === "name" ? renderTextSheet(t("subscription.name")) : null}
+      {activeField === "category" ? renderTextSheet(t("subscription.category")) : null}
+      {activeField === "notes" ? renderTextSheet(t("subscription.notes"), true) : null}
+
+      <EditorSheet
+        visible={activeField === "price"}
+        title={t("subscription.price")}
+        onClose={closeSheet}
+        onConfirm={saveActiveField}
+        confirmLabel={t("common.save")}
+        cancelLabel={t("common.cancel")}
+      >
+        <TextInput
+          value={draftPrice}
+          onChangeText={setDraftPrice}
+          placeholder="0.00"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="numeric"
+          autoFocus
+          style={[inputs.input, styles.sheetInput]}
+        />
+      </EditorSheet>
+
+      <EditorSheet
+        visible={activeField === "billingCycle"}
+        title={t("subscription.formBillingCycle")}
+        onClose={closeSheet}
+        confirmLabel={t("common.save")}
+        cancelLabel={t("common.cancel")}
+        showConfirm={false}
+      >
+        <View style={[surfaces.subtlePanel, styles.sheetList]}>
+          {billingCycleOptions.map((option, index) => (
+            <View key={option.value}>
+              {renderSelectOption({
+                label: t(option.labelKey),
+                active: formState.billingCycle === option.value,
+                onPress: () => selectBillingCycle(option.value),
+                isLast: index === billingCycleOptions.length - 1,
+              })}
+            </View>
+          ))}
+        </View>
+      </EditorSheet>
+
+      <EditorSheet
+        visible={activeField === "status"}
+        title={t("subscription.status")}
+        onClose={closeSheet}
+        confirmLabel={t("common.save")}
+        cancelLabel={t("common.cancel")}
+        showConfirm={false}
+      >
+        <View style={[surfaces.subtlePanel, styles.sheetList]}>
+          {statusOptions.map((option, index) => (
+            <View key={option.value}>
+              {renderSelectOption({
+                label: t(option.labelKey),
+                active: formState.status === option.value,
+                onPress: () => selectStatus(option.value),
+                isLast: index === statusOptions.length - 1,
+              })}
+            </View>
+          ))}
+        </View>
+      </EditorSheet>
+
+      <EditorSheet
+        visible={activeField === "nextPaymentDate"}
+        title={t("subscription.formNextPaymentDate")}
+        onClose={closeSheet}
+        onConfirm={saveActiveField}
+        confirmLabel={t("common.save")}
+        cancelLabel={t("common.cancel")}
+      >
+        <View style={[surfaces.subtlePanel, styles.datePreview]}>
+          <Text style={[typography.meta, styles.datePreviewLabel]}>
+            {t("subscription.formNextPaymentDate")}
+          </Text>
+          <Text style={[typography.sectionTitle, styles.datePreviewValue]}>
+            {formatDate(draftDate.toISOString().slice(0, 10))}
+          </Text>
+        </View>
+        <View style={styles.datePickerWrap}>
+          <DateTimePicker
+            value={draftDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "calendar"}
+            onChange={handleDateChange}
+            accentColor={colors.accent}
+          />
+        </View>
+      </EditorSheet>
     </SafeAreaView>
   );
 };
@@ -386,76 +443,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     title: {
       color: colors.textPrimary,
+      marginBottom: spacing.xs,
     },
-    groupCard: {
-      paddingVertical: spacing.sm,
-      gap: 0,
-    },
-    rowShell: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    rowShellOpen: {
-      backgroundColor: colors.surfaceSoft,
-    },
-    row: {
-      minHeight: 56,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    rowLabel: {
-      color: colors.textPrimary,
-      flex: 1,
-    },
-    rowRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.xs,
-      flexShrink: 1,
-    },
-    rowValue: {
-      color: colors.textSecondary,
-      maxWidth: 170,
-      textAlign: "right",
-    },
-    rowEditor: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.md,
-      gap: spacing.sm,
-    },
-    inlineInput: {
-      color: colors.textPrimary,
-    },
-    optionEditor: {
-      gap: spacing.sm,
-    },
-    optionButton: {
-      justifyContent: "center",
-    },
-    optionButtonActive: {
-      backgroundColor: colors.accentSoft,
-      borderColor: colors.accent,
-    },
-    optionButtonText: {
-      color: colors.textPrimary,
-    },
-    optionButtonTextActive: {
-      color: colors.accent,
+    cardGroup: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: 0,
+      overflow: "hidden",
     },
     notesCard: {
-      gap: spacing.xs,
-      paddingVertical: spacing.sm,
-    },
-    notesInput: {
-      minHeight: 120,
-      color: colors.textPrimary,
-      marginHorizontal: spacing.md,
-      marginBottom: spacing.md,
-      textAlignVertical: "top",
+      paddingVertical: spacing.xs,
+      paddingHorizontal: 0,
+      overflow: "hidden",
     },
     actions: {
       flexDirection: "row",
@@ -469,5 +467,68 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     secondaryButtonText: {
       color: colors.textPrimary,
+    },
+    sheetInput: {
+      color: colors.textPrimary,
+      borderRadius: radius.md,
+    },
+    notesInput: {
+      minHeight: 140,
+      color: colors.textPrimary,
+      borderRadius: radius.md,
+    },
+    sheetList: {
+      padding: 0,
+      overflow: "hidden",
+    },
+    selectRow: {
+      minHeight: 56,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    selectRowLast: {
+      borderBottomWidth: 0,
+    },
+    selectLabel: {
+      color: colors.textPrimary,
+    },
+    selectLabelActive: {
+      color: colors.accent,
+    },
+    selectIndicator: {
+      width: 18,
+      height: 18,
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+    },
+    selectIndicatorActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    datePreview: {
+      gap: spacing.xs,
+    },
+    datePreviewLabel: {
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    datePreviewValue: {
+      color: colors.textPrimary,
+    },
+    datePickerWrap: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.lg,
+      backgroundColor: colors.surfaceSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
     },
   });

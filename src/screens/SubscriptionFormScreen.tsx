@@ -1,6 +1,7 @@
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -9,13 +10,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { FormField } from "@/components/forms/FormField";
-import { SegmentedField } from "@/components/forms/SegmentedField";
 import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -26,6 +26,7 @@ import {
   createButtonStyles,
   createInputStyles,
   createScreenLayout,
+  createSurfaceStyles,
   spacing,
 } from "@/theme";
 import { SubscriptionInput } from "@/types/subscription";
@@ -33,6 +34,15 @@ import { formatDate, isDateInputValid } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
 
+type EditableField =
+  | "name"
+  | "category"
+  | "price"
+  | "billingCycle"
+  | "nextPaymentDate"
+  | "status"
+  | "notes"
+  | null;
 
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
@@ -59,6 +69,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
+  const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
@@ -69,7 +80,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   );
 
   const [formState, setFormState] = useState<SubscriptionInput>(buildInitialState());
-  const [showNextPaymentPicker, setShowNextPaymentPicker] = useState(false);
+  const [activeField, setActiveField] = useState<EditableField>(null);
 
   useEffect(() => {
     if (!existingSubscription) {
@@ -105,7 +116,11 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       return t("subscription.validationNextPayment");
     }
 
-    if (formState.status === "cancelled" && formState.endDate && !isDateInputValid(formState.endDate)) {
+    if (
+      formState.status === "cancelled" &&
+      formState.endDate &&
+      !isDateInputValid(formState.endDate)
+    ) {
       return t("subscription.validationEndDate");
     }
 
@@ -114,7 +129,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS !== "ios") {
-      setShowNextPaymentPicker(false);
+      setActiveField(null);
     }
 
     if (event.type === "dismissed" || !selectedDate) {
@@ -150,90 +165,200 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     navigation.goBack();
   };
 
+  const renderTextEditor = (
+    field: "name" | "category" | "price",
+    keyboardType: "default" | "numeric" = "default",
+  ) => (
+    <TextInput
+      value={field === "price" ? String(formState.price || "") : String(formState[field] ?? "")}
+      onChangeText={(value) =>
+        field === "price"
+          ? updateField("price", Number(value.replace(",", ".")) || 0)
+          : updateField(field, value)
+      }
+      keyboardType={keyboardType}
+      placeholderTextColor={colors.textSecondary}
+      style={[inputs.input, styles.inlineInput]}
+      autoFocus
+    />
+  );
+
+  const renderRow = ({
+    field,
+    label,
+    value,
+    editor,
+  }: {
+    field: Exclude<EditableField, "notes" | null>;
+    label: string;
+    value: string;
+    editor: React.ReactNode;
+  }) => {
+    const isOpen = activeField === field;
+
+    return (
+      <View style={[styles.rowShell, isOpen ? styles.rowShellOpen : null]}>
+        <Pressable style={styles.row} onPress={() => setActiveField(isOpen ? null : field)}>
+          <Text style={[typography.body, styles.rowLabel]}>{label}</Text>
+          <View style={styles.rowRight}>
+            <Text style={[typography.secondary, styles.rowValue]} numberOfLines={1}>
+              {value}
+            </Text>
+            <Ionicons
+              name={isOpen ? "chevron-up-outline" : "chevron-forward-outline"}
+              size={18}
+              color={colors.textSecondary}
+            />
+          </View>
+        </Pressable>
+        {isOpen ? <View style={styles.rowEditor}>{editor}</View> : null}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={layout.content}>
         <Text style={[typography.pageTitle, styles.title]}>
           {isEditing ? t("subscription.formEditTitle") : t("subscription.formCreateTitle")}
         </Text>
-        <Text style={[typography.secondary, styles.subtitle]}>{t("subscription.formSubtitle")}</Text>
 
-        <View style={styles.form}>
-          <FormField
-            label={t("subscription.name")}
-            value={formState.name}
-            onChangeText={(value) => updateField("name", value)}
-            placeholder="z. B. Netflix"
-          />
-          <FormField
-            label={t("subscription.category")}
-            value={formState.category}
-            onChangeText={(value) => updateField("category", value)}
-            placeholder="z. B. Entertainment"
-          />
-          <FormField
-            label={t("subscription.price")}
-            value={String(formState.price || "")}
-            onChangeText={(value) => updateField("price", Number(value.replace(",", ".")) || 0)}
-            keyboardType="numeric"
-            placeholder="9.99"
-          />
-          <SegmentedField
-            label={t("subscription.billingCycle")}
-            value={formState.billingCycle}
-            onChange={(value) => updateField("billingCycle", value)}
-            options={billingCycleOptions.map((option) => ({
-              value: option.value,
-              label: t(option.labelKey),
-            }))}
-          />
+        <View style={[surfaces.panel, styles.groupCard]}>
+          {renderRow({
+            field: "name",
+            label: t("subscription.name"),
+            value: formState.name || t("subscription.optional"),
+            editor: renderTextEditor("name"),
+          })}
 
-          <View style={styles.dateField}>
-            <Text style={[typography.secondary, styles.dateLabel]}>
-              {t("subscription.nextPaymentDate")}
-            </Text>
-            <Pressable
-              style={[inputs.input, styles.dateTrigger]}
-              onPress={() => setShowNextPaymentPicker(true)}
-            >
-              <Text style={[typography.body, styles.dateValue]}>
-                {formatDate(formState.nextPaymentDate)}
-              </Text>
-            </Pressable>
-            {showNextPaymentPicker ? (
+          {renderRow({
+            field: "category",
+            label: t("subscription.category"),
+            value: formState.category || t("subscription.optional"),
+            editor: renderTextEditor("category"),
+          })}
+
+          {renderRow({
+            field: "price",
+            label: t("subscription.price"),
+            value: formState.price ? String(formState.price) : "0",
+            editor: renderTextEditor("price", "numeric"),
+          })}
+
+          {renderRow({
+            field: "billingCycle",
+            label: t("subscription.formBillingCycle"),
+            value: t(`subscription.billing_${formState.billingCycle}`),
+            editor: (
+              <View style={styles.optionEditor}>
+                {billingCycleOptions.map((option) => {
+                  const isActive = formState.billingCycle === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      style={[
+                        buttons.buttonBase,
+                        styles.optionButton,
+                        isActive ? styles.optionButtonActive : buttons.secondaryButton,
+                      ]}
+                      onPress={() => {
+                        updateField("billingCycle", option.value);
+                        setActiveField(null);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          typography.button,
+                          isActive ? styles.optionButtonTextActive : styles.optionButtonText,
+                        ]}
+                      >
+                        {t(option.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ),
+          })}
+
+          {renderRow({
+            field: "nextPaymentDate",
+            label: t("subscription.formNextPaymentDate"),
+            value: formatDate(formState.nextPaymentDate),
+            editor: (
               <DateTimePicker
                 value={toDateValue(formState.nextPaymentDate)}
                 mode="date"
                 display={Platform.OS === "ios" ? "inline" : "default"}
                 onChange={handleDateChange}
               />
-            ) : null}
-          </View>
+            ),
+          })}
 
-          <SegmentedField
-            label={t("subscription.status")}
-            value={formState.status}
-            onChange={(value) => updateField("status", value)}
-            options={statusOptions.map((option) => ({
-              value: option.value,
-              label: t(option.labelKey),
-            }))}
-          />
-          {formState.status === "cancelled" ? (
-            <FormField
-              label={t("subscription.endDate")}
-              value={formState.endDate ?? ""}
-              onChangeText={(value) => updateField("endDate", value)}
+          {renderRow({
+            field: "status",
+            label: t("subscription.status"),
+            value: t(`subscription.status_${formState.status}`),
+            editor: (
+              <View style={styles.optionEditor}>
+                {statusOptions.map((option) => {
+                  const isActive = formState.status === option.value;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      style={[
+                        buttons.buttonBase,
+                        styles.optionButton,
+                        isActive ? styles.optionButtonActive : buttons.secondaryButton,
+                      ]}
+                      onPress={() => {
+                        updateField("status", option.value);
+                        setActiveField(null);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          typography.button,
+                          isActive ? styles.optionButtonTextActive : styles.optionButtonText,
+                        ]}
+                      >
+                        {t(option.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ),
+          })}
+        </View>
+
+        <View style={[surfaces.subtlePanel, styles.notesCard]}>
+          <Pressable style={styles.row} onPress={() => setActiveField(activeField === "notes" ? null : "notes")}>
+            <Text style={[typography.body, styles.rowLabel]}>{t("subscription.notes")}</Text>
+            <View style={styles.rowRight}>
+              <Text style={[typography.secondary, styles.rowValue]} numberOfLines={1}>
+                {formState.notes?.trim() || t("subscription.optional")}
+              </Text>
+              <Ionicons
+                name={activeField === "notes" ? "chevron-up-outline" : "chevron-forward-outline"}
+                size={18}
+                color={colors.textSecondary}
+              />
+            </View>
+          </Pressable>
+          {activeField === "notes" ? (
+            <TextInput
+              value={formState.notes ?? ""}
+              onChangeText={(value) => updateField("notes", value)}
               placeholder={t("subscription.optional")}
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              style={[inputs.input, styles.notesInput]}
+              autoFocus
             />
           ) : null}
-          <FormField
-            label={t("subscription.notes")}
-            value={formState.notes ?? ""}
-            onChangeText={(value) => updateField("notes", value)}
-            placeholder={t("subscription.optional")}
-            multiline
-          />
         </View>
 
         <View style={styles.actions}>
@@ -248,7 +373,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             onPress={handleSubmit}
           >
             <Text style={[typography.button, styles.primaryButtonText]}>
-              {isEditing ? t("common.save") : t("subscription.create")}
+              {isEditing ? t("common.save") : t("subscription.formCreateAction")}
             </Text>
           </Pressable>
         </View>
@@ -262,28 +387,79 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     title: {
       color: colors.textPrimary,
     },
-    subtitle: {
-      color: colors.textSecondary,
+    groupCard: {
+      paddingVertical: spacing.sm,
+      gap: 0,
     },
-    form: {
+    rowShell: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowShellOpen: {
+      backgroundColor: colors.surfaceSoft,
+    },
+    row: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
     },
-    dateField: {
+    rowLabel: {
+      color: colors.textPrimary,
+      flex: 1,
+    },
+    rowRight: {
+      flexDirection: "row",
+      alignItems: "center",
       gap: spacing.xs,
+      flexShrink: 1,
     },
-    dateLabel: {
+    rowValue: {
+      color: colors.textSecondary,
+      maxWidth: 170,
+      textAlign: "right",
+    },
+    rowEditor: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    inlineInput: {
       color: colors.textPrimary,
     },
-    dateTrigger: {
+    optionEditor: {
+      gap: spacing.sm,
+    },
+    optionButton: {
       justifyContent: "center",
     },
-    dateValue: {
+    optionButtonActive: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    optionButtonText: {
       color: colors.textPrimary,
+    },
+    optionButtonTextActive: {
+      color: colors.accent,
+    },
+    notesCard: {
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+    },
+    notesInput: {
+      minHeight: 120,
+      color: colors.textPrimary,
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.md,
+      textAlignVertical: "top",
     },
     actions: {
       flexDirection: "row",
       gap: spacing.md,
-      marginTop: spacing.sm,
     },
     button: {
       flex: 1,

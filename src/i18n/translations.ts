@@ -80,6 +80,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       formEditTitle: "Abo bearbeiten",
       formSubtitle:
         "Wenige Felder, klare Struktur und vorbereitet für spätere Erweiterungen.",
+      formBillingCycle: "Intervall",
+      formNextPaymentDate: "Fälligkeit",
+      formCreateAction: "Hinzufügen",
       name: "Name",
       category: "Kategorie",
       price: "Preis",
@@ -190,6 +193,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       formEditTitle: "Edit subscription",
       formSubtitle:
         "A focused form with a clean structure, ready for future expansion.",
+      formBillingCycle: "Interval",
+      formNextPaymentDate: "Due date",
+      formCreateAction: "Add",
       name: "Name",
       category: "Category",
       price: "Price",
@@ -285,6 +291,9 @@ export type TranslationKey =
   | "subscription.formCreateTitle"
   | "subscription.formEditTitle"
   | "subscription.formSubtitle"
+  | "subscription.formBillingCycle"
+  | "subscription.formNextPaymentDate"
+  | "subscription.formCreateAction"
   | "subscription.name"
   | "subscription.category"
   | "subscription.price"

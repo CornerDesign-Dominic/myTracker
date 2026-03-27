@@ -1,10 +1,6 @@
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -80,6 +76,13 @@ const formatDateMeta = (value: Date, language: "de" | "en") =>
     month: "2-digit",
     day: "2-digit",
   }).format(value);
+const formatMonthLabel = (monthIndex: number, language: "de" | "en") =>
+  new Intl.DateTimeFormat(language, {
+    month: "long",
+  }).format(new Date(2024, monthIndex, 1));
+const daysInMonth = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
+const clampDay = (year: number, monthIndex: number, day: number) =>
+  Math.min(day, daysInMonth(year, monthIndex));
 
 const DEFAULT_CATEGORIES = {
   de: [
@@ -231,14 +234,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     }
   };
 
-  const handleDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (!selectedDate) {
-      return;
-    }
-
-    setDraftDate(selectedDate);
-  };
-
   const handleSubmit = async () => {
     const validationError = validateForm();
 
@@ -283,6 +278,29 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const selectStatus = (value: SubscriptionStatus) => {
     updateField("status", value);
     closeSheet();
+  };
+  const updateDraftDatePart = (part: "day" | "month" | "year", delta: number) => {
+    setDraftDate((current) => {
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const day = current.getDate();
+
+      if (part === "day") {
+        const next = new Date(current);
+        next.setDate(day + delta);
+        return next;
+      }
+
+      if (part === "month") {
+        const nextMonth = month + delta;
+        const base = new Date(year, nextMonth, 1);
+        base.setDate(clampDay(base.getFullYear(), base.getMonth(), day));
+        return base;
+      }
+
+      const nextYear = year + delta;
+      return new Date(nextYear, month, clampDay(nextYear, month, day));
+    });
   };
 
   const renderTextSheet = (title: string, multiline = false) => (
@@ -337,6 +355,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const datePreviewValue = useMemo(() => formatDateHeadline(draftDate, language), [draftDate, language]);
   const datePreviewMeta = useMemo(() => formatDateMeta(draftDate, language), [draftDate, language]);
+  const dateMonthLabel = useMemo(() => formatMonthLabel(draftDate.getMonth(), language), [draftDate, language]);
 
   const renderSelectOption = ({
     label,
@@ -517,13 +536,64 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         </View>
         <View style={[surfaces.subtlePanel, styles.datePickerWrap]}>
           <View style={styles.datePickerFrame}>
-          <DateTimePicker
-            value={draftDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "calendar"}
-            onChange={handleDateChange}
-            accentColor={colors.accent}
-          />
+            <View style={styles.dateSelectors}>
+              <View style={styles.dateSelectorCard}>
+                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Tag" : "Day"}</Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("day", 1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
+                </Pressable>
+                <Text style={[typography.sectionTitle, styles.dateSelectorValue]}>
+                  {String(draftDate.getDate()).padStart(2, "0")}
+                </Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("day", -1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.dateSelectorCard}>
+                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Monat" : "Month"}</Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("month", 1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
+                </Pressable>
+                <Text style={[typography.body, styles.dateSelectorValue, styles.dateSelectorMonthValue]}>
+                  {dateMonthLabel}
+                </Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("month", -1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.dateSelectorCard}>
+                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Jahr" : "Year"}</Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("year", 1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
+                </Pressable>
+                <Text style={[typography.sectionTitle, styles.dateSelectorValue]}>
+                  {draftDate.getFullYear()}
+                </Text>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
+                  onPress={() => updateDraftDatePart("year", -1)}
+                >
+                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
         </View>
       </EditorSheet>
@@ -649,13 +719,47 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       padding: spacing.sm,
     },
     datePickerFrame: {
-      alignItems: "center",
-      justifyContent: "center",
       borderRadius: radius.md,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderStrong,
-      paddingVertical: spacing.sm,
+      padding: spacing.md,
+    },
+    dateSelectors: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    dateSelectorCard: {
+      flex: 1,
+      alignItems: "center",
+      gap: spacing.sm,
+      backgroundColor: colors.surfaceSoft,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.md,
+    },
+    dateSelectorLabel: {
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    dateSelectorValue: {
+      color: colors.textPrimary,
+      textAlign: "center",
+    },
+    dateSelectorMonthValue: {
+      minHeight: 44,
+      textTransform: "capitalize",
+      textAlignVertical: "center",
+    },
+    dateStepButton: {
+      minHeight: 40,
+      width: "100%",
+      paddingVertical: spacing.xs,
+    },
+    dateStepButtonText: {
+      color: colors.textPrimary,
     },
     singleSuggestionRow: {
       minHeight: 56,

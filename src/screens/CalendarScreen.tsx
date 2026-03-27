@@ -63,6 +63,19 @@ export const CalendarScreen = () => {
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
         <Text style={[typography.pageTitle, styles.pageTitle]}>{t("calendar.title")}</Text>
 
+        <View style={styles.topActionRow}>
+          <View />
+          <Pressable
+            style={[surfaces.subtlePanel, styles.todayButton]}
+            onPress={() => {
+              const now = new Date();
+              setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+            }}
+          >
+            <Text style={[typography.meta, styles.todayButtonText]}>{t("calendar.today")}</Text>
+          </Pressable>
+        </View>
+
         <View style={[surfaces.panel, styles.calendarCard]}>
           <View style={styles.headerRow}>
             <Pressable
@@ -96,13 +109,7 @@ export const CalendarScreen = () => {
 
               return (
                 <View key={`${visibleMonth.getFullYear()}-${visibleMonth.getMonth()}-${index}`} style={styles.dayCell}>
-                  <View
-                    style={[
-                      styles.dayInner,
-                      day ? styles.dayInnerFilled : null,
-                      isToday ? styles.todayCell : null,
-                    ]}
-                  >
+                  <View style={styles.dayInner}>
                     <Text
                       style={[
                         typography.body,
@@ -113,6 +120,9 @@ export const CalendarScreen = () => {
                     >
                       {day ?? ""}
                     </Text>
+                    {day ? (
+                      <View style={[styles.dayDotSlot, isToday ? styles.todayDotSlot : null]} />
+                    ) : null}
                   </View>
                 </View>
               );
@@ -133,7 +143,24 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
     },
     calendarCard: {
-      gap: spacing.lg,
+      gap: spacing.md,
+    },
+    topActionRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    todayButton: {
+      minHeight: 34,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    todayButtonText: {
+      color: colors.accent,
+      textTransform: "uppercase",
     },
     headerRow: {
       flexDirection: "row",
@@ -162,7 +189,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     weekdayCell: {
       flex: 1,
       alignItems: "center",
-      paddingVertical: spacing.xxs,
+      paddingVertical: 2,
     },
     weekdayText: {
       color: colors.textSecondary,
@@ -171,35 +198,42 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     grid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      rowGap: spacing.xxs,
+      rowGap: 2,
     },
     dayCell: {
       width: "14.2857%",
-      paddingHorizontal: 2,
-      paddingVertical: 2,
+      paddingHorizontal: 1,
+      paddingVertical: 1,
     },
     dayInner: {
-      minHeight: 62,
-      borderRadius: radius.md,
+      minHeight: 48,
       alignItems: "center",
       justifyContent: "center",
-    },
-    dayInnerFilled: {
-      backgroundColor: colors.surfaceSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    todayCell: {
-      backgroundColor: colors.accentSoft,
-      borderColor: colors.accent,
+      gap: 1,
     },
     dayText: {
       color: colors.textPrimary,
     },
     todayText: {
       color: colors.accent,
+      width: 30,
+      height: 30,
+      textAlign: "center",
+      textAlignVertical: "center",
+      lineHeight: 30,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
     },
     dayTextEmpty: {
       color: "transparent",
+    },
+    dayDotSlot: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.pill,
+      backgroundColor: "transparent",
+    },
+    todayDotSlot: {
+      backgroundColor: colors.accentSoft,
     },
   });

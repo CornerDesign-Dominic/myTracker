@@ -27,6 +27,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     },
     calendar: {
       title: "Kalender",
+      today: "Heute",
     },
     settings: {
       title: "Einstellungen",
@@ -145,6 +146,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     },
     calendar: {
       title: "Calendar",
+      today: "Today",
     },
     settings: {
       title: "Settings",
@@ -260,6 +262,7 @@ export type TranslationKey =
   | "tabs.allSubscriptions"
   | "tabs.stats"
   | "calendar.title"
+  | "calendar.today"
   | "settings.title"
   | "settings.subtitle"
   | "settings.language"

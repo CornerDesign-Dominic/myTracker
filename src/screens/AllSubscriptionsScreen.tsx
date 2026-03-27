@@ -68,6 +68,9 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               {formatCurrency(totalYearlyAmount)}
             </Text>
           </View>
+        </View>
+
+        <View style={[surfaces.panel, styles.searchCard]}>
           <Pressable
             style={[buttons.buttonBase, buttons.primaryButton]}
             onPress={() => navigation.navigate("SubscriptionForm")}
@@ -78,23 +81,23 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           </Pressable>
         </View>
 
-        <View style={[surfaces.panel, styles.searchCard]}>
-          <Text style={[typography.cardTitle, styles.searchTitle]}>{t("allSubscriptions.searchTitle")}</Text>
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t("allSubscriptions.searchPlaceholder")}
-            placeholderTextColor={colors.textSecondary}
-            style={[inputs.input, styles.searchInput]}
-          />
-        </View>
-
         <View style={[surfaces.panel, styles.listCard]}>
           <View style={styles.listHeader}>
             <Text style={[typography.cardTitle, styles.listTitle]}>{t("allSubscriptions.management")}</Text>
             <Text style={[typography.secondary, styles.listMeta]}>
               {t("allSubscriptions.entries", { count: filteredSubscriptions.length })}
             </Text>
+          </View>
+
+          <View style={styles.listSearch}>
+            <Text style={[typography.cardTitle, styles.searchTitle]}>{t("allSubscriptions.searchTitle")}</Text>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t("allSubscriptions.searchPlaceholder")}
+              placeholderTextColor={colors.textSecondary}
+              style={[inputs.input, styles.searchInput]}
+            />
           </View>
 
           {filteredSubscriptions.length === 0 ? (
@@ -191,6 +194,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
     },
     searchCard: {
+      gap: spacing.md,
+    },
+    listSearch: {
       gap: spacing.md,
     },
     searchTitle: {

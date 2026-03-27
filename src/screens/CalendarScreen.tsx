@@ -157,12 +157,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     weekdayRow: {
       flexDirection: "row",
-      gap: spacing.xs,
+      gap: spacing.xxs,
     },
     weekdayCell: {
       flex: 1,
       alignItems: "center",
-      paddingVertical: spacing.xs,
+      paddingVertical: spacing.xxs,
     },
     weekdayText: {
       color: colors.textSecondary,
@@ -171,15 +171,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     grid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      rowGap: spacing.xs,
+      rowGap: spacing.xxs,
     },
     dayCell: {
       width: "14.2857%",
-      paddingHorizontal: 3,
-      paddingVertical: 3,
+      paddingHorizontal: 2,
+      paddingVertical: 2,
     },
     dayInner: {
-      minHeight: 52,
+      minHeight: 62,
       borderRadius: radius.md,
       alignItems: "center",
       justifyContent: "center",

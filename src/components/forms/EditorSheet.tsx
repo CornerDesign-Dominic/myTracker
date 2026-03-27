@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  ViewStyle,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +29,8 @@ type EditorSheetProps = PropsWithChildren<{
   confirmLabel: string;
   cancelLabel: string;
   showConfirm?: boolean;
+  sheetStyle?: ViewStyle;
+  contentStyle?: ViewStyle;
 }>;
 
 export const EditorSheet = ({
@@ -38,6 +41,8 @@ export const EditorSheet = ({
   confirmLabel,
   cancelLabel,
   showConfirm = true,
+  sheetStyle,
+  contentStyle,
   children,
 }: EditorSheetProps) => {
   const { colors, typography } = useAppTheme();
@@ -53,7 +58,7 @@ export const EditorSheet = ({
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.keyboardShell}
         >
-          <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet]}>
+          <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>
             <View style={styles.handle} />
             <View style={styles.header}>
               <Text style={[typography.sectionTitle, styles.title]}>{title}</Text>
@@ -62,7 +67,7 @@ export const EditorSheet = ({
               </Pressable>
             </View>
 
-            <View style={styles.content}>{children}</View>
+            <View style={[styles.content, contentStyle]}>{children}</View>
 
             <View style={styles.actions}>
               <Pressable style={[buttons.buttonBase, buttons.secondaryButton, styles.action]} onPress={onClose}>

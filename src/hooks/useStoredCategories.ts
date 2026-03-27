@@ -84,7 +84,7 @@ export const useStoredCategories = (defaultCategories: readonly string[]) => {
       const normalizedQuery = normalizeCategory(query);
 
       if (!normalizedQuery) {
-        return categories.slice(0, 6);
+        return [];
       }
 
       return categories

@@ -4,6 +4,7 @@ import DateTimePicker, {
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -302,20 +303,26 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         autoFocus
         style={[inputs.input, styles.sheetInput]}
       />
-      {categorySuggestions.length ? (
-        <View style={[surfaces.subtlePanel, styles.suggestionPanel]}>
-          {categorySuggestions.map((category, index) => (
-            <Pressable
-              key={category}
-              style={[
-                styles.suggestionRow,
-                index === categorySuggestions.length - 1 ? styles.suggestionRowLast : null,
-              ]}
-              onPress={() => setDraftText(category)}
-            >
-              <Text style={[typography.body, styles.suggestionText]}>{category}</Text>
-            </Pressable>
-          ))}
+      {draftText.trim() && categorySuggestions.length ? (
+        <View style={styles.categoryListWrap}>
+          <View style={[surfaces.subtlePanel, styles.suggestionPanel]}>
+            <FlatList
+              data={categorySuggestions}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item, index }) => (
+                <Pressable
+                  style={[
+                    styles.suggestionRow,
+                    index === categorySuggestions.length - 1 ? styles.suggestionRowLast : null,
+                  ]}
+                  onPress={() => setDraftText(item)}
+                >
+                  <Text style={[typography.body, styles.suggestionText]}>{item}</Text>
+                </Pressable>
+              )}
+            />
+          </View>
         </View>
       ) : null}
     </EditorSheet>
@@ -605,6 +612,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     suggestionPanel: {
       padding: 0,
       overflow: "hidden",
+      flex: 1,
+    },
+    categoryListWrap: {
+      maxHeight: 280,
+      minHeight: 140,
     },
     suggestionRow: {
       minHeight: 52,

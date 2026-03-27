@@ -247,13 +247,10 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     navigation.goBack();
   };
 
-  const formatPriceLabel = () => {
-    if (!formState.price) {
-      return t("subscription.optional");
-    }
-
-    return `${formState.price.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`;
-  };
+  const formatPriceLabel = () =>
+    formState.price
+      ? `${formState.price.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`
+      : "";
 
   const openBillingCycleSheet = () => setActiveField("billingCycle");
   const openStatusSheet = () => setActiveField("status");
@@ -280,7 +277,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       <TextInput
         value={draftText}
         onChangeText={setDraftText}
-        placeholder={title}
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
         autoFocus
@@ -302,7 +298,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       <TextInput
         value={draftText}
         onChangeText={setDraftText}
-        placeholder={t("subscription.category")}
         placeholderTextColor={colors.textMuted}
         autoFocus
         style={[inputs.input, styles.sheetInput]}
@@ -346,8 +341,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   );
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={layout.content}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
+      <ScrollView contentContainerStyle={[layout.content, styles.content]}>
         <Text style={[typography.pageTitle, styles.title]}>
           {isEditing ? t("subscription.formEditTitle") : t("subscription.formCreateTitle")}
         </Text>
@@ -355,13 +350,13 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         <View style={[surfaces.panel, styles.cardGroup]}>
           <FormRow
             label={t("subscription.name")}
-            value={formState.name || t("subscription.optional")}
+            value={formState.name}
             onPress={() => openTextSheet("name")}
             isFirst
           />
           <FormRow
             label={t("subscription.category")}
-            value={formState.category || t("subscription.optional")}
+            value={formState.category}
             onPress={() => openTextSheet("category")}
           />
           <FormRow
@@ -390,7 +385,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         <View style={[surfaces.subtlePanel, styles.notesCard]}>
           <FormRow
             label={t("subscription.notes")}
-            value={formState.notes?.trim() || t("subscription.optional")}
+            value={formState.notes?.trim() ?? ""}
             onPress={() => openTextSheet("notes")}
             isFirst
             isLast
@@ -431,7 +426,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         <TextInput
           value={draftPrice}
           onChangeText={setDraftPrice}
-          placeholder="0.00"
           placeholderTextColor={colors.textMuted}
           keyboardType="numeric"
           autoFocus
@@ -518,6 +512,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     title: {
       color: colors.textPrimary,
       marginBottom: spacing.xs,
+    },
+    content: {
+      paddingTop: 0,
     },
     cardGroup: {
       paddingVertical: spacing.xs,

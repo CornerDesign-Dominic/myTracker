@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
@@ -85,9 +85,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
-      <View style={layout.content}>
+      <ScrollView
+        contentContainerStyle={layout.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={[typography.pageTitle, styles.title]}>{t("settings.title")}</Text>
-        <Text style={[typography.secondary, styles.subtitle]}>{t("settings.subtitle")}</Text>
 
         <View style={[surfaces.panel, styles.groupCard]}>
           <Text style={[typography.cardTitle, styles.groupTitle]}>{accountCopy.title}</Text>
@@ -142,7 +144,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           }
           onChange={setTheme}
         />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -151,10 +153,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     title: {
       color: colors.textPrimary,
-    },
-    subtitle: {
-      color: colors.textSecondary,
-      marginBottom: spacing.sm,
     },
     accountText: {
       color: colors.textSecondary,

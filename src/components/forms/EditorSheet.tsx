@@ -27,7 +27,6 @@ type EditorSheetProps = PropsWithChildren<{
   onClose: () => void;
   onConfirm?: () => void;
   confirmLabel: string;
-  cancelLabel: string;
   showConfirm?: boolean;
   sheetStyle?: ViewStyle;
   contentStyle?: ViewStyle;
@@ -39,7 +38,6 @@ export const EditorSheet = ({
   onClose,
   onConfirm,
   confirmLabel,
-  cancelLabel,
   showConfirm = true,
   sheetStyle,
   contentStyle,
@@ -68,20 +66,16 @@ export const EditorSheet = ({
             </View>
 
             <View style={[styles.content, contentStyle]}>{children}</View>
-
-            <View style={styles.actions}>
-              <Pressable style={[buttons.buttonBase, buttons.secondaryButton, styles.action]} onPress={onClose}>
-                <Text style={[typography.button, styles.secondaryLabel]}>{cancelLabel}</Text>
-              </Pressable>
-              {showConfirm ? (
+            {showConfirm ? (
+              <View style={styles.actions}>
                 <Pressable
                   style={[buttons.buttonBase, buttons.primaryButton, styles.action]}
                   onPress={onConfirm}
                 >
                   <Text style={[typography.button, styles.primaryLabel]}>{confirmLabel}</Text>
                 </Pressable>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
           </SafeAreaView>
         </KeyboardAvoidingView>
       </View>
@@ -147,12 +141,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.md,
     },
     action: {
-      flex: 1,
+      width: "100%",
     },
     primaryLabel: {
       color: colors.accent,
-    },
-    secondaryLabel: {
-      color: colors.textPrimary,
     },
   });

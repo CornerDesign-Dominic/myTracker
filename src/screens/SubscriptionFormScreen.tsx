@@ -279,7 +279,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       onClose={closeSheet}
       onConfirm={saveActiveField}
       confirmLabel={t("common.save")}
-      cancelLabel={t("common.cancel")}
     >
       <TextInput
         value={draftText}
@@ -300,7 +299,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       onClose={closeSheet}
       onConfirm={saveActiveField}
       confirmLabel={t("common.save")}
-      cancelLabel={t("common.cancel")}
       contentStyle={styles.categorySheetContent}
     >
       <TextInput
@@ -424,7 +422,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         onClose={closeSheet}
         onConfirm={saveActiveField}
         confirmLabel={t("common.save")}
-        cancelLabel={t("common.cancel")}
       >
         <TextInput
           value={draftPrice}
@@ -441,7 +438,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         title={t("subscription.formBillingCycle")}
         onClose={closeSheet}
         confirmLabel={t("common.save")}
-        cancelLabel={t("common.cancel")}
         showConfirm={false}
       >
         <View style={[surfaces.subtlePanel, styles.sheetList]}>
@@ -463,7 +459,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         title={t("subscription.status")}
         onClose={closeSheet}
         confirmLabel={t("common.save")}
-        cancelLabel={t("common.cancel")}
         showConfirm={false}
       >
         <View style={[surfaces.subtlePanel, styles.sheetList]}>
@@ -486,7 +481,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         onClose={closeSheet}
         onConfirm={saveActiveField}
         confirmLabel={t("common.save")}
-        cancelLabel={t("common.cancel")}
       >
         <View style={[surfaces.subtlePanel, styles.datePreview]}>
           <Text style={[typography.meta, styles.datePreviewLabel]}>

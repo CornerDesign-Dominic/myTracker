@@ -2,6 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { AppSettingsProvider } from "./src/context/AppSettingsContext";
 import { useAppSettings } from "./src/context/AppSettingsContext";
 import { useAppTheme } from "./src/hooks/useAppTheme";
@@ -10,9 +11,10 @@ import { spacing } from "./src/theme";
 
 function AppContent() {
   const { isHydrated } = useAppSettings();
+  const { authIsReady } = useAuth();
   const { colors, statusBarStyle } = useAppTheme();
 
-  if (!isHydrated) {
+  if (!authIsReady || !isHydrated) {
     return (
       <View
         style={{
@@ -40,9 +42,11 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppSettingsProvider>
-        <AppContent />
-      </AppSettingsProvider>
+      <AuthProvider>
+        <AppSettingsProvider>
+          <AppContent />
+        </AppSettingsProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

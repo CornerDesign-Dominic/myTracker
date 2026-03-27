@@ -1,10 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAuth } from "@/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { RootStackParamList } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+
+type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
 const OptionGroup = <T extends string>({
   title,
@@ -51,18 +56,64 @@ const OptionGroup = <T extends string>({
   );
 };
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ navigation }: Props) => {
   const { colors, typography } = useAppTheme();
-  const { t } = useI18n();
+  const { language: locale, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
+  const surfaces = createSurfaceStyles(colors);
   const { language, currency, theme, setLanguage, setCurrency, setTheme } = useAppSettings();
+  const { currentUser, isAnonymous, logout } = useAuth();
+  const accountCopy =
+    locale === "de"
+      ? {
+          title: "Konto",
+          anonymous: "Du nutzt die App aktuell anonym.",
+          signedIn: `Angemeldet als ${currentUser?.email ?? "-"}`,
+          login: "Login",
+          register: "Registrieren",
+          logout: "Abmelden",
+        }
+      : {
+          title: "Account",
+          anonymous: "You are currently using the app anonymously.",
+          signedIn: `Signed in as ${currentUser?.email ?? "-"}`,
+          login: "Login",
+          register: "Register",
+          logout: "Log out",
+        };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
       <View style={layout.content}>
         <Text style={[typography.pageTitle, styles.title]}>{t("settings.title")}</Text>
         <Text style={[typography.secondary, styles.subtitle]}>{t("settings.subtitle")}</Text>
+
+        <View style={[surfaces.panel, styles.groupCard]}>
+          <Text style={[typography.cardTitle, styles.groupTitle]}>{accountCopy.title}</Text>
+          <Text style={[typography.secondary, styles.accountText]}>
+            {isAnonymous ? accountCopy.anonymous : accountCopy.signedIn}
+          </Text>
+          <View style={styles.optionRow}>
+            {isAnonymous ? (
+              <>
+                <Pressable style={styles.optionButton} onPress={() => navigation.navigate("Login")}>
+                  <Text style={[typography.button, styles.optionText]}>{accountCopy.login}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.optionButton, styles.optionButtonActive]}
+                  onPress={() => navigation.navigate("Register")}
+                >
+                  <Text style={[typography.button, styles.optionTextActive]}>{accountCopy.register}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable style={styles.optionButton} onPress={logout}>
+                <Text style={[typography.button, styles.optionText]}>{accountCopy.logout}</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
 
         <OptionGroup
           title={t("settings.language")}
@@ -104,6 +155,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     subtitle: {
       color: colors.textSecondary,
       marginBottom: spacing.sm,
+    },
+    accountText: {
+      color: colors.textSecondary,
     },
     groupCard: {
       gap: spacing.md,

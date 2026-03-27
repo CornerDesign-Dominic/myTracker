@@ -12,32 +12,36 @@ import { mockSubscriptionStore } from "./storage/mockSubscriptionStore";
 export const usingFirebase = hasRequiredFirebaseConfig;
 
 export const subscriptionRepository = {
-  subscribe(listener: (subscriptions: Subscription[]) => void) {
+  subscribe(
+    userId: string,
+    listener: (subscriptions: Subscription[]) => void,
+    onError?: (error: Error) => void,
+  ) {
     if (usingFirebase) {
-      return subscribeToFirestoreSubscriptions(listener);
+      return subscribeToFirestoreSubscriptions(userId, listener, onError);
     }
 
     return mockSubscriptionStore.subscribe(listener);
   },
-  async create(input: SubscriptionInput) {
+  async create(userId: string, input: SubscriptionInput) {
     if (usingFirebase) {
-      await createFirestoreSubscription(input);
+      await createFirestoreSubscription(userId, input);
       return;
     }
 
     await mockSubscriptionStore.create(input);
   },
-  async update(id: string, input: Partial<SubscriptionInput>) {
+  async update(userId: string, id: string, input: Partial<SubscriptionInput>) {
     if (usingFirebase) {
-      await updateFirestoreSubscription(id, input);
+      await updateFirestoreSubscription(userId, id, input);
       return;
     }
 
     await mockSubscriptionStore.update(id, input);
   },
-  async archive(id: string) {
+  async archive(userId: string, id: string) {
     if (usingFirebase) {
-      await archiveFirestoreSubscription(id);
+      await archiveFirestoreSubscription(userId, id);
       return;
     }
 

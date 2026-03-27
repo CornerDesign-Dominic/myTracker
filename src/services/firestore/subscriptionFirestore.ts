@@ -13,8 +13,7 @@ import {
 
 import { firestoreDb } from "@/firebase/config";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
-
-const COLLECTION_NAME = "subscriptions";
+import { serializeTimestamp } from "./userFirestore";
 
 const ensureFirestore = () => {
   if (!firestoreDb) {
@@ -24,17 +23,11 @@ const ensureFirestore = () => {
   return firestoreDb;
 };
 
-const serializeTimestamp = (value: unknown) => {
-  if (value instanceof Timestamp) {
-    return value.toDate().toISOString();
-  }
+const subscriptionsCollection = (userId: string) =>
+  collection(ensureFirestore(), "users", userId, "subscriptions");
 
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return new Date().toISOString();
-};
+const subscriptionDoc = (userId: string, subscriptionId: string) =>
+  doc(ensureFirestore(), "users", userId, "subscriptions", subscriptionId);
 
 const mapSubscription = (id: string, data: Record<string, unknown>): Subscription => ({
   id,
@@ -44,9 +37,7 @@ const mapSubscription = (id: string, data: Record<string, unknown>): Subscriptio
   currency: String(data.currency ?? "EUR"),
   billingCycle: (data.billingCycle as Subscription["billingCycle"]) ?? "monthly",
   nextPaymentDate: String(data.nextPaymentDate ?? ""),
-  cancellationDeadline: data.cancellationDeadline
-    ? String(data.cancellationDeadline)
-    : undefined,
+  cancellationDeadline: data.cancellationDeadline ? String(data.cancellationDeadline) : undefined,
   status: (data.status as Subscription["status"]) ?? "active",
   endDate: data.endDate ? String(data.endDate) : undefined,
   notes: data.notes ? String(data.notes) : undefined,
@@ -56,52 +47,52 @@ const mapSubscription = (id: string, data: Record<string, unknown>): Subscriptio
 });
 
 export const subscribeToFirestoreSubscriptions = (
+  userId: string,
   callback: (subscriptions: Subscription[]) => void,
+  onError?: (error: Error) => void,
 ) => {
-  const db = ensureFirestore();
   const subscriptionQuery = query(
-    collection(db, COLLECTION_NAME),
+    subscriptionsCollection(userId),
     where("archivedAt", "==", null),
     orderBy("nextPaymentDate", "asc"),
   );
 
-  return onSnapshot(subscriptionQuery, (snapshot) => {
-    const items = snapshot.docs.map((snapshotItem) =>
-      mapSubscription(snapshotItem.id, snapshotItem.data()),
-    );
-    callback(items);
-  });
+  return onSnapshot(
+    subscriptionQuery,
+    (snapshot) => {
+      const items = snapshot.docs.map((snapshotItem) =>
+        mapSubscription(snapshotItem.id, snapshotItem.data()),
+      );
+      callback(items);
+    },
+    (error) => {
+      onError?.(error);
+    },
+  );
 };
 
-export const createFirestoreSubscription = async (input: SubscriptionInput) => {
-  const db = ensureFirestore();
-  const collectionRef = collection(db, COLLECTION_NAME);
-
-  await addDoc(collectionRef, {
+export const createFirestoreSubscription = async (userId: string, input: SubscriptionInput) => {
+  await addDoc(subscriptionsCollection(userId), {
     ...input,
     archivedAt: null,
-    userId: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 };
 
 export const updateFirestoreSubscription = async (
+  userId: string,
   id: string,
   input: Partial<SubscriptionInput>,
 ) => {
-  const db = ensureFirestore();
-
-  await updateDoc(doc(db, COLLECTION_NAME, id), {
+  await updateDoc(subscriptionDoc(userId, id), {
     ...input,
     updatedAt: serverTimestamp(),
   });
 };
 
-export const archiveFirestoreSubscription = async (id: string) => {
-  const db = ensureFirestore();
-
-  await updateDoc(doc(db, COLLECTION_NAME, id), {
+export const archiveFirestoreSubscription = async (userId: string, id: string) => {
+  await updateDoc(subscriptionDoc(userId, id), {
     archivedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

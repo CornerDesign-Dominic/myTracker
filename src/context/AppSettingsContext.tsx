@@ -8,7 +8,13 @@ import {
   useState,
 } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 import { AppLanguage } from "@/i18n/translations";
+import {
+  ensureSettingsDocument,
+  subscribeToUserSettings,
+  updateUserSettings,
+} from "@/services/firestore/userFirestore";
 
 type LanguageOption = AppLanguage;
 type CurrencyOption = "EUR" | "Dollar";
@@ -29,18 +35,18 @@ interface AppSettingsContextValue {
 const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
-  const [language, setLanguage] = useState<LanguageOption>("de");
-  const [currency, setCurrency] = useState<CurrencyOption>("EUR");
-  const [theme, setTheme] = useState<ThemeOption>("Light");
+  const { currentUser, authIsReady } = useAuth();
+  const [language, setLanguageState] = useState<LanguageOption>("de");
+  const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
+  const [theme, setThemeState] = useState<ThemeOption>("Light");
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const hydrateSettings = async () => {
+    const hydrateLocalSettings = async () => {
       try {
         const storedSettings = await AsyncStorage.getItem(STORAGE_KEY);
 
         if (!storedSettings) {
-          setIsHydrated(true);
           return;
         }
 
@@ -51,7 +57,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         }>;
 
         if (parsedSettings.language) {
-          setLanguage(
+          setLanguageState(
             parsedSettings.language === "DE"
               ? "de"
               : parsedSettings.language === "EN"
@@ -61,21 +67,68 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         }
 
         if (parsedSettings.currency) {
-          setCurrency(parsedSettings.currency);
+          setCurrencyState(parsedSettings.currency);
         }
 
         if (parsedSettings.theme) {
-          setTheme(parsedSettings.theme);
+          setThemeState(parsedSettings.theme);
         }
       } catch {
-        // Keep defaults if reading persisted settings fails.
+        // Keep defaults if local hydration fails.
       } finally {
         setIsHydrated(true);
       }
     };
 
-    hydrateSettings();
+    hydrateLocalSettings();
   }, []);
+
+  useEffect(() => {
+    if (!authIsReady || !isHydrated || !currentUser) {
+      return;
+    }
+
+    let isActive = true;
+
+    const defaults = { language, currency, theme };
+
+    const syncInitialSettings = async () => {
+      await ensureSettingsDocument(currentUser.uid, defaults);
+    };
+
+    syncInitialSettings().catch(() => {
+      // Keep current in-memory settings if Firestore bootstrap fails.
+    });
+
+    const unsubscribe = subscribeToUserSettings(
+      currentUser.uid,
+      (settings) => {
+        if (!isActive || !settings) {
+          return;
+        }
+
+        if (settings.language) {
+          setLanguageState(settings.language);
+        }
+
+        if (settings.currency) {
+          setCurrencyState(settings.currency);
+        }
+
+        if (settings.theme) {
+          setThemeState(settings.theme);
+        }
+      },
+      () => {
+        // Keep local settings usable if Firestore rules are not deployed yet.
+      },
+    );
+
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
+  }, [authIsReady, currentUser, currency, isHydrated, language, theme]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -94,6 +147,27 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     });
   }, [currency, isHydrated, language, theme]);
 
+  const setLanguage = (value: LanguageOption) => {
+    setLanguageState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { language: value }).catch(() => undefined);
+    }
+  };
+
+  const setCurrency = (value: CurrencyOption) => {
+    setCurrencyState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { currency: value }).catch(() => undefined);
+    }
+  };
+
+  const setTheme = (value: ThemeOption) => {
+    setThemeState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { theme: value }).catch(() => undefined);
+    }
+  };
+
   const value = useMemo(
     () => ({
       language,
@@ -107,9 +181,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     [currency, isHydrated, language, theme],
   );
 
-  return (
-    <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>
-  );
+  return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;
 };
 
 export const useAppSettings = () => {

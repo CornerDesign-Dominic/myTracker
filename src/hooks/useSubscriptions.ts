@@ -1,23 +1,47 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 import { subscriptionRepository, usingFirebase } from "@/services/subscriptionRepository";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
 import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 
 export const useSubscriptions = () => {
+  const { currentUser, authIsReady } = useAuth();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscriptionRepository.subscribe((items) => {
-      setSubscriptions(items);
+    if (!authIsReady) {
+      return;
+    }
+
+    if (!currentUser?.uid) {
+      setSubscriptions([]);
       setIsLoading(false);
-      setErrorMessage(null);
-    });
+      return;
+    }
+
+    setIsLoading(true);
+
+    const unsubscribe = subscriptionRepository.subscribe(
+      currentUser.uid,
+      (items) => {
+        setSubscriptions(items);
+        setIsLoading(false);
+        setErrorMessage(null);
+      },
+      (error) => {
+        setSubscriptions([]);
+        setIsLoading(false);
+        setErrorMessage(
+          error.message || "Abos konnten nicht geladen werden.",
+        );
+      },
+    );
 
     return unsubscribe;
-  }, []);
+  }, [authIsReady, currentUser?.uid]);
 
   const metrics = useMemo(
     () => buildSubscriptionMetrics(subscriptions),
@@ -42,10 +66,16 @@ export const useSubscriptions = () => {
     errorMessage,
     isUsingFirebase: usingFirebase,
     createSubscription: (input: SubscriptionInput) =>
-      wrapAction(() => subscriptionRepository.create(input)),
+      currentUser?.uid
+        ? wrapAction(() => subscriptionRepository.create(currentUser.uid, input))
+        : Promise.resolve(),
     updateSubscription: (id: string, input: Partial<SubscriptionInput>) =>
-      wrapAction(() => subscriptionRepository.update(id, input)),
+      currentUser?.uid
+        ? wrapAction(() => subscriptionRepository.update(currentUser.uid, id, input))
+        : Promise.resolve(),
     archiveSubscription: (id: string) =>
-      wrapAction(() => subscriptionRepository.archive(id)),
+      currentUser?.uid
+        ? wrapAction(() => subscriptionRepository.archive(currentUser.uid, id))
+        : Promise.resolve(),
   };
 };

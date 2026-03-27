@@ -9,6 +9,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
+import { LoginScreen } from "@/screens/LoginScreen";
+import { RegisterScreen } from "@/screens/RegisterScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
 import { SubscriptionDetailsScreen } from "@/screens/SubscriptionDetailsScreen";
@@ -98,7 +100,7 @@ const TabsNavigator = () => {
 
 export const AppNavigator = () => {
   const { colors, navigationTheme, typography } = useAppTheme();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
 
   return (
     <NavigationContainer theme={navigationTheme}>
@@ -123,6 +125,16 @@ export const AppNavigator = () => {
         }}
       >
         <Stack.Screen name="Tabs" component={TabsNavigator} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ title: language === "de" ? "Login" : "Login" }}
+        />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ title: language === "de" ? "Registrierung" : "Register" }}
+        />
         <Stack.Screen
           name="SubscriptionForm"
           component={SubscriptionFormScreen}

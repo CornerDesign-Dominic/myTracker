@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -42,6 +45,23 @@ type EditableField =
   | "status"
   | "notes"
   | null;
+
+type WheelOption<T extends string | number> = {
+  label: string;
+  value: T;
+};
+
+type DateWheelProps<T extends string | number> = {
+  label: string;
+  options: WheelOption<T>[];
+  selectedValue: T;
+  onChange: (value: T) => void;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+};
+
+const WHEEL_ITEM_HEIGHT = 44;
+const WHEEL_VISIBLE_ROWS = 5;
+const WHEEL_HEIGHT = WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_ROWS;
 
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
@@ -106,6 +126,89 @@ const DEFAULT_CATEGORIES = {
     "Software",
   ],
 } as const;
+
+const DateWheel = <T extends string | number>({
+  label,
+  options,
+  selectedValue,
+  onChange,
+  colors,
+}: DateWheelProps<T>) => {
+  const { typography } = useAppTheme();
+  const styles = getStyles(colors);
+  const listRef = useRef<FlatList<WheelOption<T>>>(null);
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === selectedValue),
+  );
+
+  useEffect(() => {
+    listRef.current?.scrollToOffset({
+      offset: selectedIndex * WHEEL_ITEM_HEIGHT,
+      animated: false,
+    });
+  }, [selectedIndex]);
+
+  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const rawIndex = Math.round(event.nativeEvent.contentOffset.y / WHEEL_ITEM_HEIGHT);
+    const boundedIndex = Math.max(0, Math.min(options.length - 1, rawIndex));
+    const nextValue = options[boundedIndex]?.value;
+
+    if (nextValue !== undefined && nextValue !== selectedValue) {
+      onChange(nextValue);
+    }
+  };
+
+  return (
+    <View style={styles.wheelCard}>
+      <Text style={[typography.meta, styles.dateSelectorLabel]}>{label}</Text>
+      <View style={styles.wheelViewport}>
+        <View pointerEvents="none" style={styles.wheelSelectionFrame} />
+        <FlatList
+          ref={listRef}
+          data={options}
+          keyExtractor={(item) => String(item.value)}
+          showsVerticalScrollIndicator={false}
+          snapToInterval={WHEEL_ITEM_HEIGHT}
+          decelerationRate="fast"
+          bounces={false}
+          contentContainerStyle={styles.wheelContent}
+          getItemLayout={(_, index) => ({
+            length: WHEEL_ITEM_HEIGHT,
+            offset: WHEEL_ITEM_HEIGHT * index,
+            index,
+          })}
+          initialScrollIndex={selectedIndex}
+          onScrollToIndexFailed={() => {
+            listRef.current?.scrollToOffset({
+              offset: selectedIndex * WHEEL_ITEM_HEIGHT,
+              animated: false,
+            });
+          }}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
+          renderItem={({ item }) => {
+            const isSelected = item.value === selectedValue;
+
+            return (
+              <View style={styles.wheelRow}>
+                <Text
+                  style={[
+                    typography.body,
+                    styles.wheelRowText,
+                    isSelected ? styles.wheelRowTextActive : styles.wheelRowTextInactive,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </View>
+            );
+          }}
+        />
+      </View>
+    </View>
+  );
+};
 
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
@@ -279,27 +382,24 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     updateField("status", value);
     closeSheet();
   };
-  const updateDraftDatePart = (part: "day" | "month" | "year", delta: number) => {
+
+  const updateDraftDay = (day: number) => {
+    setDraftDate((current) => new Date(current.getFullYear(), current.getMonth(), day));
+  };
+
+  const updateDraftMonth = (month: number) => {
     setDraftDate((current) => {
       const year = current.getFullYear();
+      const day = clampDay(year, month, current.getDate());
+      return new Date(year, month, day);
+    });
+  };
+
+  const updateDraftYear = (year: number) => {
+    setDraftDate((current) => {
       const month = current.getMonth();
-      const day = current.getDate();
-
-      if (part === "day") {
-        const next = new Date(current);
-        next.setDate(day + delta);
-        return next;
-      }
-
-      if (part === "month") {
-        const nextMonth = month + delta;
-        const base = new Date(year, nextMonth, 1);
-        base.setDate(clampDay(base.getFullYear(), base.getMonth(), day));
-        return base;
-      }
-
-      const nextYear = year + delta;
-      return new Date(nextYear, month, clampDay(nextYear, month, day));
+      const day = clampDay(year, month, current.getDate());
+      return new Date(year, month, day);
     });
   };
 
@@ -355,7 +455,33 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const datePreviewValue = useMemo(() => formatDateHeadline(draftDate, language), [draftDate, language]);
   const datePreviewMeta = useMemo(() => formatDateMeta(draftDate, language), [draftDate, language]);
-  const dateMonthLabel = useMemo(() => formatMonthLabel(draftDate.getMonth(), language), [draftDate, language]);
+  const dayOptions = useMemo(
+    () =>
+      Array.from({ length: daysInMonth(draftDate.getFullYear(), draftDate.getMonth()) }, (_, index) => ({
+        label: String(index + 1).padStart(2, "0"),
+        value: index + 1,
+      })),
+    [draftDate],
+  );
+  const monthOptions = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        label: formatMonthLabel(index, language),
+        value: index,
+      })),
+    [language],
+  );
+  const yearOptions = useMemo(() => {
+    const currentYear = draftDate.getFullYear();
+
+    return Array.from({ length: 41 }, (_, index) => {
+      const value = currentYear - 20 + index;
+      return {
+        label: String(value),
+        value,
+      };
+    });
+  }, [draftDate]);
 
   const renderSelectOption = ({
     label,
@@ -537,62 +663,27 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         <View style={[surfaces.subtlePanel, styles.datePickerWrap]}>
           <View style={styles.datePickerFrame}>
             <View style={styles.dateSelectors}>
-              <View style={styles.dateSelectorCard}>
-                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Tag" : "Day"}</Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("day", 1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
-                </Pressable>
-                <Text style={[typography.sectionTitle, styles.dateSelectorValue]}>
-                  {String(draftDate.getDate()).padStart(2, "0")}
-                </Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("day", -1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.dateSelectorCard}>
-                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Monat" : "Month"}</Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("month", 1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
-                </Pressable>
-                <Text style={[typography.body, styles.dateSelectorValue, styles.dateSelectorMonthValue]}>
-                  {dateMonthLabel}
-                </Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("month", -1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.dateSelectorCard}>
-                <Text style={[typography.meta, styles.dateSelectorLabel]}>{language === "de" ? "Jahr" : "Year"}</Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("year", 1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>+</Text>
-                </Pressable>
-                <Text style={[typography.sectionTitle, styles.dateSelectorValue]}>
-                  {draftDate.getFullYear()}
-                </Text>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.subtleButton, styles.dateStepButton]}
-                  onPress={() => updateDraftDatePart("year", -1)}
-                >
-                  <Text style={[typography.button, styles.dateStepButtonText]}>-</Text>
-                </Pressable>
-              </View>
+              <DateWheel
+                label={language === "de" ? "Tag" : "Day"}
+                options={dayOptions}
+                selectedValue={draftDate.getDate()}
+                onChange={updateDraftDay}
+                colors={colors}
+              />
+              <DateWheel
+                label={language === "de" ? "Monat" : "Month"}
+                options={monthOptions}
+                selectedValue={draftDate.getMonth()}
+                onChange={updateDraftMonth}
+                colors={colors}
+              />
+              <DateWheel
+                label={language === "de" ? "Jahr" : "Year"}
+                options={yearOptions}
+                selectedValue={draftDate.getFullYear()}
+                onChange={updateDraftYear}
+                colors={colors}
+              />
             </View>
           </View>
         </View>
@@ -729,7 +820,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flexDirection: "row",
       gap: spacing.sm,
     },
-    dateSelectorCard: {
+    wheelCard: {
       flex: 1,
       alignItems: "center",
       gap: spacing.sm,
@@ -744,22 +835,41 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textMuted,
       textTransform: "uppercase",
     },
-    dateSelectorValue: {
-      color: colors.textPrimary,
-      textAlign: "center",
-    },
-    dateSelectorMonthValue: {
-      minHeight: 44,
-      textTransform: "capitalize",
-      textAlignVertical: "center",
-    },
-    dateStepButton: {
-      minHeight: 40,
+    wheelViewport: {
+      height: WHEEL_HEIGHT,
       width: "100%",
-      paddingVertical: spacing.xs,
+      position: "relative",
+      overflow: "hidden",
     },
-    dateStepButtonText: {
+    wheelSelectionFrame: {
+      position: "absolute",
+      top: (WHEEL_HEIGHT - WHEEL_ITEM_HEIGHT) / 2,
+      left: 0,
+      right: 0,
+      height: WHEEL_ITEM_HEIGHT,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    wheelContent: {
+      paddingVertical: (WHEEL_HEIGHT - WHEEL_ITEM_HEIGHT) / 2,
+    },
+    wheelRow: {
+      height: WHEEL_ITEM_HEIGHT,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: spacing.xs,
+    },
+    wheelRowText: {
+      textAlign: "center",
+      textTransform: "capitalize",
+    },
+    wheelRowTextActive: {
       color: colors.textPrimary,
+    },
+    wheelRowTextInactive: {
+      color: colors.textMuted,
     },
     singleSuggestionRow: {
       minHeight: 56,

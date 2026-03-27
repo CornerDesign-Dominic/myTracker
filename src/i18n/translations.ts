@@ -94,6 +94,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       endDate: "Läuft ab am",
       notes: "Notizen",
       templates: "Vorlagen",
+      suggestion: "Vorschlag",
       noCategoryFound: "Keine Kategorie gefunden",
       dateHelp: "Bitte im Format JJJJ-MM-TT eingeben.",
       optional: "Optional",
@@ -209,6 +210,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       endDate: "Runs until",
       notes: "Notes",
       templates: "Templates",
+      suggestion: "Suggestion",
       noCategoryFound: "No category found",
       dateHelp: "Please use the format YYYY-MM-DD.",
       optional: "Optional",
@@ -309,6 +311,7 @@ export type TranslationKey =
   | "subscription.endDate"
   | "subscription.notes"
   | "subscription.templates"
+  | "subscription.suggestion"
   | "subscription.noCategoryFound"
   | "subscription.dateHelp"
   | "subscription.optional"

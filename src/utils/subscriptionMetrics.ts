@@ -3,26 +3,26 @@ import { Subscription, SubscriptionMetrics } from "@/types/subscription";
 export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
-      return subscription.price;
+      return subscription.amount;
     case "quarterly":
-      return subscription.price / 3;
+      return subscription.amount / 3;
     case "yearly":
-      return subscription.price / 12;
+      return subscription.amount / 12;
     default:
-      return subscription.price;
+      return subscription.amount;
   }
 };
 
 export const getYearlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
-      return subscription.price * 12;
+      return subscription.amount * 12;
     case "quarterly":
-      return subscription.price * 4;
+      return subscription.amount * 4;
     case "yearly":
-      return subscription.price;
+      return subscription.amount;
     default:
-      return subscription.price * 12;
+      return subscription.amount * 12;
   }
 };
 

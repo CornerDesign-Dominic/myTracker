@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -26,6 +27,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
   const styles = getStyles(colors);
+  const { currency } = useAppSettings();
   const { subscriptions } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -65,7 +67,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               {t("allSubscriptions.yearlySpend")}
             </Text>
             <Text style={[typography.metric, styles.summaryAmount]}>
-              {formatCurrency(totalYearlyAmount)}
+              {formatCurrency(totalYearlyAmount, currency)}
             </Text>
           </View>
         </View>
@@ -138,9 +140,9 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 
                   <View style={styles.metaGrid}>
                     <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.price")}</Text>
+                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
                       <Text style={[typography.secondary, styles.metaValue]}>
-                        {formatCurrency(subscription.price, subscription.currency)}
+                        {formatCurrency(subscription.amount, currency)}
                       </Text>
                     </View>
                     <View style={styles.metaItem}>

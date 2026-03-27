@@ -12,5 +12,3 @@ export const statusOptions: Array<{ labelKey: TranslationKey; value: Subscriptio
   { labelKey: "subscription.status_paused", value: "paused" },
   { labelKey: "subscription.status_cancelled", value: "cancelled" },
 ];
-
-export const defaultCurrency = "EUR";

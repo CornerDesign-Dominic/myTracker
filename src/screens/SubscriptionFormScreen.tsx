@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
-import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
+import { billingCycleOptions, statusOptions } from "@/constants/options";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -39,7 +39,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
 type EditableField =
   | "name"
   | "category"
-  | "price"
+  | "amount"
   | "billingCycle"
   | "nextPaymentDate"
   | "status"
@@ -68,8 +68,7 @@ const YEAR_RANGE_END = 2045;
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
   category: "",
-  price: 0,
-  currency: defaultCurrency,
+  amount: 0,
   billingCycle: "monthly",
   nextPaymentDate: formatLocalDateInput(new Date()),
   status: "active",
@@ -77,13 +76,11 @@ const buildInitialState = (): SubscriptionInput => ({
   notes: "",
 });
 
-const toCurrencyCode = (currency: "EUR" | "Dollar") => (currency === "EUR" ? "EUR" : "USD");
-
 const toDateValue = (value: string) => {
   return parseLocalDateInput(value) ?? new Date();
 };
 
-const formatPriceInput = (value: string) => value.replace(",", ".");
+const formatAmountInput = (value: string) => value.replace(",", ".");
 const daysInMonth = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
 const clampDay = (year: number, monthIndex: number, day: number) =>
   Math.min(day, daysInMonth(year, monthIndex));
@@ -215,7 +212,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [formState, setFormState] = useState<SubscriptionInput>(buildInitialState());
   const [activeField, setActiveField] = useState<EditableField>(null);
   const [draftText, setDraftText] = useState("");
-  const [draftPrice, setDraftPrice] = useState("");
+  const [draftAmount, setDraftAmount] = useState("");
   const [draftDate, setDraftDate] = useState(new Date());
 
   const categorySuggestion = useMemo(() => {
@@ -243,15 +240,14 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     setFormState({
       name: existingSubscription.name,
       category: existingSubscription.category,
-      price: existingSubscription.price,
-      currency: toCurrencyCode(currency),
+      amount: existingSubscription.amount,
       billingCycle: existingSubscription.billingCycle,
       nextPaymentDate: existingSubscription.nextPaymentDate,
       status: existingSubscription.status,
       endDate: existingSubscription.endDate ?? "",
       notes: existingSubscription.notes ?? "",
     });
-  }, [currency, existingSubscription]);
+  }, [existingSubscription]);
 
   const updateField = <K extends keyof SubscriptionInput>(key: K, value: SubscriptionInput[K]) =>
     setFormState((current) => ({ ...current, [key]: value }));
@@ -261,8 +257,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       return t("subscription.validationRequired");
     }
 
-    if (!Number.isFinite(formState.price) || formState.price <= 0) {
-      return t("subscription.validationPrice");
+    if (!Number.isFinite(formState.amount) || formState.amount <= 0) {
+      return t("subscription.validationAmount");
     }
 
     if (!isDateInputValid(formState.nextPaymentDate)) {
@@ -285,9 +281,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     setActiveField(field);
   };
 
-  const openPriceSheet = () => {
-    setDraftPrice(formState.price ? String(formState.price) : "");
-    setActiveField("price");
+  const openAmountSheet = () => {
+    setDraftAmount(formState.amount ? String(formState.amount) : "");
+    setActiveField("amount");
   };
 
   const openDateSheet = () => {
@@ -298,7 +294,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const closeSheet = () => {
     setActiveField(null);
     setDraftText("");
-    setDraftPrice("");
+    setDraftAmount("");
   };
 
   const saveActiveField = () => {
@@ -308,9 +304,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    if (activeField === "price") {
-      const nextPrice = Number(formatPriceInput(draftPrice));
-      updateField("price", Number.isFinite(nextPrice) ? nextPrice : 0);
+    if (activeField === "amount") {
+      const nextAmount = Number(formatAmountInput(draftAmount));
+      updateField("amount", Number.isFinite(nextAmount) ? nextAmount : 0);
       closeSheet();
       return;
     }
@@ -333,7 +329,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       ...formState,
       name: formState.name.trim(),
       category: formState.category.trim(),
-      currency: toCurrencyCode(currency),
       endDate: formState.status === "cancelled" ? formState.endDate || undefined : undefined,
       notes: formState.notes?.trim() || undefined,
     };
@@ -349,9 +344,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     navigation.goBack();
   };
 
-  const formatPriceLabel = () =>
-    formState.price
-      ? `${formState.price.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`
+  const formatAmountLabel = () =>
+    formState.amount
+      ? `${formState.amount.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`
       : "";
 
   const openBillingCycleSheet = () => setActiveField("billingCycle");
@@ -504,9 +499,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             onPress={() => openTextSheet("category")}
           />
           <FormRow
-            label={t("subscription.price")}
-            value={formatPriceLabel()}
-            onPress={openPriceSheet}
+            label={t("subscription.amount")}
+            value={formatAmountLabel()}
+            onPress={openAmountSheet}
           />
           <FormRow
             label={t("subscription.formBillingCycle")}
@@ -560,15 +555,15 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       {activeField === "notes" ? renderTextSheet(t("subscription.notes"), true) : null}
 
       <EditorSheet
-        visible={activeField === "price"}
-        title={t("subscription.price")}
+        visible={activeField === "amount"}
+        title={t("subscription.amount")}
         onClose={closeSheet}
         onConfirm={saveActiveField}
         confirmLabel={t("common.save")}
       >
         <TextInput
-          value={draftPrice}
-          onChangeText={setDraftPrice}
+          value={draftAmount}
+          onChangeText={setDraftAmount}
           placeholderTextColor={colors.textMuted}
           keyboardType="numeric"
           autoFocus

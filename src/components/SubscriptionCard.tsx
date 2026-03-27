@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useI18n } from "@/hooks/useI18n";
 import { createButtonStyles, createSurfaceStyles, radius, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -21,6 +22,7 @@ export const SubscriptionCard = ({
   onCancel,
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
@@ -49,9 +51,9 @@ export const SubscriptionCard = ({
 
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
-            <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.price")}</Text>
+            <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
             <Text style={[typography.body, styles.metaValue]}>
-              {formatCurrency(subscription.price, subscription.currency)}
+              {formatCurrency(subscription.amount, currency)}
             </Text>
           </View>
           <View style={styles.metaItem}>

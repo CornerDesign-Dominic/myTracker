@@ -5,11 +5,9 @@ export interface Subscription {
   id: string;
   name: string;
   category: string;
-  price: number;
-  currency: string;
+  amount: number;
   billingCycle: BillingCycle;
   nextPaymentDate: string;
-  cancellationDeadline?: string;
   status: SubscriptionStatus;
   endDate?: string;
   notes?: string;
@@ -21,11 +19,9 @@ export interface Subscription {
 export interface SubscriptionInput {
   name: string;
   category: string;
-  price: number;
-  currency: string;
+  amount: number;
   billingCycle: BillingCycle;
   nextPaymentDate: string;
-  cancellationDeadline?: string;
   status: SubscriptionStatus;
   endDate?: string;
   notes?: string;

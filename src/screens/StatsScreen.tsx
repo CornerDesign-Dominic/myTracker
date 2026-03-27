@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatCard } from "@/components/StatCard";
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -13,6 +14,7 @@ import { formatDate } from "@/utils/date";
 
 export const StatsScreen = () => {
   const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
@@ -31,10 +33,10 @@ export const StatsScreen = () => {
         <View style={styles.statsRow}>
           <StatCard
             label={t("stats.monthlySpend")}
-            value={formatCurrency(metrics.monthlyTotal)}
+            value={formatCurrency(metrics.monthlyTotal, currency)}
             tone="accent"
           />
-          <StatCard label={t("stats.yearlySpend")} value={formatCurrency(metrics.yearlyTotal)} />
+          <StatCard label={t("stats.yearlySpend")} value={formatCurrency(metrics.yearlyTotal, currency)} />
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
@@ -45,10 +47,7 @@ export const StatsScreen = () => {
                 {metrics.mostExpensive.name}
               </Text>
               <Text style={[typography.secondary, styles.highlightValue]}>
-                {formatCurrency(
-                  metrics.mostExpensive.price,
-                  metrics.mostExpensive.currency,
-                )}{" "}
+                {formatCurrency(metrics.mostExpensive.amount, currency)}{" "}
                 / {metrics.mostExpensive.billingCycle}
               </Text>
             </>
@@ -73,7 +72,7 @@ export const StatsScreen = () => {
                   <View style={styles.chartHeader}>
                     <Text style={[typography.body, styles.chartLabel]}>{item.category}</Text>
                     <Text style={[typography.secondary, styles.chartValue]}>
-                      {formatCurrency(item.monthlyTotal)}
+                      {formatCurrency(item.monthlyTotal, currency)}
                     </Text>
                   </View>
                   <View style={styles.chartTrack}>
@@ -108,7 +107,7 @@ export const StatsScreen = () => {
                   </View>
                   <View style={styles.paymentRight}>
                     <Text style={[typography.body, styles.paymentAmount]}>
-                      {formatCurrency(item.price, item.currency)}
+                      {formatCurrency(item.amount, currency)}
                     </Text>
                     <Text style={[typography.secondary, styles.paymentMeta]}>
                       {formatDate(item.nextPaymentDate)}

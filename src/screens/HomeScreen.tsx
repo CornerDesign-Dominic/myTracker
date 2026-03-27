@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -14,6 +15,7 @@ import { formatCurrency } from "@/utils/currency";
 
 export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
   const { language, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
@@ -52,7 +54,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
         month: "long",
       }).format(now),
       totalAmount: currentMonthSubscriptions.reduce(
-        (sum, subscription) => sum + subscription.price,
+        (sum, subscription) => sum + subscription.amount,
         0,
       ),
       paymentCount: currentMonthSubscriptions.length,
@@ -85,7 +87,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
         <View style={[surfaces.panel, styles.summaryCard]}>
           <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
           <Text style={[typography.metric, styles.summaryAmount]}>
-            {formatCurrency(monthlySummary.totalAmount)}
+            {formatCurrency(monthlySummary.totalAmount, currency)}
           </Text>
           <Text style={[typography.secondary, styles.summaryCount]}>
             {monthlySummary.paymentCount}{" "}

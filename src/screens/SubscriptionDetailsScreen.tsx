@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -14,6 +15,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
@@ -36,8 +38,8 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         <View style={[surfaces.panel, styles.heroCard]}>
           <Text style={[typography.pageTitle, styles.name]}>{subscription.name}</Text>
           <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
-          <Text style={[typography.metric, styles.price]}>
-            {formatCurrency(subscription.price, subscription.currency)}
+          <Text style={[typography.metric, styles.amount]}>
+            {formatCurrency(subscription.amount, currency)}
           </Text>
           <Text style={[typography.secondary, styles.cycle]}>
             /{t(`subscription.billing_${subscription.billingCycle}`)}
@@ -49,11 +51,6 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
           <InfoRow
             label={t("allSubscriptions.nextPayment")}
             value={formatDate(subscription.nextPaymentDate)}
-            colors={colors}
-          />
-          <InfoRow
-            label={t("subscription.cancellationDeadline")}
-            value={formatDate(subscription.cancellationDeadline)}
             colors={colors}
           />
           <InfoRow
@@ -122,7 +119,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   category: {
     color: colors.textSecondary,
   },
-  price: {
+  amount: {
     marginTop: spacing.sm,
     color: colors.accent,
   },

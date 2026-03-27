@@ -46,8 +46,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthPaymentSingular: "Zahlung",
       monthPaymentPlural: "Zahlungen",
       emptyTitle: "Noch keine Abos sichtbar",
-      emptyDescription:
-        "Lege dein erstes Abo an oder blende gekündigte Einträge wieder ein.",
+      emptyDescription: "Lege dein erstes Abo an oder blende gekündigte Einträge wieder ein.",
       settingsA11y: "Einstellungen öffnen",
     },
     allSubscriptions: {
@@ -60,9 +59,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       management: "Verwaltung",
       entries: "{{count}} Einträge",
       emptyTitle: "Noch keine Abos vorhanden",
-      emptyDescription:
-        "Lege dein erstes Abo an oder passe die Suche an, um bestehende Einträge zu sehen.",
-      price: "Preis",
+      emptyDescription: "Lege dein erstes Abo an oder passe die Suche an, um bestehende Einträge zu sehen.",
+      amount: "Betrag",
       billingCycle: "Billing Cycle",
       nextPayment: "Nächste Zahlung",
     },
@@ -75,26 +73,22 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noActive: "Noch kein aktives Abo vorhanden.",
       byCategory: "Ausgaben nach Kategorie",
       noCategories: "Noch keine Kategorien",
-      noCategoriesDescription:
-        "Sobald du Abos anlegst, erscheinen hier einfache Auswertungen.",
+      noCategoriesDescription: "Sobald du Abos anlegst, erscheinen hier einfache Auswertungen.",
       upcomingPayments: "Nächste Zahlungen",
       noUpcoming: "Keine nächsten Zahlungen vorhanden.",
     },
     subscription: {
       formCreateTitle: "Abo hinzufügen",
       formEditTitle: "Abo bearbeiten",
-      formSubtitle:
-        "Wenige Felder, klare Struktur und vorbereitet für spätere Erweiterungen.",
+      formSubtitle: "Wenige Felder, klare Struktur und vorbereitet für spätere Erweiterungen.",
       formBillingCycle: "Intervall",
       formNextPaymentDate: "Fälligkeit",
       formCreateAction: "Hinzufügen",
       name: "Name",
       category: "Kategorie",
-      price: "Preis",
-      currency: "Währung",
+      amount: "Betrag",
       billingCycle: "Abrechnungsintervall",
       nextPaymentDate: "Nächstes Zahlungsdatum",
-      cancellationDeadline: "Kündigungsfrist",
       status: "Status",
       endDate: "Läuft ab am",
       notes: "Notizen",
@@ -108,10 +102,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       updatedAt: "Aktualisiert",
       editAction: "Abo bearbeiten",
       validationRequired: "Name und Kategorie sind Pflichtfelder.",
-      validationPrice: "Bitte einen gültigen Preis angeben.",
-      validationNextPayment:
-        "Bitte ein gültiges nächstes Zahlungsdatum im Format JJJJ-MM-TT angeben.",
-      validationCancellation: "Die Kündigungsfrist braucht das Format JJJJ-MM-TT.",
+      validationAmount: "Bitte einen gültigen Betrag angeben.",
+      validationNextPayment: "Bitte ein gültiges nächstes Zahlungsdatum im Format JJJJ-MM-TT angeben.",
       validationEndDate: "Das Enddatum braucht das Format JJJJ-MM-TT.",
       formAlertTitle: "Formular prüfen",
       standardPlan: "Standard Plan",
@@ -165,8 +157,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthPaymentSingular: "payment",
       monthPaymentPlural: "payments",
       emptyTitle: "No subscriptions visible yet",
-      emptyDescription:
-        "Create your first subscription or bring cancelled entries back into view.",
+      emptyDescription: "Create your first subscription or bring cancelled entries back into view.",
       settingsA11y: "Open settings",
     },
     allSubscriptions: {
@@ -179,9 +170,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       management: "Management",
       entries: "{{count}} entries",
       emptyTitle: "No subscriptions yet",
-      emptyDescription:
-        "Create your first subscription or adjust the search to see existing entries.",
-      price: "Price",
+      emptyDescription: "Create your first subscription or adjust the search to see existing entries.",
+      amount: "Amount",
       billingCycle: "Billing cycle",
       nextPayment: "Next payment",
     },
@@ -194,26 +184,22 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noActive: "No active subscription yet.",
       byCategory: "Spend by category",
       noCategories: "No categories yet",
-      noCategoriesDescription:
-        "As soon as you add subscriptions, simple evaluations will appear here.",
+      noCategoriesDescription: "As soon as you add subscriptions, simple evaluations will appear here.",
       upcomingPayments: "Upcoming payments",
       noUpcoming: "No upcoming payments available.",
     },
     subscription: {
       formCreateTitle: "Add subscription",
       formEditTitle: "Edit subscription",
-      formSubtitle:
-        "A focused form with a clean structure, ready for future expansion.",
+      formSubtitle: "A focused form with a clean structure, ready for future expansion.",
       formBillingCycle: "Interval",
       formNextPaymentDate: "Due date",
       formCreateAction: "Add",
       name: "Name",
       category: "Category",
-      price: "Price",
-      currency: "Currency",
+      amount: "Amount",
       billingCycle: "Billing cycle",
       nextPaymentDate: "Next payment date",
-      cancellationDeadline: "Cancellation deadline",
       status: "Status",
       endDate: "Runs until",
       notes: "Notes",
@@ -227,10 +213,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       updatedAt: "Updated",
       editAction: "Edit subscription",
       validationRequired: "Name and category are required.",
-      validationPrice: "Please enter a valid price.",
-      validationNextPayment:
-        "Please enter a valid next payment date in the format YYYY-MM-DD.",
-      validationCancellation: "The cancellation deadline must use the format YYYY-MM-DD.",
+      validationAmount: "Please enter a valid amount.",
+      validationNextPayment: "Please enter a valid next payment date in the format YYYY-MM-DD.",
       validationEndDate: "The end date must use the format YYYY-MM-DD.",
       formAlertTitle: "Check form",
       standardPlan: "Standard plan",
@@ -289,7 +273,7 @@ export type TranslationKey =
   | "allSubscriptions.entries"
   | "allSubscriptions.emptyTitle"
   | "allSubscriptions.emptyDescription"
-  | "allSubscriptions.price"
+  | "allSubscriptions.amount"
   | "allSubscriptions.billingCycle"
   | "allSubscriptions.nextPayment"
   | "stats.title"
@@ -311,11 +295,9 @@ export type TranslationKey =
   | "subscription.formCreateAction"
   | "subscription.name"
   | "subscription.category"
-  | "subscription.price"
-  | "subscription.currency"
+  | "subscription.amount"
   | "subscription.billingCycle"
   | "subscription.nextPaymentDate"
-  | "subscription.cancellationDeadline"
   | "subscription.status"
   | "subscription.endDate"
   | "subscription.notes"
@@ -329,9 +311,8 @@ export type TranslationKey =
   | "subscription.updatedAt"
   | "subscription.editAction"
   | "subscription.validationRequired"
-  | "subscription.validationPrice"
+  | "subscription.validationAmount"
   | "subscription.validationNextPayment"
-  | "subscription.validationCancellation"
   | "subscription.validationEndDate"
   | "subscription.formAlertTitle"
   | "subscription.standardPlan"

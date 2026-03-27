@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FormField } from "@/components/forms/FormField";
 import { SegmentedField } from "@/components/forms/SegmentedField";
 import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
-import { radius, spacing } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
+import { createButtonStyles, createScreenLayout, spacing } from "@/theme";
 import { SubscriptionInput } from "@/types/subscription";
 import { isDateInputValid } from "@/utils/date";
 
@@ -28,8 +30,11 @@ const buildInitialState = (): SubscriptionInput => ({
 });
 
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
+  const { t } = useI18n();
   const styles = getStyles(colors);
+  const layout = createScreenLayout(colors);
+  const buttons = createButtonStyles(colors);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
@@ -66,19 +71,19 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const validateForm = () => {
     if (!formState.name.trim() || !formState.category.trim()) {
-      return "Name und Kategorie sind Pflichtfelder.";
+      return t("subscription.validationRequired");
     }
 
     if (!Number.isFinite(formState.price) || formState.price <= 0) {
-      return "Bitte einen gueltigen Preis angeben.";
+      return t("subscription.validationPrice");
     }
 
     if (!isDateInputValid(formState.nextPaymentDate)) {
-      return "Bitte ein gueltiges naechstes Zahlungsdatum im Format JJJJ-MM-TT angeben.";
+      return t("subscription.validationNextPayment");
     }
 
     if (formState.cancellationDeadline && !isDateInputValid(formState.cancellationDeadline)) {
-      return "Die Kuendigungsfrist braucht das Format JJJJ-MM-TT.";
+      return t("subscription.validationCancellation");
     }
 
     if (
@@ -86,7 +91,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       formState.endDate &&
       !isDateInputValid(formState.endDate)
     ) {
-      return "Das Enddatum braucht das Format JJJJ-MM-TT.";
+      return t("subscription.validationEndDate");
     }
 
     return null;
@@ -96,7 +101,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     const validationError = validateForm();
 
     if (validationError) {
-      Alert.alert("Formular pruefen", validationError);
+      Alert.alert(t("subscription.formAlertTitle"), validationError);
       return;
     }
 
@@ -120,118 +125,115 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{isEditing ? "Abo bearbeiten" : "Abo hinzufuegen"}</Text>
-      <Text style={styles.subtitle}>
-        Wenige Felder, klare Struktur und vorbereitet fuer spaetere Erweiterungen.
-      </Text>
+    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={layout.content}>
+        <Text style={[typography.pageTitle, styles.title]}>
+          {isEditing ? t("subscription.formEditTitle") : t("subscription.formCreateTitle")}
+        </Text>
+        <Text style={[typography.secondary, styles.subtitle]}>{t("subscription.formSubtitle")}</Text>
 
-      <View style={styles.form}>
-        <FormField
-          label="Name"
-          value={formState.name}
-          onChangeText={(value) => updateField("name", value)}
-          placeholder="z. B. Netflix"
-        />
-        <FormField
-          label="Kategorie"
-          value={formState.category}
-          onChangeText={(value) => updateField("category", value)}
-          placeholder="z. B. Entertainment"
-        />
-        <FormField
-          label="Preis"
-          value={String(formState.price || "")}
-          onChangeText={(value) => updateField("price", Number(value.replace(",", ".")) || 0)}
-          keyboardType="numeric"
-          placeholder="9.99"
-        />
-        <FormField
-          label="Waehrung"
-          value={formState.currency}
-          onChangeText={(value) => updateField("currency", value)}
-          placeholder="EUR"
-        />
-        <SegmentedField
-          label="Abrechnungsintervall"
-          value={formState.billingCycle}
-          onChange={(value) => updateField("billingCycle", value)}
-          options={billingCycleOptions}
-        />
-        <FormField
-          label="Naechstes Zahlungsdatum"
-          value={formState.nextPaymentDate}
-          onChangeText={(value) => updateField("nextPaymentDate", value)}
-          placeholder="2026-04-01"
-          helpText="Bitte im Format JJJJ-MM-TT eingeben."
-        />
-        <FormField
-          label="Kuendigungsfrist"
-          value={formState.cancellationDeadline ?? ""}
-          onChangeText={(value) => updateField("cancellationDeadline", value)}
-          placeholder="Optional"
-        />
-        <SegmentedField
-          label="Status"
-          value={formState.status}
-          onChange={(value) => updateField("status", value)}
-          options={statusOptions}
-        />
-        {formState.status === "cancelled" ? (
+        <View style={styles.form}>
           <FormField
-            label="Laeuft ab am"
-            value={formState.endDate ?? ""}
-            onChangeText={(value) => updateField("endDate", value)}
-            placeholder="Optional"
+            label={t("subscription.name")}
+            value={formState.name}
+            onChangeText={(value) => updateField("name", value)}
+            placeholder="z. B. Netflix"
           />
-        ) : null}
-        <FormField
-          label="Notizen"
-          value={formState.notes ?? ""}
-          onChangeText={(value) => updateField("notes", value)}
-          placeholder="Optional"
-          multiline
-        />
-      </View>
+          <FormField
+            label={t("subscription.category")}
+            value={formState.category}
+            onChangeText={(value) => updateField("category", value)}
+            placeholder="z. B. Entertainment"
+          />
+          <FormField
+            label={t("subscription.price")}
+            value={String(formState.price || "")}
+            onChangeText={(value) => updateField("price", Number(value.replace(",", ".")) || 0)}
+            keyboardType="numeric"
+            placeholder="9.99"
+          />
+          <FormField
+            label={t("subscription.currency")}
+            value={formState.currency}
+            onChangeText={(value) => updateField("currency", value)}
+            placeholder="EUR"
+          />
+          <SegmentedField
+            label={t("subscription.billingCycle")}
+            value={formState.billingCycle}
+            onChange={(value) => updateField("billingCycle", value)}
+            options={billingCycleOptions.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+          />
+          <FormField
+            label={t("subscription.nextPaymentDate")}
+            value={formState.nextPaymentDate}
+            onChangeText={(value) => updateField("nextPaymentDate", value)}
+            placeholder="2026-04-01"
+            helpText={t("subscription.dateHelp")}
+          />
+          <FormField
+            label={t("subscription.cancellationDeadline")}
+            value={formState.cancellationDeadline ?? ""}
+            onChangeText={(value) => updateField("cancellationDeadline", value)}
+            placeholder={t("subscription.optional")}
+          />
+          <SegmentedField
+            label={t("subscription.status")}
+            value={formState.status}
+            onChange={(value) => updateField("status", value)}
+            options={statusOptions.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
+          />
+          {formState.status === "cancelled" ? (
+            <FormField
+              label={t("subscription.endDate")}
+              value={formState.endDate ?? ""}
+              onChangeText={(value) => updateField("endDate", value)}
+              placeholder={t("subscription.optional")}
+            />
+          ) : null}
+          <FormField
+            label={t("subscription.notes")}
+            value={formState.notes ?? ""}
+            onChangeText={(value) => updateField("notes", value)}
+            placeholder={t("subscription.optional")}
+            multiline
+          />
+        </View>
 
-      <View style={styles.actions}>
-        <Pressable
-          style={[styles.button, styles.secondaryButton]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.secondaryButtonText}>Abbrechen</Text>
-        </Pressable>
-        <Pressable style={[styles.button, styles.primaryButton]} onPress={handleSubmit}>
-          <Text style={styles.primaryButtonText}>
-            {isEditing ? "Speichern" : "Abo anlegen"}
-          </Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+        <View style={styles.actions}>
+          <Pressable
+            style={[buttons.buttonBase, buttons.secondaryButton, styles.button]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={[typography.button, styles.secondaryButtonText]}>{t("common.cancel")}</Text>
+          </Pressable>
+          <Pressable
+            style={[buttons.buttonBase, buttons.primaryButton, styles.button]}
+            onPress={handleSubmit}
+          >
+            <Text style={[typography.button, styles.primaryButtonText]}>
+              {isEditing ? t("common.save") : t("subscription.create")}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.xl,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   subtitle: {
-    fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 21,
   },
   form: {
     gap: spacing.md,
@@ -239,27 +241,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   actions: {
     flexDirection: "row",
     gap: spacing.md,
+    marginTop: spacing.sm,
   },
   button: {
     flex: 1,
-    borderRadius: radius.pill,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  primaryButton: {
-    backgroundColor: colors.accent,
-  },
-  secondaryButton: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   primaryButtonText: {
-    color: colors.accentText,
-    fontWeight: "700",
+    color: colors.accent,
   },
   secondaryButtonText: {
     color: colors.textPrimary,
-    fontWeight: "700",
   },
   });

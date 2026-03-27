@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
-import { useColorScheme } from "react-native";
 
-import { getThemeColors } from "@/constants/theme";
+import { useAppSettings } from "@/context/AppSettingsContext";
+import { getThemeColors, radius, shadowPresets, spacing, typography } from "@/theme";
 
 export const useAppTheme = () => {
-  const colorScheme = useColorScheme();
+  const { theme } = useAppSettings();
+  const colorScheme = theme === "Dark" ? "dark" : "light";
   const isDark = colorScheme === "dark";
   const colors = getThemeColors(colorScheme);
 
@@ -23,8 +24,16 @@ export const useAppTheme = () => {
 
   return {
     colorScheme,
+    theme,
     isDark,
     colors,
+    spacing,
+    radius,
+    typography,
+    shadows: {
+      card: shadowPresets.card(colors),
+      soft: shadowPresets.soft(colors),
+    },
     navigationTheme,
     statusBarStyle: isDark ? "light" : "dark",
   } as const;

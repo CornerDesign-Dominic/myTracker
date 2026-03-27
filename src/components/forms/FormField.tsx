@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { radius, spacing } from "@/constants/theme";
+import { createInputStyles, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface FormFieldProps {
@@ -22,12 +22,13 @@ export const FormField = ({
   multiline = false,
   helpText,
 }: FormFieldProps) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
+  const inputs = createInputStyles(colors);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[typography.secondary, styles.label]}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -35,9 +36,9 @@ export const FormField = ({
         placeholderTextColor={colors.textSecondary}
         keyboardType={keyboardType}
         multiline={multiline}
-        style={[styles.input, multiline ? styles.multilineInput : null]}
+        style={[inputs.input, styles.input, multiline ? styles.multilineInput : null]}
       />
-      {helpText ? <Text style={styles.helpText}>{helpText}</Text> : null}
+      {helpText ? <Text style={[typography.meta, styles.helpText]}>{helpText}</Text> : null}
     </View>
   );
 };
@@ -48,17 +49,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.xs,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
     color: colors.textPrimary,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
     fontSize: 16,
     color: colors.textPrimary,
   },
@@ -67,7 +60,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     textAlignVertical: "top",
   },
   helpText: {
-    fontSize: 12,
     color: colors.textSecondary,
   },
   });

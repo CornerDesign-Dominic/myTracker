@@ -1,152 +1,153 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StatCard } from "@/components/StatCard";
-import { radius, spacing } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 export const StatsScreen = () => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
+  const { t } = useI18n();
   const styles = getStyles(colors);
+  const layout = createScreenLayout(colors);
+  const surfaces = createSurfaceStyles(colors);
   const { metrics } = useSubscriptions();
   const maxCategoryValue = metrics.byCategory[0]?.monthlyTotal ?? 1;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <SectionHeader
-        title="Statistiken"
-        subtitle="Fokus auf die wichtigsten Kennzahlen fuer schnelle Entscheidungen."
-      />
-
-      <View style={styles.statsRow}>
-        <StatCard
-          label="Monatliche Ausgaben"
-          value={formatCurrency(metrics.monthlyTotal)}
-          tone="accent"
+    <SafeAreaView style={layout.screen} edges={["top"]}>
+      <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
+        <SectionHeader
+          title={t("stats.title")}
+          subtitle={t("stats.subtitle")}
         />
-        <StatCard label="Jaehrliche Ausgaben" value={formatCurrency(metrics.yearlyTotal)} />
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Teuerstes Abo</Text>
-        {metrics.mostExpensive ? (
-          <>
-            <Text style={styles.highlightName}>{metrics.mostExpensive.name}</Text>
-            <Text style={styles.highlightValue}>
-              {formatCurrency(
-                metrics.mostExpensive.price,
-                metrics.mostExpensive.currency,
-              )}{" "}
-              / {metrics.mostExpensive.billingCycle}
-            </Text>
-          </>
-        ) : (
-          <Text style={styles.helperText}>Noch kein aktives Abo vorhanden.</Text>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Ausgaben nach Kategorie</Text>
-        {metrics.byCategory.length === 0 ? (
-          <EmptyState
-            title="Noch keine Kategorien"
-            description="Sobald du Abos anlegst, erscheinen hier einfache Auswertungen."
+        <View style={styles.statsRow}>
+          <StatCard
+            label={t("stats.monthlySpend")}
+            value={formatCurrency(metrics.monthlyTotal)}
+            tone="accent"
           />
-        ) : (
-          <View style={styles.chartList}>
-            {metrics.byCategory.map((item) => (
-              <View key={item.category} style={styles.chartItem}>
-                <View style={styles.chartHeader}>
-                  <Text style={styles.chartLabel}>{item.category}</Text>
-                  <Text style={styles.chartValue}>{formatCurrency(item.monthlyTotal)}</Text>
-                </View>
-                <View style={styles.chartTrack}>
-                  <View
-                    style={[
-                      styles.chartFill,
-                      {
-                        width: `${Math.max((item.monthlyTotal / maxCategoryValue) * 100, 10)}%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+          <StatCard label={t("stats.yearlySpend")} value={formatCurrency(metrics.yearlyTotal)} />
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Naechste Zahlungen</Text>
-        {metrics.nextPayments.length === 0 ? (
-          <Text style={styles.helperText}>Keine naechsten Zahlungen vorhanden.</Text>
-        ) : (
-          <View style={styles.paymentList}>
-            {metrics.nextPayments.map((item) => (
-              <View key={item.id} style={styles.paymentRow}>
-                <View>
-                  <Text style={styles.paymentName}>{item.name}</Text>
-                  <Text style={styles.paymentMeta}>{item.category}</Text>
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.mostExpensive")}</Text>
+          {metrics.mostExpensive ? (
+            <>
+              <Text style={[typography.pageTitle, styles.highlightName]}>
+                {metrics.mostExpensive.name}
+              </Text>
+              <Text style={[typography.secondary, styles.highlightValue]}>
+                {formatCurrency(
+                  metrics.mostExpensive.price,
+                  metrics.mostExpensive.currency,
+                )}{" "}
+                / {metrics.mostExpensive.billingCycle}
+              </Text>
+            </>
+          ) : (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noActive")}
+            </Text>
+          )}
+        </View>
+
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.byCategory")}</Text>
+          {metrics.byCategory.length === 0 ? (
+            <EmptyState
+              title={t("stats.noCategories")}
+              description={t("stats.noCategoriesDescription")}
+            />
+          ) : (
+            <View style={styles.chartList}>
+              {metrics.byCategory.map((item) => (
+                <View key={item.category} style={styles.chartItem}>
+                  <View style={styles.chartHeader}>
+                    <Text style={[typography.body, styles.chartLabel]}>{item.category}</Text>
+                    <Text style={[typography.secondary, styles.chartValue]}>
+                      {formatCurrency(item.monthlyTotal)}
+                    </Text>
+                  </View>
+                  <View style={styles.chartTrack}>
+                    <View
+                      style={[
+                        styles.chartFill,
+                        {
+                          width: `${Math.max((item.monthlyTotal / maxCategoryValue) * 100, 10)}%`,
+                        },
+                      ]}
+                    />
+                  </View>
                 </View>
-                <View style={styles.paymentRight}>
-                  <Text style={styles.paymentAmount}>
-                    {formatCurrency(item.price, item.currency)}
-                  </Text>
-                  <Text style={styles.paymentMeta}>{formatDate(item.nextPaymentDate)}</Text>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.upcomingPayments")}</Text>
+          {metrics.nextPayments.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noUpcoming")}
+            </Text>
+          ) : (
+            <View style={styles.paymentList}>
+              {metrics.nextPayments.map((item) => (
+                <View key={item.id} style={styles.paymentRow}>
+                  <View>
+                    <Text style={[typography.body, styles.paymentName]}>{item.name}</Text>
+                    <Text style={[typography.secondary, styles.paymentMeta]}>{item.category}</Text>
+                  </View>
+                  <View style={styles.paymentRight}>
+                    <Text style={[typography.body, styles.paymentAmount]}>
+                      {formatCurrency(item.price, item.currency)}
+                    </Text>
+                    <Text style={[typography.secondary, styles.paymentMeta]}>
+                      {formatDate(item.nextPaymentDate)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.xl,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
   statsRow: {
     flexDirection: "row",
     gap: spacing.md,
   },
+  contentWithTabBar: {
+    minHeight: "100%",
+  },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
     gap: spacing.md,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   highlightName: {
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 26,
+    lineHeight: 32,
     color: colors.textPrimary,
   },
   highlightValue: {
-    fontSize: 15,
     color: colors.textSecondary,
   },
   helperText: {
-    fontSize: 14,
     color: colors.textSecondary,
   },
   chartList: {
@@ -161,25 +162,22 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.md,
   },
   chartLabel: {
-    fontSize: 14,
     color: colors.textPrimary,
-    fontWeight: "600",
   },
   chartValue: {
-    fontSize: 14,
     color: colors.textSecondary,
   },
   chartTrack: {
     width: "100%",
     height: 10,
-    borderRadius: radius.pill,
+    borderRadius: 999,
     backgroundColor: colors.surfaceSoft,
     overflow: "hidden",
   },
   chartFill: {
     height: "100%",
     backgroundColor: colors.accent,
-    borderRadius: radius.pill,
+    borderRadius: 999,
   },
   paymentList: {
     gap: spacing.md,
@@ -193,18 +191,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     borderBottomColor: colors.border,
   },
   paymentName: {
-    fontSize: 15,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   paymentAmount: {
-    fontSize: 15,
-    fontWeight: "700",
     color: colors.textPrimary,
     textAlign: "right",
   },
   paymentMeta: {
-    fontSize: 13,
     color: colors.textSecondary,
   },
   paymentRight: {

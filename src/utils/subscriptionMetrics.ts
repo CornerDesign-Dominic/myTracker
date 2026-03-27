@@ -1,6 +1,6 @@
 import { Subscription, SubscriptionMetrics } from "@/types/subscription";
 
-const getMonthlyEquivalent = (subscription: Subscription) => {
+export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
       return subscription.price;
@@ -13,7 +13,7 @@ const getMonthlyEquivalent = (subscription: Subscription) => {
   }
 };
 
-const getYearlyEquivalent = (subscription: Subscription) => {
+export const getYearlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
       return subscription.price * 12;

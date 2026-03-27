@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { radius, spacing } from "@/constants/theme";
+import { createSurfaceStyles, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface EmptyStateProps {
@@ -9,13 +9,14 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({ title, description }: EmptyStateProps) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
+  const surfaces = createSurfaceStyles(colors);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+    <View style={[surfaces.subtlePanel, styles.container]}>
+      <Text style={[typography.cardTitle, styles.title]}>{title}</Text>
+      <Text style={[typography.secondary, styles.description]}>{description}</Text>
     </View>
   );
 };
@@ -23,21 +24,12 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: spacing.sm,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   description: {
-    fontSize: 14,
-    lineHeight: 20,
     color: colors.textSecondary,
   },
   });

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { radius, spacing } from "@/constants/theme";
+import { createSurfaceStyles, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface StatCardProps {
@@ -10,14 +10,19 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ label, value, tone = "default" }: StatCardProps) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
+  const surfaces = createSurfaceStyles(colors);
   const isAccent = tone === "accent";
 
   return (
-    <View style={[styles.card, isAccent ? styles.accentCard : null]}>
-      <Text style={[styles.label, isAccent ? styles.accentLabel : null]}>{label}</Text>
-      <Text style={[styles.value, isAccent ? styles.accentValue : null]}>{value}</Text>
+    <View style={[surfaces.panel, styles.card, isAccent ? styles.accentCard : null]}>
+      <Text style={[typography.meta, styles.label, isAccent ? styles.accentLabel : null]}>
+        {label}
+      </Text>
+      <Text style={[typography.metric, styles.value, isAccent ? styles.accentValue : null]}>
+        {value}
+      </Text>
     </View>
   );
 };
@@ -27,11 +32,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   card: {
     flex: 1,
     minWidth: 120,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    padding: spacing.lg,
     gap: spacing.sm,
   },
   accentCard: {
@@ -39,12 +40,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     borderColor: colors.accent,
   },
   label: {
-    fontSize: 13,
     color: colors.textSecondary,
   },
   value: {
-    fontSize: 24,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   accentLabel: {

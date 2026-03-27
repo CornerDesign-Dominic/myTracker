@@ -1,77 +1,93 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { radius, spacing } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
+import { createButtonStyles, createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
+  const { t } = useI18n();
   const styles = getStyles(colors);
+  const layout = createScreenLayout(colors);
+  const surfaces = createSurfaceStyles(colors);
+  const buttons = createButtonStyles(colors);
   const { subscriptions } = useSubscriptions();
   const subscription = subscriptions.find((item) => item.id === route.params.subscriptionId);
 
   if (!subscription) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Abo nicht gefunden.</Text>
-      </View>
+      <SafeAreaView style={styles.emptyContainer} edges={["top", "bottom"]}>
+        <Text style={[typography.secondary, styles.emptyText]}>{t("subscription.detailsNotFound")}</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.heroCard}>
-        <Text style={styles.name}>{subscription.name}</Text>
-        <Text style={styles.category}>{subscription.category}</Text>
-        <Text style={styles.price}>{formatCurrency(subscription.price, subscription.currency)}</Text>
-        <Text style={styles.cycle}>/{subscription.billingCycle}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <InfoRow label="Status" value={subscription.status} colors={colors} />
-        <InfoRow
-          label="Naechste Zahlung"
-          value={formatDate(subscription.nextPaymentDate)}
-          colors={colors}
-        />
-        <InfoRow
-          label="Kuendigungsfrist"
-          value={formatDate(subscription.cancellationDeadline)}
-          colors={colors}
-        />
-        <InfoRow label="Laeuft ab am" value={formatDate(subscription.endDate)} colors={colors} />
-        <InfoRow label="Erstellt" value={formatDate(subscription.createdAt)} colors={colors} />
-        <InfoRow
-          label="Aktualisiert"
-          value={formatDate(subscription.updatedAt)}
-          colors={colors}
-        />
-      </View>
-
-      {subscription.notes ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Notizen</Text>
-          <Text style={styles.notes}>{subscription.notes}</Text>
+    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={layout.content}>
+        <View style={[surfaces.panel, styles.heroCard]}>
+          <Text style={[typography.pageTitle, styles.name]}>{subscription.name}</Text>
+          <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
+          <Text style={[typography.metric, styles.price]}>
+            {formatCurrency(subscription.price, subscription.currency)}
+          </Text>
+          <Text style={[typography.secondary, styles.cycle]}>
+            /{t(`subscription.billing_${subscription.billingCycle}`)}
+          </Text>
         </View>
-      ) : null}
 
-      <Pressable
-        style={styles.editButton}
-        onPress={() =>
-          navigation.navigate("SubscriptionForm", {
-            subscriptionId: subscription.id,
-          })
-        }
-      >
-        <Text style={styles.editButtonText}>Abo bearbeiten</Text>
-      </Pressable>
-    </ScrollView>
+        <View style={[surfaces.panel, styles.card]}>
+          <InfoRow label={t("subscription.status")} value={t(`subscription.status_${subscription.status}`)} colors={colors} />
+          <InfoRow
+            label={t("allSubscriptions.nextPayment")}
+            value={formatDate(subscription.nextPaymentDate)}
+            colors={colors}
+          />
+          <InfoRow
+            label={t("subscription.cancellationDeadline")}
+            value={formatDate(subscription.cancellationDeadline)}
+            colors={colors}
+          />
+          <InfoRow
+            label={t("subscription.endDate")}
+            value={formatDate(subscription.endDate)}
+            colors={colors}
+          />
+          <InfoRow label={t("subscription.createdAt")} value={formatDate(subscription.createdAt)} colors={colors} />
+          <InfoRow
+            label={t("subscription.updatedAt")}
+            value={formatDate(subscription.updatedAt)}
+            colors={colors}
+          />
+        </View>
+
+        {subscription.notes ? (
+          <View style={[surfaces.panel, styles.card]}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("subscription.notes")}</Text>
+            <Text style={[typography.body, styles.notes]}>{subscription.notes}</Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          style={[buttons.buttonBase, buttons.secondaryButton, styles.editButton]}
+          onPress={() =>
+            navigation.navigate("SubscriptionForm", {
+              subscriptionId: subscription.id,
+            })
+          }
+        >
+          <Text style={[typography.button, styles.editButtonText]}>{t("subscription.editAction")}</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -84,64 +100,39 @@ const InfoRow = ({
   value: string;
   colors: ReturnType<typeof useAppTheme>["colors"];
 }) => {
+  const { typography } = useAppTheme();
   const styles = getStyles(colors);
 
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+      <Text style={[typography.meta, styles.infoLabel]}>{label}</Text>
+      <Text style={[typography.body, styles.infoValue]}>{value}</Text>
     </View>
   );
 };
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.xl,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
   heroCard: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
     gap: spacing.xs,
   },
   name: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.accentText,
+    color: colors.textPrimary,
   },
   category: {
-    fontSize: 15,
-    color: colors.accentSoft,
+    color: colors.textSecondary,
   },
   price: {
-    marginTop: spacing.md,
-    fontSize: 26,
-    fontWeight: "700",
-    color: colors.accentText,
+    marginTop: spacing.sm,
+    color: colors.accent,
   },
   cycle: {
-    fontSize: 14,
-    color: colors.accentSoft,
+    color: colors.textSecondary,
   },
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
     gap: spacing.md,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   infoRow: {
@@ -150,32 +141,21 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.md,
   },
   infoLabel: {
-    fontSize: 14,
     color: colors.textSecondary,
+    textTransform: "uppercase",
   },
   infoValue: {
     flex: 1,
     textAlign: "right",
-    fontSize: 14,
-    fontWeight: "600",
     color: colors.textPrimary,
   },
   notes: {
-    fontSize: 14,
     color: colors.textPrimary,
-    lineHeight: 21,
   },
   editButton: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   editButtonText: {
     color: colors.textPrimary,
-    fontWeight: "700",
   },
   emptyContainer: {
     flex: 1,
@@ -184,7 +164,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     backgroundColor: colors.background,
   },
   emptyText: {
-    fontSize: 16,
     color: colors.textSecondary,
   },
   });

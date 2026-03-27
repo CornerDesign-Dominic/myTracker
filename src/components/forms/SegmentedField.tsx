@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { radius, spacing } from "@/constants/theme";
+import { radius, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
 interface SegmentedOption<T extends string> {
@@ -21,12 +21,12 @@ export const SegmentedField = <T extends string>({
   onChange,
   options,
 }: SegmentedFieldProps<T>) => {
-  const { colors } = useAppTheme();
+  const { colors, typography, shadows } = useAppTheme();
   const styles = getStyles(colors);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[typography.secondary, styles.label]}>{label}</Text>
       <View style={styles.wrapper}>
         {options.map((option) => {
           const isActive = option.value === value;
@@ -34,10 +34,19 @@ export const SegmentedField = <T extends string>({
           return (
             <Pressable
               key={option.value}
-              style={[styles.option, isActive ? styles.activeOption : null]}
+              style={[
+                styles.option,
+                isActive ? [styles.activeOption, shadows.soft] : null,
+              ]}
               onPress={() => onChange(option.value)}
             >
-              <Text style={[styles.optionLabel, isActive ? styles.activeOptionLabel : null]}>
+              <Text
+                style={[
+                  typography.button,
+                  styles.optionLabel,
+                  isActive ? styles.activeOptionLabel : null,
+                ]}
+              >
                 {option.label}
               </Text>
             </Pressable>
@@ -54,8 +63,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.xs,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "600",
     color: colors.textPrimary,
   },
   wrapper: {
@@ -68,18 +75,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   activeOption: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentSoft,
     borderColor: colors.accent,
   },
   optionLabel: {
     color: colors.textPrimary,
-    fontWeight: "600",
   },
   activeOptionLabel: {
-    color: colors.accentText,
+    color: colors.accent,
   },
   });

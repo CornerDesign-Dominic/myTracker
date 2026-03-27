@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { radius, spacing } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
+import { createButtonStyles, createSurfaceStyles, radius, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Subscription } from "@/types/subscription";
 import { formatCurrency } from "@/utils/currency";
@@ -19,59 +20,74 @@ export const SubscriptionCard = ({
   onEdit,
   onCancel,
 }: SubscriptionCardProps) => {
-  const { colors } = useAppTheme();
+  const { colors, typography } = useAppTheme();
+  const { t } = useI18n();
   const styles = getStyles(colors);
+  const surfaces = createSurfaceStyles(colors);
+  const buttons = createButtonStyles(colors);
   const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
-    active: { label: "Aktiv", color: colors.success },
-    paused: { label: "Pausiert", color: colors.warning },
-    cancelled: { label: "Gekuendigt", color: colors.danger },
+    active: { label: t("subscription.status_active"), color: colors.success },
+    paused: { label: t("subscription.status_paused"), color: colors.warning },
+    cancelled: { label: t("subscription.status_cancelled"), color: colors.danger },
   };
   const status = statusMap[subscription.status];
 
   return (
-    <View style={styles.card}>
+    <View style={[surfaces.panel, styles.card]}>
       <Pressable onPress={onPress} style={styles.contentArea}>
         <View style={styles.topRow}>
           <View style={styles.titleBlock}>
-            <Text style={styles.name}>{subscription.name}</Text>
-            <Text style={styles.category}>{subscription.category}</Text>
+            <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
+            <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: `${status.color}20` }]}>
-            <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
+            <Text style={[typography.meta, styles.badgeText, { color: status.color }]}>
+              {status.label}
+            </Text>
           </View>
         </View>
 
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Preis</Text>
-            <Text style={styles.metaValue}>
+            <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.price")}</Text>
+            <Text style={[typography.body, styles.metaValue]}>
               {formatCurrency(subscription.price, subscription.currency)}
             </Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Intervall</Text>
-            <Text style={styles.metaValue}>{subscription.billingCycle}</Text>
+            <Text style={[typography.meta, styles.metaLabel]}>
+              {t("subscription.billingCycle")}
+            </Text>
+            <Text style={[typography.body, styles.metaValue]}>
+              {t(`subscription.billing_${subscription.billingCycle}`)}
+            </Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Naechste Zahlung</Text>
-            <Text style={styles.metaValue}>{formatDate(subscription.nextPaymentDate)}</Text>
+            <Text style={[typography.meta, styles.metaLabel]}>
+              {t("allSubscriptions.nextPayment")}
+            </Text>
+            <Text style={[typography.body, styles.metaValue]}>
+              {formatDate(subscription.nextPaymentDate)}
+            </Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Ende</Text>
-            <Text style={styles.metaValue}>{formatDate(subscription.endDate)}</Text>
+            <Text style={[typography.meta, styles.metaLabel]}>{t("subscription.endDate")}</Text>
+            <Text style={[typography.body, styles.metaValue]}>{formatDate(subscription.endDate)}</Text>
           </View>
         </View>
       </Pressable>
 
       <View style={styles.actions}>
         {onEdit ? (
-          <Pressable style={[styles.actionButton, styles.secondaryButton]} onPress={onEdit}>
-            <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
+          <Pressable style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]} onPress={onEdit}>
+            <Text style={[typography.button, styles.secondaryButtonText]}>{t("subscription.edit")}</Text>
           </Pressable>
         ) : null}
         {onCancel ? (
-          <Pressable style={[styles.actionButton, styles.primaryButton]} onPress={onCancel}>
-            <Text style={styles.primaryButtonText}>Als gekuendigt markieren</Text>
+          <Pressable style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]} onPress={onCancel}>
+            <Text style={[typography.button, styles.primaryButtonText]}>
+              {t("subscription.markCancelled")}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -82,11 +98,7 @@ export const SubscriptionCard = ({
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   contentArea: {
     gap: spacing.md,
@@ -101,12 +113,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.xs,
   },
   name: {
-    fontSize: 18,
-    fontWeight: "700",
     color: colors.textPrimary,
   },
   category: {
-    fontSize: 14,
     color: colors.textSecondary,
   },
   badge: {
@@ -116,8 +125,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     paddingVertical: spacing.xs,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: "700",
   },
   metaGrid: {
     flexDirection: "row",
@@ -129,12 +136,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: 4,
   },
   metaLabel: {
-    fontSize: 12,
     color: colors.textSecondary,
+    textTransform: "uppercase",
   },
   metaValue: {
-    fontSize: 14,
-    fontWeight: "600",
     color: colors.textPrimary,
   },
   actions: {
@@ -144,22 +149,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   },
   actionButton: {
     flex: 1,
-    borderRadius: radius.pill,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  primaryButton: {
-    backgroundColor: colors.accent,
-  },
-  secondaryButton: {
-    backgroundColor: colors.surfaceSoft,
   },
   primaryButtonText: {
-    color: colors.accentText,
-    fontWeight: "700",
+    color: colors.accent,
   },
   secondaryButtonText: {
     color: colors.accent,
-    fontWeight: "700",
   },
   });

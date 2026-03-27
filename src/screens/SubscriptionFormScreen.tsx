@@ -21,6 +21,7 @@ import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useStoredCategories } from "@/hooks/useStoredCategories";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
 import {
@@ -67,16 +68,41 @@ const toDateValue = (value: string) => {
 
 const formatPriceInput = (value: string) => value.replace(",", ".");
 
+const DEFAULT_CATEGORIES = {
+  de: [
+    "Streaming",
+    "Unterhaltung",
+    "Musik",
+    "Produktivität",
+    "Cloud",
+    "Fitness",
+    "Gaming",
+    "Software",
+  ],
+  en: [
+    "Streaming",
+    "Entertainment",
+    "Music",
+    "Productivity",
+    "Cloud",
+    "Fitness",
+    "Gaming",
+    "Software",
+  ],
+} as const;
+
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
-  const { currency } = useAppSettings();
+  const { currency, language } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
+  const defaultCategories = useMemo(() => DEFAULT_CATEGORIES[language], [language]);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
+  const { addCategory, getSuggestions } = useStoredCategories(defaultCategories);
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
     () => subscriptions.find((subscription) => subscription.id === route.params?.subscriptionId),
@@ -88,6 +114,16 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [draftText, setDraftText] = useState("");
   const [draftPrice, setDraftPrice] = useState("");
   const [draftDate, setDraftDate] = useState(new Date());
+
+  const categorySuggestions = useMemo(
+    () =>
+      activeField === "category"
+        ? getSuggestions(draftText).filter(
+            (category) => category.trim().toLocaleLowerCase() !== draftText.trim().toLocaleLowerCase(),
+          )
+        : [],
+    [activeField, draftText, getSuggestions],
+  );
 
   useEffect(() => {
     if (!existingSubscription) {
@@ -206,6 +242,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       await createSubscription(payload);
     }
 
+    await addCategory(payload.category);
+
     navigation.goBack();
   };
 
@@ -249,6 +287,42 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         style={[inputs.input, multiline ? styles.notesInput : styles.sheetInput]}
         textAlignVertical={multiline ? "top" : "center"}
       />
+    </EditorSheet>
+  );
+
+  const renderCategorySheet = () => (
+    <EditorSheet
+      visible={activeField === "category"}
+      title={t("subscription.category")}
+      onClose={closeSheet}
+      onConfirm={saveActiveField}
+      confirmLabel={t("common.save")}
+      cancelLabel={t("common.cancel")}
+    >
+      <TextInput
+        value={draftText}
+        onChangeText={setDraftText}
+        placeholder={t("subscription.category")}
+        placeholderTextColor={colors.textMuted}
+        autoFocus
+        style={[inputs.input, styles.sheetInput]}
+      />
+      {categorySuggestions.length ? (
+        <View style={[surfaces.subtlePanel, styles.suggestionPanel]}>
+          {categorySuggestions.map((category, index) => (
+            <Pressable
+              key={category}
+              style={[
+                styles.suggestionRow,
+                index === categorySuggestions.length - 1 ? styles.suggestionRowLast : null,
+              ]}
+              onPress={() => setDraftText(category)}
+            >
+              <Text style={[typography.body, styles.suggestionText]}>{category}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </EditorSheet>
   );
 
@@ -343,7 +417,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       </ScrollView>
 
       {activeField === "name" ? renderTextSheet(t("subscription.name")) : null}
-      {activeField === "category" ? renderTextSheet(t("subscription.category")) : null}
+      {activeField === "category" ? renderCategorySheet() : null}
       {activeField === "notes" ? renderTextSheet(t("subscription.notes"), true) : null}
 
       <EditorSheet
@@ -530,5 +604,23 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderWidth: 1,
       borderColor: colors.border,
       paddingVertical: spacing.sm,
+    },
+    suggestionPanel: {
+      padding: 0,
+      overflow: "hidden",
+    },
+    suggestionRow: {
+      minHeight: 52,
+      justifyContent: "center",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    suggestionRowLast: {
+      borderBottomWidth: 0,
+    },
+    suggestionText: {
+      color: colors.textPrimary,
     },
   });

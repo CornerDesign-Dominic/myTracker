@@ -4,10 +4,10 @@ export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
       return subscription.price;
+    case "quarterly":
+      return subscription.price / 3;
     case "yearly":
       return subscription.price / 12;
-    case "custom":
-      return subscription.price;
     default:
       return subscription.price;
   }
@@ -17,10 +17,10 @@ export const getYearlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
     case "monthly":
       return subscription.price * 12;
+    case "quarterly":
+      return subscription.price * 4;
     case "yearly":
       return subscription.price;
-    case "custom":
-      return subscription.price * 12;
     default:
       return subscription.price * 12;
   }

@@ -3,8 +3,8 @@ import { BillingCycle, SubscriptionStatus } from "@/types/subscription";
 
 export const billingCycleOptions: Array<{ labelKey: TranslationKey; value: BillingCycle }> = [
   { labelKey: "subscription.billing_monthly", value: "monthly" },
+  { labelKey: "subscription.billing_quarterly", value: "quarterly" },
   { labelKey: "subscription.billing_yearly", value: "yearly" },
-  { labelKey: "subscription.billing_custom", value: "custom" },
 ];
 
 export const statusOptions: Array<{ labelKey: TranslationKey; value: SubscriptionStatus }> = [

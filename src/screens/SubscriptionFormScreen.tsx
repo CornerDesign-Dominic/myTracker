@@ -1,20 +1,38 @@
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FormField } from "@/components/forms/FormField";
 import { SegmentedField } from "@/components/forms/SegmentedField";
 import { billingCycleOptions, defaultCurrency, statusOptions } from "@/constants/options";
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
-import { createButtonStyles, createScreenLayout, spacing } from "@/theme";
+import {
+  createButtonStyles,
+  createInputStyles,
+  createScreenLayout,
+  spacing,
+} from "@/theme";
 import { SubscriptionInput } from "@/types/subscription";
-import { isDateInputValid } from "@/utils/date";
+import { formatDate, isDateInputValid } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
+
 
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
@@ -23,29 +41,35 @@ const buildInitialState = (): SubscriptionInput => ({
   currency: defaultCurrency,
   billingCycle: "monthly",
   nextPaymentDate: new Date().toISOString().slice(0, 10),
-  cancellationDeadline: "",
   status: "active",
   endDate: "",
   notes: "",
 });
 
+const toCurrencyCode = (currency: "EUR" | "Dollar") => (currency === "EUR" ? "EUR" : "USD");
+
+const toDateValue = (value: string) => {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
 export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const buttons = createButtonStyles(colors);
+  const inputs = createInputStyles(colors);
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
-    () =>
-      subscriptions.find(
-        (subscription) => subscription.id === route.params?.subscriptionId,
-      ),
+    () => subscriptions.find((subscription) => subscription.id === route.params?.subscriptionId),
     [route.params?.subscriptionId, subscriptions],
   );
 
   const [formState, setFormState] = useState<SubscriptionInput>(buildInitialState());
+  const [showNextPaymentPicker, setShowNextPaymentPicker] = useState(false);
 
   useEffect(() => {
     if (!existingSubscription) {
@@ -56,15 +80,14 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       name: existingSubscription.name,
       category: existingSubscription.category,
       price: existingSubscription.price,
-      currency: existingSubscription.currency,
+      currency: toCurrencyCode(currency),
       billingCycle: existingSubscription.billingCycle,
       nextPaymentDate: existingSubscription.nextPaymentDate,
-      cancellationDeadline: existingSubscription.cancellationDeadline ?? "",
       status: existingSubscription.status,
       endDate: existingSubscription.endDate ?? "",
       notes: existingSubscription.notes ?? "",
     });
-  }, [existingSubscription]);
+  }, [currency, existingSubscription]);
 
   const updateField = <K extends keyof SubscriptionInput>(key: K, value: SubscriptionInput[K]) =>
     setFormState((current) => ({ ...current, [key]: value }));
@@ -82,19 +105,23 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       return t("subscription.validationNextPayment");
     }
 
-    if (formState.cancellationDeadline && !isDateInputValid(formState.cancellationDeadline)) {
-      return t("subscription.validationCancellation");
-    }
-
-    if (
-      formState.status === "cancelled" &&
-      formState.endDate &&
-      !isDateInputValid(formState.endDate)
-    ) {
+    if (formState.status === "cancelled" && formState.endDate && !isDateInputValid(formState.endDate)) {
       return t("subscription.validationEndDate");
     }
 
     return null;
+  };
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS !== "ios") {
+      setShowNextPaymentPicker(false);
+    }
+
+    if (event.type === "dismissed" || !selectedDate) {
+      return;
+    }
+
+    updateField("nextPaymentDate", selectedDate.toISOString().slice(0, 10));
   };
 
   const handleSubmit = async () => {
@@ -109,8 +136,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       ...formState,
       name: formState.name.trim(),
       category: formState.category.trim(),
-      currency: formState.currency.trim().toUpperCase() || defaultCurrency,
-      cancellationDeadline: formState.cancellationDeadline || undefined,
+      currency: toCurrencyCode(currency),
       endDate: formState.status === "cancelled" ? formState.endDate || undefined : undefined,
       notes: formState.notes?.trim() || undefined,
     };
@@ -152,12 +178,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             keyboardType="numeric"
             placeholder="9.99"
           />
-          <FormField
-            label={t("subscription.currency")}
-            value={formState.currency}
-            onChangeText={(value) => updateField("currency", value)}
-            placeholder="EUR"
-          />
           <SegmentedField
             label={t("subscription.billingCycle")}
             value={formState.billingCycle}
@@ -167,19 +187,29 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
               label: t(option.labelKey),
             }))}
           />
-          <FormField
-            label={t("subscription.nextPaymentDate")}
-            value={formState.nextPaymentDate}
-            onChangeText={(value) => updateField("nextPaymentDate", value)}
-            placeholder="2026-04-01"
-            helpText={t("subscription.dateHelp")}
-          />
-          <FormField
-            label={t("subscription.cancellationDeadline")}
-            value={formState.cancellationDeadline ?? ""}
-            onChangeText={(value) => updateField("cancellationDeadline", value)}
-            placeholder={t("subscription.optional")}
-          />
+
+          <View style={styles.dateField}>
+            <Text style={[typography.secondary, styles.dateLabel]}>
+              {t("subscription.nextPaymentDate")}
+            </Text>
+            <Pressable
+              style={[inputs.input, styles.dateTrigger]}
+              onPress={() => setShowNextPaymentPicker(true)}
+            >
+              <Text style={[typography.body, styles.dateValue]}>
+                {formatDate(formState.nextPaymentDate)}
+              </Text>
+            </Pressable>
+            {showNextPaymentPicker ? (
+              <DateTimePicker
+                value={toDateValue(formState.nextPaymentDate)}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                onChange={handleDateChange}
+              />
+            ) : null}
+          </View>
+
           <SegmentedField
             label={t("subscription.status")}
             value={formState.status}
@@ -229,27 +259,39 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  title: {
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-  },
-  form: {
-    gap: spacing.md,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  button: {
-    flex: 1,
-  },
-  primaryButtonText: {
-    color: colors.accent,
-  },
-  secondaryButtonText: {
-    color: colors.textPrimary,
-  },
+    title: {
+      color: colors.textPrimary,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+    },
+    form: {
+      gap: spacing.md,
+    },
+    dateField: {
+      gap: spacing.xs,
+    },
+    dateLabel: {
+      color: colors.textPrimary,
+    },
+    dateTrigger: {
+      justifyContent: "center",
+    },
+    dateValue: {
+      color: colors.textPrimary,
+    },
+    actions: {
+      flexDirection: "row",
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    button: {
+      flex: 1,
+    },
+    primaryButtonText: {
+      color: colors.accent,
+    },
+    secondaryButtonText: {
+      color: colors.textPrimary,
+    },
   });

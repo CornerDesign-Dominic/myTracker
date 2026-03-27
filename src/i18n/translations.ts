@@ -113,7 +113,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       status_cancelled: "Gekündigt",
       billing_monthly: "Monatlich",
       billing_yearly: "Jährlich",
-      billing_custom: "Custom",
+      billing_quarterly: "Quartal",
     },
   },
   en: {
@@ -223,7 +223,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       status_cancelled: "Cancelled",
       billing_monthly: "Monthly",
       billing_yearly: "Yearly",
-      billing_custom: "Custom",
+      billing_quarterly: "Quarterly",
     },
   },
 };
@@ -317,4 +317,4 @@ export type TranslationKey =
   | "subscription.status_cancelled"
   | "subscription.billing_monthly"
   | "subscription.billing_yearly"
-  | "subscription.billing_custom";
+  | "subscription.billing_quarterly";

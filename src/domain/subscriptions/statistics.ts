@@ -2,6 +2,8 @@ import { BillingCycle, Subscription } from "@/types/subscription";
 
 import { getMonthlyEquivalent } from "./metrics";
 
+export type DevelopmentRange = 6 | 12 | 24 | 36 | 60 | "all";
+
 const BILLING_MONTHS: Record<BillingCycle, number> = {
   monthly: 1,
   quarterly: 3,
@@ -69,13 +71,20 @@ export const getTopExpensiveSubscriptions = (
 
 export const buildCostDevelopmentSeries = (
   subscriptions: Subscription[],
-  months = 6,
+  range: DevelopmentRange = 6,
   now = new Date(),
 ) => {
   const endMonth = startOfMonth(now);
-  const startMonth = new Date(endMonth.getFullYear(), endMonth.getMonth() - (months - 1), 1);
+  const activeSubscriptions = subscriptions.filter(
+    (subscription) => subscription.status !== "cancelled",
+  );
+  const startMonth =
+    range === "all"
+      ? getAllRangeStartMonth(activeSubscriptions, endMonth)
+      : new Date(endMonth.getFullYear(), endMonth.getMonth() - (range - 1), 1);
+  const monthCount = getMonthDifference(startMonth, endMonth) + 1;
 
-  const buckets = Array.from({ length: months }, (_, index) => {
+  const buckets = Array.from({ length: monthCount }, (_, index) => {
     const monthDate = new Date(startMonth.getFullYear(), startMonth.getMonth() + index, 1);
     return {
       key: toMonthKey(monthDate),
@@ -86,9 +95,7 @@ export const buildCostDevelopmentSeries = (
 
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
-  subscriptions
-    .filter((subscription) => subscription.status !== "cancelled")
-    .forEach((subscription) => {
+  activeSubscriptions.forEach((subscription) => {
       const step = BILLING_MONTHS[subscription.billingCycle] ?? 1;
       let cursor = parseDate(subscription.nextPaymentDate);
 
@@ -103,4 +110,24 @@ export const buildCostDevelopmentSeries = (
     });
 
   return buckets;
+};
+
+const getMonthDifference = (startMonth: Date, endMonth: Date) =>
+  (endMonth.getFullYear() - startMonth.getFullYear()) * 12 +
+  (endMonth.getMonth() - startMonth.getMonth());
+
+const getAllRangeStartMonth = (
+  subscriptions: Subscription[],
+  fallbackMonth: Date,
+) => {
+  if (subscriptions.length === 0) {
+    return fallbackMonth;
+  }
+
+  const earliestMonth = subscriptions.reduce<Date>((earliest, subscription) => {
+    const paymentMonth = startOfMonth(parseDate(subscription.nextPaymentDate));
+    return paymentMonth < earliest ? paymentMonth : earliest;
+  }, startOfMonth(parseDate(subscriptions[0].nextPaymentDate)));
+
+  return earliestMonth > fallbackMonth ? fallbackMonth : earliestMonth;
 };

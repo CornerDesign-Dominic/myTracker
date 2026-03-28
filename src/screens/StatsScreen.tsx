@@ -8,6 +8,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import {
+  DevelopmentRange,
   buildCostDevelopmentSeries,
   getAverageMonthlyCost,
   getBillingStructure,
@@ -17,9 +18,19 @@ import {
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 
-const DEVELOPMENT_MONTHS = 6;
 const CHART_HEIGHT = 180;
 const Y_AXIS_STEPS = 4;
+const DEVELOPMENT_RANGE_OPTIONS: Array<{
+  key: DevelopmentRange;
+  label: "6M" | "1Y" | "2Y" | "3Y" | "5Y" | "ALL";
+}> = [
+  { key: 6, label: "6M" },
+  { key: 12, label: "1Y" },
+  { key: 24, label: "2Y" },
+  { key: 36, label: "3Y" },
+  { key: 60, label: "5Y" },
+  { key: "all", label: "ALL" },
+];
 
 const getChartScaleMax = (value: number) => {
   if (value <= 0) {
@@ -92,6 +103,7 @@ export const StatsScreen = () => {
   const styles = getStyles(colors);
   const { subscriptions, metrics } = useSubscriptions();
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [developmentRange, setDevelopmentRange] = useState<DevelopmentRange>(6);
 
   const summary = useMemo(
     () => ({
@@ -109,8 +121,8 @@ export const StatsScreen = () => {
   const maxCategoryValue = categoryItems[0]?.monthlyTotal ?? 1;
 
   const developmentSeries = useMemo(
-    () => buildCostDevelopmentSeries(subscriptions, DEVELOPMENT_MONTHS),
-    [subscriptions],
+    () => buildCostDevelopmentSeries(subscriptions, developmentRange),
+    [developmentRange, subscriptions],
   );
   const rawMaxDevelopmentValue = Math.max(
     ...developmentSeries.map((item) => item.totalAmount),
@@ -118,6 +130,7 @@ export const StatsScreen = () => {
   );
   const chartScaleMax = getChartScaleMax(rawMaxDevelopmentValue);
   const axisRoundingUnit = getAxisRoundingUnit(chartScaleMax);
+  const chartContentWidth = Math.max(developmentSeries.length * 34, 240);
   const yAxisValues = Array.from({ length: Y_AXIS_STEPS }, (_, index) => {
     const ratio = (Y_AXIS_STEPS - index - 1) / (Y_AXIS_STEPS - 1);
     return roundToUnit(chartScaleMax * ratio, axisRoundingUnit);
@@ -238,6 +251,36 @@ export const StatsScreen = () => {
 
         <View style={[surfaces.panel, styles.card]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.development}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rangeSelector}
+          >
+            {DEVELOPMENT_RANGE_OPTIONS.map((option) => {
+              const isActive = option.key === developmentRange;
+
+              return (
+                <Pressable
+                  key={option.label}
+                  style={[
+                    styles.rangeChip,
+                    isActive ? styles.rangeChipActive : null,
+                  ]}
+                  onPress={() => setDevelopmentRange(option.key)}
+                >
+                  <Text
+                    style={[
+                      typography.meta,
+                      styles.rangeChipLabel,
+                      isActive ? styles.rangeChipLabelActive : null,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
           {developmentSeries.every((item) => item.totalAmount === 0) ? (
             <Text style={[typography.secondary, styles.helperText]}>{copy.noDevelopment}</Text>
@@ -251,35 +294,37 @@ export const StatsScreen = () => {
                 ))}
               </View>
 
-              <View style={styles.chartArea}>
-                <View style={styles.yGrid}>
-                  {yAxisValues.map((_, index) => (
-                    <View key={index} style={styles.gridLine} />
-                  ))}
-                </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartScroll}>
+                <View style={[styles.chartArea, { width: chartContentWidth }]}>
+                  <View style={styles.yGrid}>
+                    {yAxisValues.map((_, index) => (
+                      <View key={index} style={styles.gridLine} />
+                    ))}
+                  </View>
 
-                <View style={styles.barRow}>
-                  {developmentSeries.map((item) => (
-                    <View key={item.key} style={styles.barColumn}>
-                      <View style={styles.barSlot}>
-                        <View
-                          style={[
-                            styles.bar,
-                            {
-                              height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
-                            },
-                          ]}
-                        />
+                  <View style={styles.barRow}>
+                    {developmentSeries.map((item) => (
+                      <View key={item.key} style={styles.barColumn}>
+                        <View style={styles.barSlot}>
+                          <View
+                            style={[
+                              styles.bar,
+                              {
+                                height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={[typography.meta, styles.barLabel]}>
+                          {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+                            month: "short",
+                          }).format(item.date)}
+                        </Text>
                       </View>
-                      <Text style={[typography.meta, styles.barLabel]}>
-                        {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-                          month: "short",
-                        }).format(item.date)}
-                      </Text>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
-              </View>
+              </ScrollView>
             </View>
           )}
         </View>
@@ -377,6 +422,30 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     card: {
       gap: spacing.md,
     },
+    rangeSelector: {
+      gap: spacing.xs,
+    },
+    rangeChip: {
+      minWidth: 48,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rangeChipActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    rangeChipLabel: {
+      color: colors.textSecondary,
+    },
+    rangeChipLabelActive: {
+      color: colors.accent,
+    },
     cardHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -437,6 +506,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     chartArea: {
       flex: 1,
       gap: spacing.sm,
+    },
+    chartScroll: {
+      flex: 1,
     },
     yGrid: {
       position: "absolute",

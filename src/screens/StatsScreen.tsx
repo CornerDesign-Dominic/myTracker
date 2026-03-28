@@ -1,65 +1,146 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
-import { SectionHeader } from "@/components/SectionHeader";
-import { StatCard } from "@/components/StatCard";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
-import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
+import {
+  buildCostDevelopmentSeries,
+  getAverageMonthlyCost,
+  getBillingStructure,
+  getCurrentMonthCost,
+  getTopExpensiveSubscriptions,
+} from "@/domain/subscriptions/statistics";
+import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
-import { formatDate } from "@/utils/date";
+
+const DEVELOPMENT_MONTHS = 6;
+const CHART_HEIGHT = 180;
+const Y_AXIS_STEPS = 4;
 
 export const StatsScreen = () => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { t } = useI18n();
-  const styles = getStyles(colors);
+  const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
-  const { metrics } = useSubscriptions();
-  const maxCategoryValue = metrics.byCategory[0]?.monthlyTotal ?? 1;
+  const styles = getStyles(colors);
+  const { subscriptions, metrics } = useSubscriptions();
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  const summary = useMemo(
+    () => ({
+      currentMonthCost: getCurrentMonthCost(subscriptions),
+      averageMonthlyCost: getAverageMonthlyCost(subscriptions),
+      yearlyTotal: metrics.yearlyTotal,
+    }),
+    [metrics.yearlyTotal, subscriptions],
+  );
+
+  const categoryItems = useMemo(
+    () => (showAllCategories ? metrics.byCategory : metrics.byCategory.slice(0, 3)),
+    [metrics.byCategory, showAllCategories],
+  );
+  const maxCategoryValue = categoryItems[0]?.monthlyTotal ?? 1;
+
+  const developmentSeries = useMemo(
+    () => buildCostDevelopmentSeries(subscriptions, DEVELOPMENT_MONTHS),
+    [subscriptions],
+  );
+  const maxDevelopmentValue = Math.max(
+    ...developmentSeries.map((item) => item.totalAmount),
+    1,
+  );
+  const yAxisValues = Array.from({ length: Y_AXIS_STEPS }, (_, index) => {
+    const ratio = (Y_AXIS_STEPS - index - 1) / (Y_AXIS_STEPS - 1);
+    return maxDevelopmentValue * ratio;
+  });
+
+  const billingStructure = useMemo(
+    () => getBillingStructure(subscriptions),
+    [subscriptions],
+  );
+  const topSubscriptions = useMemo(
+    () => getTopExpensiveSubscriptions(subscriptions, 3),
+    [subscriptions],
+  );
+
+  const copy =
+    language === "de"
+      ? {
+          currentMonthCost: "Aktuelle Monatskosten",
+          averageMonthlyCost: "Durchschnittsmonatskosten",
+          yearlyTotal: "Jährliche Gesamtkosten",
+          development: "Entwicklung",
+          billingStructure: "Abrechnungsstruktur",
+          topSubscriptions: "Top 3 teuerste Abos",
+          tapToExpand: showAllCategories ? "Tippen zum Einklappen" : "Tippen für alle Kategorien",
+          noDevelopment: "Noch keine Entwicklung vorhanden",
+          noTopSubscriptions: "Noch keine aktiven Abos vorhanden.",
+          monthly: "Monatlich",
+          quarterly: "Quartal",
+          yearly: "Jährlich",
+        }
+      : {
+          currentMonthCost: "Current month cost",
+          averageMonthlyCost: "Average monthly cost",
+          yearlyTotal: "Yearly total",
+          development: "Development",
+          billingStructure: "Billing structure",
+          topSubscriptions: "Top 3 most expensive subscriptions",
+          tapToExpand: showAllCategories ? "Tap to collapse" : "Tap to show all categories",
+          noDevelopment: "No development data yet",
+          noTopSubscriptions: "No active subscriptions yet.",
+          monthly: "Monthly",
+          quarterly: "Quarterly",
+          yearly: "Yearly",
+        };
+
+  const cycleLabel = (cycle: "monthly" | "quarterly" | "yearly") => {
+    switch (cycle) {
+      case "monthly":
+        return copy.monthly;
+      case "quarterly":
+        return copy.quarterly;
+      case "yearly":
+        return copy.yearly;
+    }
+  };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
-        <SectionHeader
-          title={t("stats.title")}
-          subtitle={t("stats.subtitle")}
-        />
+        <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
 
-        <View style={styles.statsRow}>
-          <StatCard
-            label={t("stats.monthlySpend")}
-            value={formatCurrency(metrics.monthlyTotal, currency)}
-            tone="accent"
+        <View style={[surfaces.panel, styles.summaryCard]}>
+          <SummaryMetric
+            label={copy.currentMonthCost}
+            value={formatCurrency(summary.currentMonthCost, currency)}
           />
-          <StatCard label={t("stats.yearlySpend")} value={formatCurrency(metrics.yearlyTotal, currency)} />
+          <View style={styles.summaryDivider} />
+          <SummaryMetric
+            label={copy.averageMonthlyCost}
+            value={formatCurrency(summary.averageMonthlyCost, currency)}
+          />
+          <View style={styles.summaryDivider} />
+          <SummaryMetric
+            label={copy.yearlyTotal}
+            value={formatCurrency(summary.yearlyTotal, currency)}
+          />
         </View>
 
-        <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.mostExpensive")}</Text>
-          {metrics.mostExpensive ? (
-            <>
-              <Text style={[typography.pageTitle, styles.highlightName]}>
-                {metrics.mostExpensive.name}
-              </Text>
-              <Text style={[typography.secondary, styles.highlightValue]}>
-                {formatCurrency(metrics.mostExpensive.amount, currency)}{" "}
-                / {metrics.mostExpensive.billingCycle}
-              </Text>
-            </>
-          ) : (
-            <Text style={[typography.secondary, styles.helperText]}>
-              {t("stats.noActive")}
-            </Text>
-          )}
-        </View>
+        <Pressable
+          style={[surfaces.panel, styles.card]}
+          onPress={() => setShowAllCategories((current) => !current)}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.byCategory")}</Text>
+            <Text style={[typography.secondary, styles.cardHint]}>{copy.tapToExpand}</Text>
+          </View>
 
-        <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.byCategory")}</Text>
           {metrics.byCategory.length === 0 ? (
             <EmptyState
               title={t("stats.noCategories")}
@@ -67,7 +148,7 @@ export const StatsScreen = () => {
             />
           ) : (
             <View style={styles.chartList}>
-              {metrics.byCategory.map((item) => (
+              {categoryItems.map((item) => (
                 <View key={item.category} style={styles.chartItem}>
                   <View style={styles.chartHeader}>
                     <Text style={[typography.body, styles.chartLabel]}>{item.category}</Text>
@@ -89,30 +170,104 @@ export const StatsScreen = () => {
               ))}
             </View>
           )}
+        </Pressable>
+
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.development}</Text>
+
+          {developmentSeries.every((item) => item.totalAmount === 0) ? (
+            <Text style={[typography.secondary, styles.helperText]}>{copy.noDevelopment}</Text>
+          ) : (
+            <View style={styles.developmentWrap}>
+              <View style={styles.yAxis}>
+                {yAxisValues.map((value, index) => (
+                  <Text key={index} style={[typography.meta, styles.axisLabel]}>
+                    {formatCurrency(value, currency)}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.chartArea}>
+                <View style={styles.yGrid}>
+                  {yAxisValues.map((_, index) => (
+                    <View key={index} style={styles.gridLine} />
+                  ))}
+                </View>
+
+                <View style={styles.barRow}>
+                  {developmentSeries.map((item) => (
+                    <View key={item.key} style={styles.barColumn}>
+                      <View style={styles.barSlot}>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: `${Math.max((item.totalAmount / maxDevelopmentValue) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[typography.meta, styles.barLabel]}>
+                        {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+                          month: "short",
+                        }).format(item.date)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.upcomingPayments")}</Text>
-          {metrics.nextPayments.length === 0 ? (
-            <Text style={[typography.secondary, styles.helperText]}>
-              {t("stats.noUpcoming")}
-            </Text>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.billingStructure}</Text>
+          <View style={styles.structureList}>
+            {billingStructure.map((item, index) => (
+              <View
+                key={item.cycle}
+                style={[
+                  styles.structureRow,
+                  index < billingStructure.length - 1 ? styles.structureDivider : null,
+                ]}
+              >
+                <View style={styles.structureCopy}>
+                  <Text style={[typography.body, styles.structureTitle]}>{cycleLabel(item.cycle)}</Text>
+                  <Text style={[typography.secondary, styles.structureMeta]}>
+                    {item.count} {language === "de" ? "Abos" : "subscriptions"}
+                  </Text>
+                </View>
+                <Text style={[typography.body, styles.structureValue]}>
+                  {formatCurrency(item.totalAmount, currency)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.topSubscriptions}</Text>
+          {topSubscriptions.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>{copy.noTopSubscriptions}</Text>
           ) : (
-            <View style={styles.paymentList}>
-              {metrics.nextPayments.map((item) => (
-                <View key={item.id} style={styles.paymentRow}>
-                  <View>
-                    <Text style={[typography.body, styles.paymentName]}>{item.name}</Text>
-                    <Text style={[typography.secondary, styles.paymentMeta]}>{item.category}</Text>
-                  </View>
-                  <View style={styles.paymentRight}>
-                    <Text style={[typography.body, styles.paymentAmount]}>
-                      {formatCurrency(item.amount, currency)}
+            <View style={styles.topList}>
+              {topSubscriptions.map((subscription, index) => (
+                <View
+                  key={subscription.id}
+                  style={[
+                    styles.topRow,
+                    index < topSubscriptions.length - 1 ? styles.topDivider : null,
+                  ]}
+                >
+                  <View style={styles.topCopy}>
+                    <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
+                    <Text style={[typography.secondary, styles.topMeta]}>
+                      {subscription.category}
                     </Text>
-                    <Text style={[typography.secondary, styles.paymentMeta]}>
-                      {formatDate(item.nextPaymentDate)}
-                    </Text>
                   </View>
+                  <Text style={[typography.body, styles.topValue]}>
+                    {formatCurrency(subscription.amount, currency)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -123,83 +278,198 @@ export const StatsScreen = () => {
   );
 };
 
+const SummaryMetric = ({ label, value }: { label: string; value: string }) => {
+  const { colors, typography } = useAppTheme();
+
+  return (
+    <View>
+      <Text style={[typography.meta, { color: colors.textSecondary, textTransform: "uppercase" }]}>
+        {label}
+      </Text>
+      <Text style={[typography.sectionTitle, { color: colors.textPrimary, marginTop: spacing.xxs }]}>
+        {value}
+      </Text>
+    </View>
+  );
+};
+
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  statsRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  contentWithTabBar: {
-    minHeight: "100%",
-  },
-  card: {
-    gap: spacing.md,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-  },
-  highlightName: {
-    fontSize: 26,
-    lineHeight: 32,
-    color: colors.textPrimary,
-  },
-  highlightValue: {
-    color: colors.textSecondary,
-  },
-  helperText: {
-    color: colors.textSecondary,
-  },
-  chartList: {
-    gap: spacing.md,
-  },
-  chartItem: {
-    gap: spacing.xs,
-  },
-  chartHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  chartLabel: {
-    color: colors.textPrimary,
-  },
-  chartValue: {
-    color: colors.textSecondary,
-  },
-  chartTrack: {
-    width: "100%",
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceSoft,
-    overflow: "hidden",
-  },
-  chartFill: {
-    height: "100%",
-    backgroundColor: colors.accent,
-    borderRadius: 999,
-  },
-  paymentList: {
-    gap: spacing.md,
-  },
-  paymentRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  paymentName: {
-    color: colors.textPrimary,
-  },
-  paymentAmount: {
-    color: colors.textPrimary,
-    textAlign: "right",
-  },
-  paymentMeta: {
-    color: colors.textSecondary,
-  },
-  paymentRight: {
-    alignItems: "flex-end",
-  },
+    contentWithTabBar: {
+      minHeight: "100%",
+    },
+    pageTitle: {
+      color: colors.textPrimary,
+      fontSize: 24,
+      lineHeight: 30,
+    },
+    summaryCard: {
+      gap: spacing.md,
+    },
+    summaryDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    card: {
+      gap: spacing.md,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    cardTitle: {
+      color: colors.textPrimary,
+    },
+    cardHint: {
+      color: colors.textSecondary,
+    },
+    helperText: {
+      color: colors.textSecondary,
+    },
+    chartList: {
+      gap: spacing.md,
+    },
+    chartItem: {
+      gap: spacing.xs,
+    },
+    chartHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    chartLabel: {
+      color: colors.textPrimary,
+    },
+    chartValue: {
+      color: colors.textSecondary,
+    },
+    chartTrack: {
+      width: "100%",
+      height: 10,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceSoft,
+      overflow: "hidden",
+    },
+    chartFill: {
+      height: "100%",
+      backgroundColor: colors.accent,
+      borderRadius: radius.pill,
+    },
+    developmentWrap: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    yAxis: {
+      height: CHART_HEIGHT,
+      justifyContent: "space-between",
+      paddingBottom: 24,
+    },
+    axisLabel: {
+      color: colors.textSecondary,
+      width: 56,
+    },
+    chartArea: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    yGrid: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 24,
+      justifyContent: "space-between",
+    },
+    gridLine: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    barRow: {
+      height: CHART_HEIGHT,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: spacing.sm,
+    },
+    barColumn: {
+      flex: 1,
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    barSlot: {
+      width: "100%",
+      height: CHART_HEIGHT - 24,
+      justifyContent: "flex-end",
+      alignItems: "center",
+    },
+    bar: {
+      width: "70%",
+      minHeight: 0,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      borderTopLeftRadius: radius.sm,
+      borderTopRightRadius: radius.sm,
+    },
+    barLabel: {
+      color: colors.textSecondary,
+      textTransform: "capitalize",
+    },
+    structureList: {
+      gap: spacing.xs,
+    },
+    structureRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    structureDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    structureCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    structureTitle: {
+      color: colors.textPrimary,
+    },
+    structureMeta: {
+      color: colors.textSecondary,
+    },
+    structureValue: {
+      color: colors.textPrimary,
+      textAlign: "right",
+    },
+    topList: {
+      gap: spacing.xs,
+    },
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    topDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    topName: {
+      color: colors.textPrimary,
+    },
+    topMeta: {
+      color: colors.textSecondary,
+    },
+    topValue: {
+      color: colors.textPrimary,
+      textAlign: "right",
+    },
   });

@@ -3,7 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
-import { getHistorySyncSummary, formatHistoryEvent } from "@/domain/subscriptionHistory/events";
+import { formatHistoryEvent } from "@/domain/subscriptionHistory/events";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -51,6 +51,27 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
             </View>
           </View>
         </View>
+
+        <Pressable
+          style={[surfaces.panel, styles.actionCard]}
+          onPress={() =>
+            navigation.navigate("AddPayment", {
+              subscriptionId: route.params.subscriptionId,
+            })
+          }
+        >
+          <View style={styles.historyCopy}>
+            <Text style={[typography.body, styles.historyTitle]}>
+              {language === "de" ? "Zahlung hinzufügen" : "Add payment"}
+            </Text>
+            <Text style={[typography.secondary, styles.historySubtitle]}>
+              {language === "de"
+                ? "Vergangene oder heutige Zahlung manuell erfassen"
+                : "Add a past or current payment manually"}
+            </Text>
+          </View>
+          <Text style={[typography.body, styles.historyArrow]}>›</Text>
+        </Pressable>
 
         <View style={[surfaces.panel, styles.listCard]}>
           {isLoading ? (
@@ -155,6 +176,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryValue: {
       color: colors.textPrimary,
     },
+    actionCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
     listCard: {
       gap: spacing.md,
     },
@@ -181,6 +208,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     historySubtitle: {
       color: colors.textSecondary,
+    },
+    historyArrow: {
+      color: colors.textSecondary,
+      fontSize: 22,
+      lineHeight: 22,
     },
     historyMeta: {
       color: colors.textMuted,

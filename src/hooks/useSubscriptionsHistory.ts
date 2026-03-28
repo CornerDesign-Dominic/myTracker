@@ -16,9 +16,13 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
   >({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const stableSubscriptionIds = useMemo(
-    () => [...subscriptionIds].sort(),
+  const stableSubscriptionIdsKey = useMemo(
+    () => [...subscriptionIds].sort().join("|"),
     [subscriptionIds],
+  );
+  const stableSubscriptionIds = useMemo(
+    () => (stableSubscriptionIdsKey ? stableSubscriptionIdsKey.split("|") : []),
+    [stableSubscriptionIdsKey],
   );
 
   useEffect(() => {
@@ -57,7 +61,7 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [authIsReady, currentUser?.uid, stableSubscriptionIds]);
+  }, [authIsReady, currentUser?.uid, stableSubscriptionIdsKey]);
 
   const history = useMemo(
     () => Object.values(historyBySubscription).flat(),

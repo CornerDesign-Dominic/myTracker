@@ -8,7 +8,7 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
-import { createButtonStyles, createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
+import { createButtonStyles, createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
@@ -71,36 +71,13 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         <Pressable
           style={[surfaces.panel, styles.historyCard]}
           onPress={() =>
-            navigation.navigate("AddPayment", {
-              subscriptionId: subscription.id,
-            })
-          }
-        >
-          <View style={styles.historyCopy}>
-            <Text style={[typography.cardTitle, styles.cardTitle]}>
-              {language === "de" ? "Zahlung hinzufügen" : "Add payment"}
-            </Text>
-            <Text style={[typography.secondary, styles.historyHint]}>
-              {language === "de"
-                ? "Vergangene oder heutige Zahlung manuell erfassen"
-                : "Add a past or current payment manually"}
-            </Text>
-          </View>
-          <Text style={[typography.body, styles.historyArrow]}>›</Text>
-        </Pressable>
-
-        <Pressable
-          style={[surfaces.panel, styles.historyCard]}
-          onPress={() =>
             navigation.navigate("SubscriptionHistory", {
               subscriptionId: subscription.id,
             })
           }
         >
           <View style={styles.historyCopy}>
-            <Text style={[typography.cardTitle, styles.cardTitle]}>
-              {t("common.history")}
-            </Text>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("common.history")}</Text>
             <Text style={[typography.secondary, styles.historyHint]}>
               {summary.skippedPaymentsCount > 0
                 ? language === "de"
@@ -156,75 +133,74 @@ const InfoRow = ({
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-  heroCard: {
-    gap: spacing.xs,
-  },
-  name: {
-    color: colors.textPrimary,
-  },
-  category: {
-    color: colors.textSecondary,
-  },
-  amount: {
-    marginTop: spacing.sm,
-    color: colors.accent,
-  },
-  cycle: {
-    color: colors.textSecondary,
-  },
-  card: {
-    gap: spacing.md,
-  },
-  historyCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  historyCopy: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  historyHint: {
-    color: colors.textSecondary,
-  },
-  historyArrow: {
-    color: colors.textSecondary,
-    fontSize: 22,
-    lineHeight: 22,
-  },
-  cardTitle: {
-    color: colors.textPrimary,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  infoLabel: {
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-  },
-  infoValue: {
-    flex: 1,
-    textAlign: "right",
-    color: colors.textPrimary,
-  },
-  notes: {
-    color: colors.textPrimary,
-  },
-  editButton: {
-  },
-  editButtonText: {
-    color: colors.textPrimary,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-  },
+    heroCard: {
+      gap: spacing.xs,
+    },
+    name: {
+      color: colors.textPrimary,
+    },
+    category: {
+      color: colors.textSecondary,
+    },
+    amount: {
+      marginTop: spacing.sm,
+      color: colors.accent,
+    },
+    cycle: {
+      color: colors.textSecondary,
+    },
+    card: {
+      gap: spacing.md,
+    },
+    historyCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    historyCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    historyHint: {
+      color: colors.textSecondary,
+    },
+    historyArrow: {
+      color: colors.textSecondary,
+      fontSize: 22,
+      lineHeight: 22,
+    },
+    cardTitle: {
+      color: colors.textPrimary,
+    },
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    infoLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    infoValue: {
+      flex: 1,
+      textAlign: "right",
+      color: colors.textPrimary,
+    },
+    notes: {
+      color: colors.textPrimary,
+    },
+    editButton: {},
+    editButtonText: {
+      color: colors.textPrimary,
+    },
+    emptyContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+    },
   });

@@ -11,6 +11,7 @@ import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/them
 import { CalendarTabScreenProps } from "@/navigation/types";
 import { formatCurrency } from "@/utils/currency";
 import { formatLocalDateInput } from "@/utils/date";
+import { getRecurringDueDateInputForMonth } from "@/utils/recurringDates";
 
 const WEEKDAY_LABELS = {
   de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
@@ -98,6 +99,18 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
 
   const monthLabel = useMemo(() => getMonthLabel(visibleMonth, language), [language, visibleMonth]);
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
+  const visibleCalendarMonths = useMemo(() => {
+    const months = new Map<string, Date>();
+
+    calendarDays.forEach((calendarDay) => {
+      const monthKey = `${calendarDay.date.getFullYear()}-${calendarDay.date.getMonth()}`;
+      if (!months.has(monthKey)) {
+        months.set(monthKey, new Date(calendarDay.date.getFullYear(), calendarDay.date.getMonth(), 1));
+      }
+    });
+
+    return [...months.values()];
+  }, [calendarDays]);
   const isCurrentMonth =
     today.getFullYear() === visibleMonth.getFullYear() &&
     today.getMonth() === visibleMonth.getMonth();
@@ -106,20 +119,49 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const dueSubscriptions = useMemo(
     () =>
       subscriptions.filter(
-        (subscription) =>
-          subscription.status !== "cancelled" &&
-          subscription.nextPaymentDate === selectedDateKey,
+        (subscription) => {
+          if (subscription.status === "cancelled") {
+            return false;
+          }
+
+          return (
+            getRecurringDueDateInputForMonth({
+              anchorDate: subscription.nextPaymentDate,
+              billingCycle: subscription.billingCycle,
+              targetMonth: selectedDate,
+              startsOn: subscription.createdAt,
+              endsOn: subscription.endDate,
+            }) === selectedDateKey
+          );
+        },
       ),
-    [selectedDateKey, subscriptions],
+    [selectedDate, selectedDateKey, subscriptions],
   );
   const dueDateKeys = useMemo(
-    () =>
-      new Set(
-        subscriptions
-          .filter((subscription) => subscription.status !== "cancelled")
-          .map((subscription) => subscription.nextPaymentDate),
-      ),
-    [subscriptions],
+    () => {
+      const dueDates = new Set<string>();
+
+      subscriptions
+        .filter((subscription) => subscription.status !== "cancelled")
+        .forEach((subscription) => {
+          visibleCalendarMonths.forEach((monthDate) => {
+            const dueDate = getRecurringDueDateInputForMonth({
+              anchorDate: subscription.nextPaymentDate,
+              billingCycle: subscription.billingCycle,
+              targetMonth: monthDate,
+              startsOn: subscription.createdAt,
+              endsOn: subscription.endDate,
+            });
+
+            if (dueDate) {
+              dueDates.add(dueDate);
+            }
+          });
+        });
+
+      return dueDates;
+    },
+    [subscriptions, visibleCalendarMonths],
   );
 
   const changeMonth = (direction: -1 | 1) => {

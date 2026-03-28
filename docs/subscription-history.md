@@ -82,10 +82,16 @@ Wichtig:
 Die zentrale Regel ist in folgender Datei implementiert:
 
 - [paymentSync.ts](/C:/Users/domin/Desktop/Tracker/src/domain/subscriptionHistory/paymentSync.ts)
+- [recurringDates.ts](/C:/Users/domin/Desktop/Tracker/src/utils/recurringDates.ts)
 
 Dort wird die automatische Event-Erzeugung abgebrochen, sobald gilt:
 
 - `dueDate < today`
+
+Die wiederkehrende Monatsend-Logik fuer sichtbare und zukuenftige Faelligkeiten liegt zentral in:
+
+- `getRecurringDueDateForMonth(...)`
+- `getRecurringDueDateInputForMonth(...)`
 
 ## Tests
 

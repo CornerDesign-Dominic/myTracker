@@ -48,19 +48,14 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accentBlue: "Blau",
       accentSage: "Sage",
       accentTeal: "Teal",
-      accentOlive: "Olive",
       accentForest: "Forest",
       accentSand: "Sand",
-      accentClay: "Clay",
       accentAmber: "Amber",
       accentCoral: "Coral",
-      accentPeach: "Peach",
       accentRose: "Rose",
       accentGreen: "GrÃ¼n",
-      accentPurple: "Lila",
       accentOrange: "Orange",
       accentViolet: "Violett",
-      accentLavender: "Lavendel",
       accentCyan: "Cyan",
       accentGold: "Gold",
       accentGraphite: "Graphit",
@@ -183,19 +178,14 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accentBlue: "Blue",
       accentSage: "Sage",
       accentTeal: "Teal",
-      accentOlive: "Olive",
       accentForest: "Forest",
       accentSand: "Sand",
-      accentClay: "Clay",
       accentAmber: "Amber",
       accentCoral: "Coral",
-      accentPeach: "Peach",
       accentRose: "Rose",
       accentGreen: "Green",
-      accentPurple: "Purple",
       accentOrange: "Orange",
       accentViolet: "Violet",
-      accentLavender: "Lavender",
       accentCyan: "Cyan",
       accentGold: "Gold",
       accentGraphite: "Graphite",
@@ -313,19 +303,14 @@ export type TranslationKey =
   | "settings.accentBlue"
   | "settings.accentSage"
   | "settings.accentTeal"
-  | "settings.accentOlive"
   | "settings.accentForest"
   | "settings.accentSand"
-  | "settings.accentClay"
   | "settings.accentAmber"
   | "settings.accentCoral"
-  | "settings.accentPeach"
   | "settings.accentRose"
   | "settings.accentGreen"
-  | "settings.accentPurple"
   | "settings.accentOrange"
   | "settings.accentViolet"
-  | "settings.accentLavender"
   | "settings.accentCyan"
   | "settings.accentGold"
   | "settings.accentGraphite"

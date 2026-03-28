@@ -2,31 +2,22 @@ import { TextStyle, ViewStyle } from "react-native";
 
 export type AppThemeMode = "light" | "dark";
 export type AccentColor =
+  | "slate"
+  | "graphite"
   | "indigo"
   | "blue"
+  | "cyan"
   | "teal"
   | "green"
-  | "purple"
-  | "orange"
-  | "slate"
   | "sage"
-  | "olive"
   | "forest"
   | "sand"
-  | "clay"
   | "amber"
+  | "orange"
   | "coral"
-  | "peach"
-  | "rose"
-  | "violet"
-  | "lavender"
-  | "cyan"
   | "gold"
-  | "graphite"
-  | "mint"
-  | "terracotta"
-  | "ruby"
-  | "steel";
+  | "violet"
+  | "rose";
 
 type AccentPalette = {
   accent: string;
@@ -128,16 +119,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "rgba(74,222,128,0.18)",
     },
   },
-  purple: {
-    light: {
-      accent: "#7C3AED",
-      accentSoft: "#F2EAFF",
-    },
-    dark: {
-      accent: "#A78BFA",
-      accentSoft: "rgba(167,139,250,0.2)",
-    },
-  },
   orange: {
     light: {
       accent: "#EA580C",
@@ -168,16 +149,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "rgba(158,197,174,0.18)",
     },
   },
-  olive: {
-    light: {
-      accent: "#6B7A2F",
-      accentSoft: "#F2F6E8",
-    },
-    dark: {
-      accent: "#A3B85C",
-      accentSoft: "rgba(163,184,92,0.18)",
-    },
-  },
   forest: {
     light: {
       accent: "#2F6B4F",
@@ -196,16 +167,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
     dark: {
       accent: "#D7B27B",
       accentSoft: "rgba(215,178,123,0.18)",
-    },
-  },
-  clay: {
-    light: {
-      accent: "#A56A5A",
-      accentSoft: "#F9EEEA",
-    },
-    dark: {
-      accent: "#CE9282",
-      accentSoft: "rgba(206,146,130,0.18)",
     },
   },
   amber: {
@@ -228,16 +189,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "rgba(240,154,143,0.18)",
     },
   },
-  peach: {
-    light: {
-      accent: "#D88A6C",
-      accentSoft: "#FEF1EB",
-    },
-    dark: {
-      accent: "#F1B29A",
-      accentSoft: "rgba(241,178,154,0.18)",
-    },
-  },
   rose: {
     light: {
       accent: "#C56A86",
@@ -256,16 +207,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
     dark: {
       accent: "#A996F2",
       accentSoft: "rgba(169,150,242,0.18)",
-    },
-  },
-  lavender: {
-    light: {
-      accent: "#8E7CC3",
-      accentSoft: "#F4F1FB",
-    },
-    dark: {
-      accent: "#C0B1E8",
-      accentSoft: "rgba(192,177,232,0.18)",
     },
   },
   cyan: {
@@ -298,46 +239,6 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "rgba(154,164,178,0.18)",
     },
   },
-  mint: {
-    light: {
-      accent: "#4D9B8A",
-      accentSoft: "#ECF8F4",
-    },
-    dark: {
-      accent: "#7FD0BE",
-      accentSoft: "rgba(127,208,190,0.18)",
-    },
-  },
-  terracotta: {
-    light: {
-      accent: "#B76A4C",
-      accentSoft: "#FBEEE8",
-    },
-    dark: {
-      accent: "#D8987F",
-      accentSoft: "rgba(216,152,127,0.18)",
-    },
-  },
-  ruby: {
-    light: {
-      accent: "#B85C78",
-      accentSoft: "#FAEDF2",
-    },
-    dark: {
-      accent: "#DD8DA7",
-      accentSoft: "rgba(221,141,167,0.18)",
-    },
-  },
-  steel: {
-    light: {
-      accent: "#5E7696",
-      accentSoft: "#EEF3F9",
-    },
-    dark: {
-      accent: "#93AAC9",
-      accentSoft: "rgba(147,170,201,0.18)",
-    },
-  },
 };
 
 export const getAccentPalette = (accentColor: AccentColor, mode: AppThemeMode) =>
@@ -346,29 +247,20 @@ export const getAccentPalette = (accentColor: AccentColor, mode: AppThemeMode) =
 export const accentColorOptions = [
   "slate",
   "graphite",
-  "steel",
   "indigo",
   "blue",
-  "sage",
-  "teal",
-  "mint",
-  "green",
   "cyan",
-  "olive",
+  "teal",
+  "green",
   "forest",
+  "sage",
   "sand",
-  "clay",
   "amber",
-  "gold",
   "orange",
   "coral",
-  "terracotta",
-  "peach",
-  "rose",
-  "ruby",
-  "lavender",
+  "gold",
   "violet",
-  "purple",
+  "rose",
 ] as const satisfies readonly AccentColor[];
 
 export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "indigo") => ({

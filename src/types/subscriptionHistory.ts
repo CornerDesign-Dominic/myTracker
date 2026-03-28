@@ -22,10 +22,14 @@ export interface SubscriptionHistoryEvent {
   subscriptionId: string;
   type: SubscriptionHistoryEventType;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string;
+  source?: "manual" | "sync";
   occurredAt?: string;
   effectiveDate?: string;
   notes?: string;
   metadata?: Record<string, string | number | boolean | null>;
+  syncSuppressedDueDates?: string[];
   snapshot?: SubscriptionHistorySnapshot;
   amount?: number;
   dueDate?: string;

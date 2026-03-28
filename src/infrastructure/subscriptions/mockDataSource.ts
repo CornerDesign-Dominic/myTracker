@@ -26,4 +26,13 @@ export const mockSubscriptionDataSource: SubscriptionDataSource = {
   async createHistoryEvent(_userId, subscriptionId, event) {
     await mockSubscriptionStore.createHistoryEvent(subscriptionId, event);
   },
+  async createManualPayment(_userId, subscriptionId, input) {
+    await mockSubscriptionStore.createManualPayment(subscriptionId, input);
+  },
+  async updateHistoryEvent(_userId, subscriptionId, eventId, input) {
+    await mockSubscriptionStore.updateHistoryEvent(subscriptionId, eventId, input);
+  },
+  async deleteHistoryEvent(_userId, subscriptionId, eventId) {
+    await mockSubscriptionStore.deleteHistoryEvent(subscriptionId, eventId);
+  },
 };

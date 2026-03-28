@@ -120,6 +120,121 @@ class MockSubscriptionStore {
     this.emitHistory(subscriptionId);
   }
 
+  async createManualPayment(
+    subscriptionId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) {
+    const currentHistory = this.history.get(subscriptionId) ?? [];
+    const hasExistingScheduledEvent = currentHistory.some(
+      (event) =>
+        !event.deletedAt &&
+        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
+        event.dueDate === input.dueDate,
+    );
+
+    if (hasExistingScheduledEvent) {
+      throw new Error("A payment event already exists for this due date.");
+    }
+
+    await this.createHistoryEvent(subscriptionId, {
+      id: `payment_booked_${input.dueDate}`,
+      subscriptionId,
+      type: "payment_booked",
+      source: "manual",
+      amount: input.amount,
+      dueDate: input.dueDate,
+      bookedAt: new Date().toISOString(),
+      occurredAt: input.dueDate,
+      effectiveDate: input.dueDate,
+      notes: input.notes,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async updateHistoryEvent(
+    subscriptionId: string,
+    eventId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) {
+    const currentHistory = this.history.get(subscriptionId) ?? [];
+    const currentEvent = currentHistory.find((event) => event.id === eventId);
+
+    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
+      throw new Error("Only payment_booked events can be updated.");
+    }
+
+    const hasDuplicate = currentHistory.some(
+      (event) =>
+        event.id !== eventId &&
+        !event.deletedAt &&
+        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
+        event.dueDate === input.dueDate,
+    );
+
+    if (hasDuplicate) {
+      throw new Error("A payment event already exists for this due date.");
+    }
+
+    const nextHistory = currentHistory.map((event) =>
+      event.id === eventId
+        ? {
+            ...event,
+            amount: input.amount,
+            dueDate: input.dueDate,
+            notes: input.notes,
+            occurredAt: input.dueDate,
+            effectiveDate: input.dueDate,
+            updatedAt: new Date().toISOString(),
+            syncSuppressedDueDates: Array.from(
+              new Set([
+                ...(event.syncSuppressedDueDates ?? []),
+                ...(event.dueDate && event.dueDate !== input.dueDate ? [event.dueDate] : []),
+              ]),
+            ),
+          }
+        : event,
+    );
+
+    this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
+    this.emitHistory(subscriptionId);
+  }
+
+  async deleteHistoryEvent(subscriptionId: string, eventId: string) {
+    const currentHistory = this.history.get(subscriptionId) ?? [];
+    const currentEvent = currentHistory.find((event) => event.id === eventId);
+
+    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
+      throw new Error("Only payment_booked events can be deleted.");
+    }
+
+    const nextHistory = currentHistory.map((event) =>
+      event.id === eventId
+        ? {
+            ...event,
+            deletedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            syncSuppressedDueDates: Array.from(
+              new Set([
+                ...(event.syncSuppressedDueDates ?? []),
+                ...(event.dueDate ? [event.dueDate] : []),
+              ]),
+            ),
+          }
+        : event,
+    );
+
+    this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
+    this.emitHistory(subscriptionId);
+  }
+
   async syncHistory(subscription: Subscription) {
     const currentHistory = this.history.get(subscription.id) ?? [];
     const hasCreatedEvent = currentHistory.some((event) => event.type === "subscription_created");

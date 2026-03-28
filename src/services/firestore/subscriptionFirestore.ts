@@ -71,10 +71,16 @@ const mapHistoryEvent = (
   subscriptionId,
   type: String(data.type ?? "subscription_created") as SubscriptionHistoryEvent["type"],
   createdAt: serializeTimestamp(data.createdAt),
+  updatedAt: data.updatedAt ? serializeTimestamp(data.updatedAt) : undefined,
+  deletedAt: data.deletedAt ? serializeTimestamp(data.deletedAt) : undefined,
+  source: data.source === "manual" ? "manual" : data.source === "sync" ? "sync" : undefined,
   occurredAt: data.occurredAt ? String(data.occurredAt) : undefined,
   effectiveDate: data.effectiveDate ? String(data.effectiveDate) : undefined,
   notes: data.notes ? String(data.notes) : undefined,
   metadata: (data.metadata as SubscriptionHistoryEvent["metadata"]) ?? undefined,
+  syncSuppressedDueDates: Array.isArray(data.syncSuppressedDueDates)
+    ? data.syncSuppressedDueDates.map(String)
+    : undefined,
   snapshot: (data.snapshot as SubscriptionHistoryEvent["snapshot"]) ?? undefined,
   amount: typeof data.amount === "number" ? data.amount : undefined,
   dueDate: data.dueDate ? String(data.dueDate) : undefined,
@@ -199,6 +205,152 @@ export const createFirestoreHistoryEvent = async (
       userId,
       subscriptionId,
       input: payload,
+    });
+    throw error;
+  }
+};
+
+export const createFirestoreManualPayment = async (
+  userId: string,
+  subscriptionId: string,
+  input: {
+    amount: number;
+    dueDate: string;
+    notes?: string;
+  },
+) => {
+  try {
+    const history = await readSubscriptionHistory(userId, subscriptionId);
+    const hasExistingScheduledEvent = history.some(
+      (event) =>
+        !event.deletedAt &&
+        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
+        event.dueDate === input.dueDate,
+    );
+
+    if (hasExistingScheduledEvent) {
+      throw new Error("A payment event already exists for this due date.");
+    }
+
+    const eventId = `payment_booked_${input.dueDate}`;
+    const payload = toHistoryPayload({
+      id: eventId,
+      subscriptionId,
+      type: "payment_booked",
+      source: "manual",
+      amount: input.amount,
+      dueDate: input.dueDate,
+      bookedAt: new Date().toISOString(),
+      occurredAt: input.dueDate,
+      effectiveDate: input.dueDate,
+      notes: input.notes,
+      updatedAt: new Date().toISOString(),
+    });
+
+    await setDoc(historyDoc(userId, subscriptionId, eventId), payload, { merge: false });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.createFirestoreManualPayment", error, {
+      path: `users/${userId}/subscriptions/${subscriptionId}/history`,
+      userId,
+      subscriptionId,
+      input,
+    });
+    throw error;
+  }
+};
+
+export const updateFirestoreHistoryEvent = async (
+  userId: string,
+  subscriptionId: string,
+  eventId: string,
+  input: {
+    amount: number;
+    dueDate: string;
+    notes?: string;
+  },
+) => {
+  try {
+    const history = await readSubscriptionHistory(userId, subscriptionId);
+    const currentEvent = history.find((event) => event.id === eventId);
+
+    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
+      throw new Error("Only payment_booked events can be updated.");
+    }
+
+    const hasDuplicate = history.some(
+      (event) =>
+        event.id !== eventId &&
+        !event.deletedAt &&
+        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
+        event.dueDate === input.dueDate,
+    );
+
+    if (hasDuplicate) {
+      throw new Error("A payment event already exists for this due date.");
+    }
+
+    const nextSuppressedDueDates = Array.from(
+      new Set([
+        ...(currentEvent.syncSuppressedDueDates ?? []),
+        ...(currentEvent.dueDate && currentEvent.dueDate !== input.dueDate ? [currentEvent.dueDate] : []),
+      ]),
+    );
+
+    await updateDoc(
+      historyDoc(userId, subscriptionId, eventId),
+      removeUndefinedFields({
+        amount: input.amount,
+        dueDate: input.dueDate,
+        notes: input.notes,
+        occurredAt: input.dueDate,
+        effectiveDate: input.dueDate,
+        syncSuppressedDueDates: nextSuppressedDueDates.length ? nextSuppressedDueDates : undefined,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.updateFirestoreHistoryEvent", error, {
+      path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,
+      userId,
+      subscriptionId,
+      eventId,
+      input,
+    });
+    throw error;
+  }
+};
+
+export const deleteFirestoreHistoryEvent = async (
+  userId: string,
+  subscriptionId: string,
+  eventId: string,
+) => {
+  try {
+    const history = await readSubscriptionHistory(userId, subscriptionId);
+    const currentEvent = history.find((event) => event.id === eventId);
+
+    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
+      throw new Error("Only payment_booked events can be deleted.");
+    }
+
+    const nextSuppressedDueDates = Array.from(
+      new Set([
+        ...(currentEvent.syncSuppressedDueDates ?? []),
+        ...(currentEvent.dueDate ? [currentEvent.dueDate] : []),
+      ]),
+    );
+
+    await updateDoc(historyDoc(userId, subscriptionId, eventId), {
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      syncSuppressedDueDates: nextSuppressedDueDates,
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.deleteFirestoreHistoryEvent", error, {
+      path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,
+      userId,
+      subscriptionId,
+      eventId,
     });
     throw error;
   }

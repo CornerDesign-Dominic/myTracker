@@ -71,6 +71,27 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         <Pressable
           style={[surfaces.panel, styles.historyCard]}
           onPress={() =>
+            navigation.navigate("AddPayment", {
+              subscriptionId: subscription.id,
+            })
+          }
+        >
+          <View style={styles.historyCopy}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>
+              {language === "de" ? "Zahlung hinzufügen" : "Add payment"}
+            </Text>
+            <Text style={[typography.secondary, styles.historyHint]}>
+              {language === "de"
+                ? "Vergangene oder heutige Zahlung manuell erfassen"
+                : "Add a past or current payment manually"}
+            </Text>
+          </View>
+          <Text style={[typography.body, styles.historyArrow]}>›</Text>
+        </Pressable>
+
+        <Pressable
+          style={[surfaces.panel, styles.historyCard]}
+          onPress={() =>
             navigation.navigate("SubscriptionHistory", {
               subscriptionId: subscription.id,
             })

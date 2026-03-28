@@ -1,11 +1,18 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import {
+  filterSkippedHistoryEventsByRange,
+  getTotalSavedAmount,
+  getTotalSkippedPayments,
+} from "@/domain/subscriptionHistory/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import {
   DevelopmentRange,
@@ -102,6 +109,9 @@ export const StatsScreen = () => {
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
   const { subscriptions, metrics } = useSubscriptions();
+  const { history: allHistory } = useSubscriptionsHistory(
+    subscriptions.map((subscription) => subscription.id),
+  );
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [developmentRange, setDevelopmentRange] = useState<DevelopmentRange>(6);
 
@@ -144,6 +154,15 @@ export const StatsScreen = () => {
     () => getTopExpensiveSubscriptions(subscriptions, 3),
     [subscriptions],
   );
+  const savedHistory = useMemo(
+    () => filterSkippedHistoryEventsByRange(allHistory, developmentRange),
+    [allHistory, developmentRange],
+  );
+  const savedAmount = useMemo(() => getTotalSavedAmount(savedHistory), [savedHistory]);
+  const skippedPayments = useMemo(
+    () => getTotalSkippedPayments(savedHistory),
+    [savedHistory],
+  );
 
   const copy =
     language === "de"
@@ -157,6 +176,12 @@ export const StatsScreen = () => {
           tapToExpand: showAllCategories ? "Tippen zum Einklappen" : "Tippen für alle Kategorien",
           noDevelopment: "Noch keine Entwicklung vorhanden",
           noTopSubscriptions: "Noch keine aktiven Abos vorhanden.",
+          saved: "Gespart",
+          noSavings: "Keine Einsparungen im gewählten Zeitraum",
+          savedThrough:
+            skippedPayments === 1
+              ? "durch 1 ausgelassene Zahlung"
+              : `durch ${skippedPayments} ausgelassene Zahlungen`,
           monthly: "Monatlich",
           quarterly: "Quartal",
           yearly: "Jährlich",
@@ -171,6 +196,12 @@ export const StatsScreen = () => {
           tapToExpand: showAllCategories ? "Tap to collapse" : "Tap to show all categories",
           noDevelopment: "No development data yet",
           noTopSubscriptions: "No active subscriptions yet.",
+          saved: "Saved",
+          noSavings: "No savings in the selected range",
+          savedThrough:
+            skippedPayments === 1
+              ? "through 1 skipped payment"
+              : `through ${skippedPayments} skipped payments`,
           monthly: "Monthly",
           quarterly: "Quarterly",
           yearly: "Yearly",
@@ -209,13 +240,33 @@ export const StatsScreen = () => {
           />
         </View>
 
+        <View style={[surfaces.panel, styles.card]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.saved}</Text>
+          {savedHistory.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>{copy.noSavings}</Text>
+          ) : (
+            <View style={styles.savedCardContent}>
+              <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                {language === "de"
+                  ? `Du hast ${formatCurrency(savedAmount, currency)} gespart`
+                  : `You saved ${formatCurrency(savedAmount, currency)}`}
+              </Text>
+              <Text style={[typography.secondary, styles.savedMeta]}>{copy.savedThrough}</Text>
+            </View>
+          )}
+        </View>
+
         <Pressable
           style={[surfaces.panel, styles.card]}
           onPress={() => setShowAllCategories((current) => !current)}
         >
           <View style={styles.cardHeader}>
             <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.byCategory")}</Text>
-            <Text style={[typography.secondary, styles.cardHint]}>{copy.tapToExpand}</Text>
+            <Ionicons
+              name={showAllCategories ? "chevron-up-outline" : "chevron-down-outline"}
+              size={18}
+              color={colors.textSecondary}
+            />
           </View>
 
           {metrics.byCategory.length === 0 ? (
@@ -459,6 +510,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
     },
     helperText: {
+      color: colors.textSecondary,
+    },
+    savedCardContent: {
+      gap: spacing.xs,
+    },
+    savedAmount: {
+      color: colors.textPrimary,
+    },
+    savedMeta: {
       color: colors.textSecondary,
     },
     chartList: {

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
+import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
@@ -157,6 +158,13 @@ export const AppNavigator = () => {
           component={SubscriptionHistoryScreen}
           options={{
             title: language === "de" ? "Historie" : "History",
+          }}
+        />
+        <Stack.Screen
+          name="AddPayment"
+          component={AddPaymentScreen}
+          options={{
+            title: language === "de" ? "Zahlung hinzufügen" : "Add payment",
           }}
         />
         <Stack.Screen

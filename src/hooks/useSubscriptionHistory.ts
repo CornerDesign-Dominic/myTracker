@@ -33,7 +33,7 @@ export const useSubscriptionHistory = (subscriptionId?: string) => {
       currentUser.uid,
       subscriptionId,
       (items) => {
-        setHistory(sortHistoryNewestFirst(items));
+        setHistory(sortHistoryNewestFirst(items.filter((event) => !event.deletedAt)));
         setIsLoading(false);
         setErrorMessage(null);
       },

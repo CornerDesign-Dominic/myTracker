@@ -30,6 +30,30 @@ export interface SubscriptionService {
     subscriptionId: string,
     event: HistoryEventInput,
   ) => Promise<void>;
+  createManualPaymentForUser: (
+    userId: string,
+    subscriptionId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) => Promise<void>;
+  updateHistoryEventForUser: (
+    userId: string,
+    subscriptionId: string,
+    eventId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) => Promise<void>;
+  deleteHistoryEventForUser: (
+    userId: string,
+    subscriptionId: string,
+    eventId: string,
+  ) => Promise<void>;
 }
 
 export const createSubscriptionService = (
@@ -55,5 +79,14 @@ export const createSubscriptionService = (
   },
   createHistoryEventForUser(userId, subscriptionId, event) {
     return repository.createHistoryEvent(userId, subscriptionId, event);
+  },
+  createManualPaymentForUser(userId, subscriptionId, input) {
+    return repository.createManualPayment(userId, subscriptionId, input);
+  },
+  updateHistoryEventForUser(userId, subscriptionId, eventId, input) {
+    return repository.updateHistoryEvent(userId, subscriptionId, eventId, input);
+  },
+  deleteHistoryEventForUser(userId, subscriptionId, eventId) {
+    return repository.deleteHistoryEvent(userId, subscriptionId, eventId);
   },
 });

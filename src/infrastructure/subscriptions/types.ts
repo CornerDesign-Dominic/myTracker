@@ -27,4 +27,28 @@ export interface SubscriptionDataSource {
     subscriptionId: string,
     event: HistoryEventInput,
   ) => Promise<void>;
+  createManualPayment: (
+    userId: string,
+    subscriptionId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) => Promise<void>;
+  updateHistoryEvent: (
+    userId: string,
+    subscriptionId: string,
+    eventId: string,
+    input: {
+      amount: number;
+      dueDate: string;
+      notes?: string;
+    },
+  ) => Promise<void>;
+  deleteHistoryEvent: (
+    userId: string,
+    subscriptionId: string,
+    eventId: string,
+  ) => Promise<void>;
 }

@@ -1,10 +1,13 @@
 import {
   archiveFirestoreSubscription,
   createFirestoreHistoryEvent,
+  createFirestoreManualPayment,
   createFirestoreSubscription,
+  deleteFirestoreHistoryEvent,
   subscribeToFirestoreSubscriptionHistory,
   subscribeToFirestoreSubscriptions,
   syncFirestoreSubscriptionsHistory,
+  updateFirestoreHistoryEvent,
   updateFirestoreSubscription,
 } from "@/services/firestore/subscriptionFirestore";
 
@@ -31,5 +34,14 @@ export const firebaseSubscriptionDataSource: SubscriptionDataSource = {
   },
   createHistoryEvent(userId, subscriptionId, event) {
     return createFirestoreHistoryEvent(userId, subscriptionId, event);
+  },
+  createManualPayment(userId, subscriptionId, input) {
+    return createFirestoreManualPayment(userId, subscriptionId, input);
+  },
+  updateHistoryEvent(userId, subscriptionId, eventId, input) {
+    return updateFirestoreHistoryEvent(userId, subscriptionId, eventId, input);
+  },
+  deleteHistoryEvent(userId, subscriptionId, eventId) {
+    return deleteFirestoreHistoryEvent(userId, subscriptionId, eventId);
   },
 };

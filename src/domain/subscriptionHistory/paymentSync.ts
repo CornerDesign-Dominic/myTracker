@@ -68,6 +68,9 @@ export const getMissingPaymentHistoryEvents = (
 ) => {
   const todayKey = toCalendarDateString(today);
   const dueDate = subscription.nextPaymentDate;
+  const suppressedDueDates = new Set(
+    history.flatMap((event) => event.syncSuppressedDueDates ?? []),
+  );
 
   if (!dueDate || dueDate < todayKey) {
     if (isDevEnvironment && dueDate) {
@@ -85,9 +88,11 @@ export const getMissingPaymentHistoryEvents = (
     ? "payment_booked"
     : "payment_skipped_inactive";
   const eventId = getScheduledHistoryEventId(eventType, dueDate);
-  const alreadyExists = history.some((event) => event.id === eventId);
+  const alreadyExists = history.some(
+    (event) => event.id === eventId && !event.deletedAt,
+  );
 
-  if (alreadyExists) {
+  if (alreadyExists || suppressedDueDates.has(dueDate)) {
     return [] satisfies HistoryEventInput[];
   }
 
@@ -101,6 +106,7 @@ export const getMissingPaymentHistoryEvents = (
       amount: subscription.amount,
       dueDate,
       bookedAt: eventType === "payment_booked" ? dueDate : undefined,
+      source: "sync",
       reason: eventType === "payment_skipped_inactive" ? "inactive" : undefined,
       billingCycleSnapshot: subscription.billingCycle,
       snapshot: {

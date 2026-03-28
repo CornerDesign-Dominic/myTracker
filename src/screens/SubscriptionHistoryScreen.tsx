@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -14,7 +14,7 @@ import { formatCurrency } from "@/utils/currency";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionHistory">;
 
-export const SubscriptionHistoryScreen = ({ route }: Props) => {
+export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
   const { language } = useI18n();
@@ -72,10 +72,8 @@ export const SubscriptionHistoryScreen = ({ route }: Props) => {
             <View style={styles.historyList}>
               {history.map((event, index) => {
                 const entry = formatHistoryEvent(event, { currency, language });
-
-                return (
+                const row = (
                   <View
-                    key={event.id}
                     style={[
                       styles.historyRow,
                       index < history.length - 1 ? styles.historyDivider : null,
@@ -90,7 +88,7 @@ export const SubscriptionHistoryScreen = ({ route }: Props) => {
                       ) : null}
                       {entry.canEdit ? (
                         <Text style={[typography.meta, styles.historyMeta]}>
-                          {language === "de" ? "Bearbeitbar vorbereitet" : "Prepared for editing"}
+                          {language === "de" ? "Zum Bearbeiten öffnen" : "Tap to edit"}
                         </Text>
                       ) : null}
                     </View>
@@ -104,6 +102,24 @@ export const SubscriptionHistoryScreen = ({ route }: Props) => {
                     </View>
                   </View>
                 );
+
+                if (entry.canEdit) {
+                  return (
+                    <Pressable
+                      key={event.id}
+                      onPress={() =>
+                        navigation.navigate("AddPayment", {
+                          subscriptionId: route.params.subscriptionId,
+                          eventId: event.id,
+                        })
+                      }
+                    >
+                      {row}
+                    </Pressable>
+                  );
+                }
+
+                return <View key={event.id}>{row}</View>;
               })}
             </View>
           )}

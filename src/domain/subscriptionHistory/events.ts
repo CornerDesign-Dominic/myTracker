@@ -146,8 +146,7 @@ export const formatHistoryEvent = (
       : undefined;
   const dateKey = getEventDate(event);
   const dateLabel = formatDate(dateKey);
-  const canEdit =
-    event.type === "payment_booked" || event.type === "payment_skipped_inactive";
+  const canEdit = event.type === "payment_booked";
 
   if (options.language === "de") {
     switch (event.type) {
@@ -155,7 +154,12 @@ export const formatHistoryEvent = (
         return {
           id: event.id,
           title: "Zahlung gebucht",
-          subtitle: event.dueDate ? `Fällig am ${formatDate(event.dueDate)}` : undefined,
+          subtitle:
+            event.source === "manual"
+              ? "Manuell erfasst"
+              : event.dueDate
+                ? `FÃ¤llig am ${formatDate(event.dueDate)}`
+                : undefined,
           amountLabel,
           dateLabel,
           canEdit,
@@ -243,7 +247,12 @@ export const formatHistoryEvent = (
       return {
         id: event.id,
         title: "Payment booked",
-        subtitle: event.dueDate ? `Due on ${formatDate(event.dueDate)}` : undefined,
+        subtitle:
+          event.source === "manual"
+            ? "Added manually"
+            : event.dueDate
+              ? `Due on ${formatDate(event.dueDate)}`
+              : undefined,
         amountLabel,
         dateLabel,
         canEdit,

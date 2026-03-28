@@ -15,4 +15,15 @@ export const mockSubscriptionDataSource: SubscriptionDataSource = {
   async archive(_userId, id) {
     await mockSubscriptionStore.archive(id);
   },
+  subscribeHistory(_userId, subscriptionId, listener) {
+    return mockSubscriptionStore.subscribeHistory(subscriptionId, listener);
+  },
+  async syncHistory(_userId, subscriptions) {
+    for (const subscription of subscriptions) {
+      await mockSubscriptionStore.syncHistory(subscription);
+    }
+  },
+  async createHistoryEvent(_userId, subscriptionId, event) {
+    await mockSubscriptionStore.createHistoryEvent(subscriptionId, event);
+  },
 };

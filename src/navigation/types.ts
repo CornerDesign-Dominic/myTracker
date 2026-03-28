@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Register: undefined;
   SubscriptionForm: { subscriptionId?: string } | undefined;
   SubscriptionDetails: { subscriptionId: string };
+  SubscriptionHistory: { subscriptionId: string };
   Settings: undefined;
   Terms: undefined;
   Privacy: undefined;

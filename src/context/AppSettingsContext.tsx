@@ -15,6 +15,7 @@ import {
   subscribeToUserSettings,
   updateUserSettings,
 } from "@/services/firestore/userFirestore";
+import { AccentColor } from "@/theme";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type LanguageOption = AppLanguage;
@@ -27,10 +28,12 @@ interface AppSettingsContextValue {
   language: LanguageOption;
   currency: CurrencyOption;
   theme: ThemeOption;
+  accentColor: AccentColor;
   isHydrated: boolean;
   setLanguage: (value: LanguageOption) => void;
   setCurrency: (value: CurrencyOption) => void;
   setTheme: (value: ThemeOption) => void;
+  setAccentColor: (value: AccentColor) => void;
 }
 
 const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
@@ -40,6 +43,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const [language, setLanguageState] = useState<LanguageOption>("de");
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
   const [theme, setThemeState] = useState<ThemeOption>("Light");
+  const [accentColor, setAccentColorState] = useState<AccentColor>("indigo");
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -55,6 +59,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
           language: LanguageOption | "DE" | "EN";
           currency: CurrencyOption;
           theme: ThemeOption;
+          accentColor: AccentColor;
         }>;
 
         if (parsedSettings.language) {
@@ -73,6 +78,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
 
         if (parsedSettings.theme) {
           setThemeState(parsedSettings.theme);
+        }
+
+        if (parsedSettings.accentColor) {
+          setAccentColorState(parsedSettings.accentColor);
         }
       } catch {
         // Keep defaults if local hydration fails.
@@ -161,11 +170,12 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         language,
         currency,
         theme,
+        accentColor,
       }),
     ).catch(() => {
       // Ignore persistence errors and keep the in-memory app state usable.
     });
-  }, [currency, isHydrated, language, theme]);
+  }, [accentColor, currency, isHydrated, language, theme]);
 
   const setLanguage = (value: LanguageOption) => {
     setLanguageState(value);
@@ -203,17 +213,23 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
+  const setAccentColor = (value: AccentColor) => {
+    setAccentColorState(value);
+  };
+
   const value = useMemo(
     () => ({
       language,
       currency,
       theme,
+      accentColor,
       isHydrated,
       setLanguage,
       setCurrency,
       setTheme,
+      setAccentColor,
     }),
-    [currency, isHydrated, language, theme],
+    [accentColor, currency, isHydrated, language, theme],
   );
 
   return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;

@@ -4,10 +4,10 @@ import { useAppSettings } from "@/context/AppSettingsContext";
 import { getThemeColors, radius, shadowPresets, spacing, typography } from "@/theme";
 
 export const useAppTheme = () => {
-  const { theme } = useAppSettings();
-  const colorScheme = theme === "Dark" ? "dark" : "light";
-  const isDark = colorScheme === "dark";
-  const colors = getThemeColors(colorScheme);
+  const { theme, accentColor } = useAppSettings();
+  const mode = theme === "Dark" ? "dark" : "light";
+  const isDark = mode === "dark";
+  const colors = getThemeColors(mode, accentColor);
 
   const navigationTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -23,8 +23,10 @@ export const useAppTheme = () => {
   };
 
   return {
-    colorScheme,
+    colorScheme: mode,
+    mode,
     theme,
+    accentColor,
     isDark,
     colors,
     spacing,

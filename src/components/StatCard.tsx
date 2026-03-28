@@ -36,7 +36,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: spacing.sm,
   },
   accentCard: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentSoft,
     borderColor: colors.accent,
   },
   label: {
@@ -46,9 +46,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     color: colors.textPrimary,
   },
   accentLabel: {
-    color: colors.accentText,
+    color: colors.accent,
   },
   accentValue: {
-    color: colors.accentText,
+    color: colors.textPrimary,
   },
   });

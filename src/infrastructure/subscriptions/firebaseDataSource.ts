@@ -1,7 +1,10 @@
 import {
   archiveFirestoreSubscription,
+  createFirestoreHistoryEvent,
   createFirestoreSubscription,
+  subscribeToFirestoreSubscriptionHistory,
   subscribeToFirestoreSubscriptions,
+  syncFirestoreSubscriptionsHistory,
   updateFirestoreSubscription,
 } from "@/services/firestore/subscriptionFirestore";
 
@@ -19,5 +22,14 @@ export const firebaseSubscriptionDataSource: SubscriptionDataSource = {
   },
   archive(userId, id) {
     return archiveFirestoreSubscription(userId, id);
+  },
+  subscribeHistory(userId, subscriptionId, listener, onError) {
+    return subscribeToFirestoreSubscriptionHistory(userId, subscriptionId, listener, onError);
+  },
+  syncHistory(userId, subscriptions) {
+    return syncFirestoreSubscriptionsHistory(userId, subscriptions);
+  },
+  createHistoryEvent(userId, subscriptionId, event) {
+    return createFirestoreHistoryEvent(userId, subscriptionId, event);
   },
 };

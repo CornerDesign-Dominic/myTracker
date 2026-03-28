@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppSettings } from "@/context/AppSettingsContext";
+import { useSubscriptionHistory } from "@/hooks/useSubscriptionHistory";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -16,12 +17,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
   const { subscriptions } = useSubscriptions();
+  const { summary } = useSubscriptionHistory(route.params.subscriptionId);
   const subscription = subscriptions.find((item) => item.id === route.params.subscriptionId);
 
   if (!subscription) {
@@ -65,6 +67,29 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
             colors={colors}
           />
         </View>
+
+        <Pressable
+          style={[surfaces.panel, styles.historyCard]}
+          onPress={() =>
+            navigation.navigate("SubscriptionHistory", {
+              subscriptionId: subscription.id,
+            })
+          }
+        >
+          <View style={styles.historyCopy}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>
+              {t("common.history")}
+            </Text>
+            <Text style={[typography.secondary, styles.historyHint]}>
+              {summary.skippedPaymentsCount > 0
+                ? language === "de"
+                  ? `${summary.skippedPaymentsCount} ausgesetzte Zahlungen · ${formatCurrency(summary.skippedPaymentsAmount, currency)} gespart`
+                  : `${summary.skippedPaymentsCount} skipped payments · ${formatCurrency(summary.skippedPaymentsAmount, currency)} saved`
+                : t("subscription.historyHint")}
+            </Text>
+          </View>
+          <Text style={[typography.body, styles.historyArrow]}>›</Text>
+        </Pressable>
 
         {subscription.notes ? (
           <View style={[surfaces.panel, styles.card]}>
@@ -128,6 +153,24 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   },
   card: {
     gap: spacing.md,
+  },
+  historyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  historyCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+  },
+  historyHint: {
+    color: colors.textSecondary,
+  },
+  historyArrow: {
+    color: colors.textSecondary,
+    fontSize: 22,
+    lineHeight: 22,
   },
   cardTitle: {
     color: colors.textPrimary,

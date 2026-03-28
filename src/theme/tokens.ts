@@ -1,6 +1,32 @@
-import { ColorSchemeName, TextStyle, ViewStyle } from "react-native";
+import { TextStyle, ViewStyle } from "react-native";
 
-export const lightColorTokens = {
+export type AppThemeMode = "light" | "dark";
+export type AccentColor = "indigo" | "blue" | "teal" | "green" | "purple" | "orange";
+
+type AccentPalette = {
+  accent: string;
+  accentSoft: string;
+};
+
+type ThemeBaseTokens = {
+  background: string;
+  surface: string;
+  surfaceSoft: string;
+  surfaceMuted: string;
+  border: string;
+  borderStrong: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  accentText: string;
+  success: string;
+  warning: string;
+  danger: string;
+  shadow: string;
+  overlay: string;
+};
+
+const lightThemeBase: ThemeBaseTokens = {
   background: "#F8FAFD",
   surface: "#FFFFFF",
   surfaceSoft: "#F3F6FB",
@@ -10,17 +36,15 @@ export const lightColorTokens = {
   textPrimary: "#121722",
   textSecondary: "#6B7280",
   textMuted: "#8A94A6",
-  accent: "#6366F1",
-  accentSoft: "#EEF0FF",
   accentText: "#FFFFFF",
   success: "#34C38F",
   warning: "#F4B740",
   danger: "#F87171",
   shadow: "rgba(15, 23, 42, 0.08)",
   overlay: "rgba(15, 23, 42, 0.14)",
-} as const;
+};
 
-export const darkColorTokens = {
+const darkThemeBase: ThemeBaseTokens = {
   background: "#090B0E",
   surface: "#111418",
   surfaceSoft: "#171B20",
@@ -30,15 +54,99 @@ export const darkColorTokens = {
   textPrimary: "#F5F7FA",
   textSecondary: "#98A2AD",
   textMuted: "#7D8793",
-  accent: "#818CF8",
-  accentSoft: "rgba(129,140,248,0.18)",
   accentText: "#FFFFFF",
   success: "#34D399",
   warning: "#FBBF24",
   danger: "#F87171",
   shadow: "rgba(0,0,0,0.42)",
   overlay: "rgba(0,0,0,0.56)",
-} as const;
+};
+
+const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> = {
+  indigo: {
+    light: {
+      accent: "#6366F1",
+      accentSoft: "#EEF0FF",
+    },
+    dark: {
+      accent: "#818CF8",
+      accentSoft: "rgba(129,140,248,0.18)",
+    },
+  },
+  blue: {
+    light: {
+      accent: "#2563EB",
+      accentSoft: "#EAF2FF",
+    },
+    dark: {
+      accent: "#60A5FA",
+      accentSoft: "rgba(96,165,250,0.2)",
+    },
+  },
+  teal: {
+    light: {
+      accent: "#0F766E",
+      accentSoft: "#E7F7F5",
+    },
+    dark: {
+      accent: "#2DD4BF",
+      accentSoft: "rgba(45,212,191,0.18)",
+    },
+  },
+  green: {
+    light: {
+      accent: "#15803D",
+      accentSoft: "#EAF8EE",
+    },
+    dark: {
+      accent: "#4ADE80",
+      accentSoft: "rgba(74,222,128,0.18)",
+    },
+  },
+  purple: {
+    light: {
+      accent: "#7C3AED",
+      accentSoft: "#F2EAFF",
+    },
+    dark: {
+      accent: "#A78BFA",
+      accentSoft: "rgba(167,139,250,0.2)",
+    },
+  },
+  orange: {
+    light: {
+      accent: "#EA580C",
+      accentSoft: "#FFF1E8",
+    },
+    dark: {
+      accent: "#FB923C",
+      accentSoft: "rgba(251,146,60,0.2)",
+    },
+  },
+};
+
+export const getAccentPalette = (accentColor: AccentColor, mode: AppThemeMode) =>
+  accentPalettes[accentColor][mode];
+
+export const accentColorOptions = [
+  "indigo",
+  "blue",
+  "teal",
+  "green",
+  "purple",
+  "orange",
+] as const satisfies readonly AccentColor[];
+
+export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "indigo") => ({
+  ...(mode === "dark" ? darkThemeBase : lightThemeBase),
+  ...accentPalettes[accentColor][mode],
+});
+
+export const getThemeColors = (mode: AppThemeMode, accentColor: AccentColor = "indigo") =>
+  createTheme(mode, accentColor);
+
+export type AppThemeColors = ReturnType<typeof createTheme>;
+export type AppTypography = typeof typography;
 
 export const spacing = {
   xxs: 4,
@@ -105,12 +213,6 @@ export const typography = {
     fontWeight: "700",
   } satisfies TextStyle,
 } as const;
-
-export const getThemeColors = (scheme: ColorSchemeName) =>
-  scheme === "dark" ? darkColorTokens : lightColorTokens;
-
-export type AppThemeColors = ReturnType<typeof getThemeColors>;
-export type AppTypography = typeof typography;
 
 export const shadowPresets = {
   card: (colors: AppThemeColors) =>

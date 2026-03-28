@@ -49,6 +49,18 @@ export const useSubscriptionCollection = ({ authIsReady, userId, service }: Opti
     return unsubscribe;
   }, [authIsReady, service, userId]);
 
+  useEffect(() => {
+    if (!authIsReady || !hasUserScope(userId) || subscriptions.length === 0) {
+      return;
+    }
+
+    service.syncHistoryForUser(userId, subscriptions).catch((error) => {
+      logFirestoreError("useSubscriptionCollection.syncHistory", error, {
+        userId,
+      });
+    });
+  }, [authIsReady, service, subscriptions, userId]);
+
   return {
     subscriptions,
     isLoading,

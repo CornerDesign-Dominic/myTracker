@@ -7,12 +7,15 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { RootStackParamList } from "@/navigation/types";
 import {
+  accentColorOptions,
   createButtonStyles,
+  getAccentPalette,
   createScreenLayout,
   createSurfaceStyles,
   radius,
   spacing,
 } from "@/theme";
+import { AccentColor } from "@/theme";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
@@ -63,14 +66,23 @@ const OptionGroup = <T extends string>({
 };
 
 export const SettingsScreen = ({ navigation }: Props) => {
-  const { colors, typography } = useAppTheme();
+  const { colors, typography, mode } = useAppTheme();
   const { language: locale, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
-  const { language, currency, theme, setLanguage, setCurrency, setTheme } = useAppSettings();
-  const { currentUser, isAnonymous, logout } = useAuth();
+  const {
+    language,
+    currency,
+    theme,
+    accentColor,
+    setLanguage,
+    setCurrency,
+    setTheme,
+    setAccentColor,
+  } = useAppSettings();
+  const { isAnonymous, logout } = useAuth();
   const accountCopy =
     locale === "de"
       ? {
@@ -167,6 +179,53 @@ export const SettingsScreen = ({ navigation }: Props) => {
           }
           onChange={setTheme}
         />
+        <View style={[surfaces.panel, styles.groupCard]}>
+          <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
+          <View style={styles.accentGrid}>
+            {accentColorOptions.map((option) => {
+              const isActive = option === accentColor;
+              const accentPreview = getAccentPalette(option, mode);
+
+              return (
+                <Pressable
+                  key={option}
+                  style={[
+                    styles.accentOption,
+                    { borderColor: isActive ? colors.accent : colors.border },
+                    isActive ? styles.accentOptionActive : null,
+                  ]}
+                  onPress={() => setAccentColor(option)}
+                >
+                  <View
+                    style={[
+                      styles.accentSwatch,
+                      {
+                        backgroundColor: accentPreview.accentSoft,
+                        borderColor: accentPreview.accent,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.accentSwatchInner,
+                        { backgroundColor: accentPreview.accent },
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      typography.meta,
+                      styles.accentOptionLabel,
+                      isActive ? styles.optionTextActive : null,
+                    ]}
+                  >
+                    {getAccentLabel(option, t)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
         <View style={styles.legalLinks}>
           <Pressable onPress={() => navigation.navigate("Terms")}>
@@ -182,6 +241,26 @@ export const SettingsScreen = ({ navigation }: Props) => {
       </ScrollView>
     </SafeAreaView>
   );
+};
+
+const getAccentLabel = (
+  option: AccentColor,
+  t: (key: "settings.accentIndigo" | "settings.accentBlue" | "settings.accentTeal" | "settings.accentGreen" | "settings.accentPurple" | "settings.accentOrange") => string,
+) => {
+  switch (option) {
+    case "indigo":
+      return t("settings.accentIndigo");
+    case "blue":
+      return t("settings.accentBlue");
+    case "teal":
+      return t("settings.accentTeal");
+    case "green":
+      return t("settings.accentGreen");
+    case "purple":
+      return t("settings.accentPurple");
+    case "orange":
+      return t("settings.accentOrange");
+  }
 };
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
@@ -237,6 +316,42 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     optionTextActive: {
       color: colors.accent,
+    },
+    accentGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    accentOption: {
+      width: "30%",
+      minWidth: 92,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      backgroundColor: colors.surfaceSoft,
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    accentOptionActive: {
+      backgroundColor: colors.accentSoft,
+    },
+    accentSwatch: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    accentSwatchInner: {
+      width: 16,
+      height: 16,
+      borderRadius: radius.pill,
+    },
+    accentOptionLabel: {
+      color: colors.textPrimary,
+      textTransform: "capitalize",
     },
     legalLinks: {
       gap: spacing.md,

@@ -16,6 +16,7 @@ import { SettingsScreen } from "@/screens/SettingsScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
 import { SubscriptionDetailsScreen } from "@/screens/SubscriptionDetailsScreen";
 import { SubscriptionFormScreen } from "@/screens/SubscriptionFormScreen";
+import { SubscriptionHistoryScreen } from "@/screens/SubscriptionHistoryScreen";
 
 import { RootStackParamList, RootTabParamList } from "./types";
 
@@ -149,6 +150,13 @@ export const AppNavigator = () => {
           component={SubscriptionDetailsScreen}
           options={{
             title: t("common.details"),
+          }}
+        />
+        <Stack.Screen
+          name="SubscriptionHistory"
+          component={SubscriptionHistoryScreen}
+          options={{
+            title: language === "de" ? "Historie" : "History",
           }}
         />
         <Stack.Screen

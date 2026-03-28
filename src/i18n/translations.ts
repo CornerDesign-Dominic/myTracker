@@ -13,6 +13,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       stats: "Statistik",
       settings: "Einstellungen",
       details: "Details",
+      history: "Historie",
       save: "Speichern",
       cancel: "Abbrechen",
       search: "Suche",
@@ -35,12 +36,19 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       language: "Sprache",
       currency: "Währung",
       theme: "Theme",
+      accentColor: "Akzentfarbe",
       languageDe: "DE",
       languageEn: "EN",
       currencyEur: "EUR",
       currencyDollar: "Dollar",
       themeDark: "Dark",
       themeLight: "Light",
+      accentIndigo: "Indigo",
+      accentBlue: "Blau",
+      accentTeal: "Teal",
+      accentGreen: "GrÃ¼n",
+      accentPurple: "Lila",
+      accentOrange: "Orange",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -101,6 +109,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       createdAt: "Erstellt",
       updatedAt: "Aktualisiert",
       editAction: "Abo bearbeiten",
+      historyHint: "Alle Ereignisse chronologisch ansehen",
       validationRequired: "Name und Kategorie sind Pflichtfelder.",
       validationAmount: "Bitte einen gültigen Betrag angeben.",
       validationNextPayment: "Bitte ein gültiges nächstes Zahlungsdatum im Format JJJJ-MM-TT angeben.",
@@ -124,6 +133,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       stats: "Statistics",
       settings: "Settings",
       details: "Details",
+      history: "History",
       save: "Save",
       cancel: "Cancel",
       search: "Search",
@@ -146,12 +156,19 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       language: "Language",
       currency: "Currency",
       theme: "Theme",
+      accentColor: "Accent color",
       languageDe: "DE",
       languageEn: "EN",
       currencyEur: "EUR",
       currencyDollar: "Dollar",
       themeDark: "Dark",
       themeLight: "Light",
+      accentIndigo: "Indigo",
+      accentBlue: "Blue",
+      accentTeal: "Teal",
+      accentGreen: "Green",
+      accentPurple: "Purple",
+      accentOrange: "Orange",
     },
     home: {
       monthPaymentSingular: "payment",
@@ -212,6 +229,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       createdAt: "Created",
       updatedAt: "Updated",
       editAction: "Edit subscription",
+      historyHint: "View all events in chronological order",
       validationRequired: "Name and category are required.",
       validationAmount: "Please enter a valid amount.",
       validationNextPayment: "Please enter a valid next payment date in the format YYYY-MM-DD.",
@@ -236,6 +254,7 @@ export type TranslationKey =
   | "common.stats"
   | "common.settings"
   | "common.details"
+  | "common.history"
   | "common.save"
   | "common.cancel"
   | "common.search"
@@ -252,12 +271,19 @@ export type TranslationKey =
   | "settings.language"
   | "settings.currency"
   | "settings.theme"
+  | "settings.accentColor"
   | "settings.languageDe"
   | "settings.languageEn"
   | "settings.currencyEur"
   | "settings.currencyDollar"
   | "settings.themeDark"
   | "settings.themeLight"
+  | "settings.accentIndigo"
+  | "settings.accentBlue"
+  | "settings.accentTeal"
+  | "settings.accentGreen"
+  | "settings.accentPurple"
+  | "settings.accentOrange"
   | "home.monthPaymentSingular"
   | "home.monthPaymentPlural"
   | "home.emptyTitle"
@@ -310,6 +336,7 @@ export type TranslationKey =
   | "subscription.createdAt"
   | "subscription.updatedAt"
   | "subscription.editAction"
+  | "subscription.historyHint"
   | "subscription.validationRequired"
   | "subscription.validationAmount"
   | "subscription.validationNextPayment"

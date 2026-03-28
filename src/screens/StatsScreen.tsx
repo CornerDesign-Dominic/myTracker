@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import {
   filterSkippedHistoryEventsByRange,
   getTotalSavedAmount,
@@ -419,11 +420,18 @@ export const StatsScreen = () => {
                     index < topSubscriptions.length - 1 ? styles.topDivider : null,
                   ]}
                 >
-                  <View style={styles.topCopy}>
-                    <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
-                    <Text style={[typography.secondary, styles.topMeta]}>
-                      {subscription.category}
-                    </Text>
+                  <View style={styles.topMain}>
+                    <SubscriptionAvatar
+                      name={subscription.name}
+                      category={subscription.category}
+                      size={40}
+                    />
+                    <View style={styles.topCopy}>
+                      <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
+                      <Text style={[typography.secondary, styles.topMeta]}>
+                        {subscription.category}
+                      </Text>
+                    </View>
                   </View>
                   <Text style={[typography.body, styles.topValue]}>
                     {formatCurrency(subscription.amount, currency)}
@@ -649,6 +657,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       gap: spacing.md,
       paddingVertical: spacing.sm,
+    },
+    topMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
     },
     topDivider: {
       borderBottomWidth: 1,

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -82,13 +83,15 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
                           {entry.subtitle}
                         </Text>
                       ) : null}
-                      {entry.canEdit ? (
-                        <Text style={[typography.meta, styles.historyMeta]}>
-                          {language === "de" ? "Zum Bearbeiten öffnen" : "Tap to edit"}
-                        </Text>
-                      ) : null}
                     </View>
                     <View style={styles.historyMetaBlock}>
+                      {entry.canEdit ? (
+                        <Ionicons
+                          name="pencil-outline"
+                          size={16}
+                          color={colors.textSecondary}
+                        />
+                      ) : null}
                       {entry.amountLabel ? (
                         <Text style={[typography.body, styles.historyAmount]}>
                           {entry.amountLabel}
@@ -167,9 +170,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       fontSize: 22,
       lineHeight: 22,
-    },
-    historyMeta: {
-      color: colors.textMuted,
     },
     historyMetaBlock: {
       alignItems: "flex-end",

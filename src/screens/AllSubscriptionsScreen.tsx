@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -117,13 +118,19 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                   }
                 >
                   <View style={styles.rowTop}>
-                    <View style={styles.rowTitleBlock}>
-                      <Text style={[typography.body, styles.subscriptionName]}>
-                        {subscription.name}
-                      </Text>
-                      <Text style={[typography.secondary, styles.subscriptionCategory]}>
-                        {subscription.category}
-                      </Text>
+                    <View style={styles.rowMain}>
+                      <SubscriptionAvatar
+                        name={subscription.name}
+                        category={subscription.category}
+                      />
+                      <View style={styles.rowTitleBlock}>
+                        <Text style={[typography.body, styles.subscriptionName]}>
+                          {subscription.name}
+                        </Text>
+                        <Text style={[typography.secondary, styles.subscriptionCategory]}>
+                          {subscription.category}
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.statusBadge}>
                       <Text style={[typography.meta, styles.statusText]}>
@@ -240,6 +247,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
+      gap: spacing.md,
+    },
+    rowMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
       gap: spacing.md,
     },
     rowTitleBlock: {

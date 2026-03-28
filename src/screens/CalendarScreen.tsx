@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -283,10 +284,17 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
                   }
                 >
                   <View style={styles.dueRowLeft}>
-                    <Text style={[typography.body, styles.dueName]}>{subscription.name}</Text>
-                    <Text style={[typography.secondary, styles.dueMeta]}>
-                      {subscription.category}
-                    </Text>
+                    <SubscriptionAvatar
+                      name={subscription.name}
+                      category={subscription.category}
+                      size={40}
+                    />
+                    <View style={styles.dueRowCopy}>
+                      <Text style={[typography.body, styles.dueName]}>{subscription.name}</Text>
+                      <Text style={[typography.secondary, styles.dueMeta]}>
+                        {subscription.category}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.dueRowRight}>
                     <Text style={[typography.body, styles.dueAmount]}>
@@ -455,6 +463,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderBottomColor: colors.border,
     },
     dueRowLeft: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    dueRowCopy: {
       flex: 1,
       gap: spacing.xxs,
     },

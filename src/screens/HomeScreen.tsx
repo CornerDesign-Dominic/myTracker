@@ -23,7 +23,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const { subscriptions, updateSubscription, errorMessage, isLoading } = useSubscriptions();
 
   const visibleSubscriptions = useMemo(
-    () => subscriptions.filter((subscription) => subscription.status !== "cancelled"),
+    () => subscriptions.filter((subscription) => subscription.status === "active"),
     [subscriptions],
   );
 
@@ -145,6 +145,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             <SubscriptionCard
               key={subscription.id}
               subscription={subscription}
+              showStatus={false}
               onPress={() =>
                 navigation.navigate("SubscriptionDetails", {
                   subscriptionId: subscription.id,

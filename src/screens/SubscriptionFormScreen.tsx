@@ -16,11 +16,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { billingCycleOptions, statusOptions } from "@/constants/options";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useStoredCategories } from "@/hooks/useStoredCategories";
+import { useStoredSubscriptionTemplates } from "@/hooks/useStoredSubscriptionTemplates";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
 import {
@@ -105,6 +107,37 @@ const DEFAULT_CATEGORIES = {
     "Fitness",
     "Gaming",
     "Software",
+  ],
+} as const;
+
+const DEFAULT_SUBSCRIPTION_TEMPLATES = {
+  de: [
+    { name: "Netflix", category: "Unterhaltung" },
+    { name: "Spotify", category: "Musik" },
+    { name: "Amazon Prime", category: "Unterhaltung" },
+    { name: "Disney+", category: "Unterhaltung" },
+    { name: "YouTube Premium", category: "Video" },
+    { name: "Apple Music", category: "Musik" },
+    { name: "iCloud", category: "Cloud" },
+    { name: "Adobe Creative Cloud", category: "Software" },
+    { name: "Dropbox", category: "Cloud" },
+    { name: "Notion", category: "Produktivität" },
+    { name: "Canva", category: "Produktivität" },
+    { name: "ChatGPT", category: "Software" },
+  ],
+  en: [
+    { name: "Netflix", category: "Entertainment" },
+    { name: "Spotify", category: "Music" },
+    { name: "Amazon Prime", category: "Entertainment" },
+    { name: "Disney+", category: "Entertainment" },
+    { name: "YouTube Premium", category: "Video" },
+    { name: "Apple Music", category: "Music" },
+    { name: "iCloud", category: "Cloud" },
+    { name: "Adobe Creative Cloud", category: "Software" },
+    { name: "Dropbox", category: "Cloud" },
+    { name: "Notion", category: "Productivity" },
+    { name: "Canva", category: "Productivity" },
+    { name: "ChatGPT", category: "Software" },
   ],
 } as const;
 
@@ -201,8 +234,14 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
   const defaultCategories = useMemo(() => DEFAULT_CATEGORIES[language], [language]);
+  const defaultSubscriptionTemplates = useMemo(
+    () => DEFAULT_SUBSCRIPTION_TEMPLATES[language],
+    [language],
+  );
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
   const { addCategory, getSuggestions } = useStoredCategories(defaultCategories);
+  const { addTemplate, getSuggestions: getSubscriptionSuggestions } =
+    useStoredSubscriptionTemplates(defaultSubscriptionTemplates);
   const isEditing = Boolean(route.params?.subscriptionId);
   const existingSubscription = useMemo(
     () => subscriptions.find((subscription) => subscription.id === route.params?.subscriptionId),
@@ -231,6 +270,23 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
     return match ?? null;
   }, [activeField, draftText, getSuggestions]);
+
+  const subscriptionSuggestion = useMemo(() => {
+    if (activeField !== "name") {
+      return null;
+    }
+
+    const query = draftText.trim();
+    if (!query) {
+      return null;
+    }
+
+    const match = getSubscriptionSuggestions(query).find(
+      (template) => template.name.trim().toLocaleLowerCase() !== query.toLocaleLowerCase(),
+    );
+
+    return match ?? null;
+  }, [activeField, draftText, getSubscriptionSuggestions]);
 
   useEffect(() => {
     if (!existingSubscription) {
@@ -299,6 +355,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const saveActiveField = () => {
     if (activeField === "name" || activeField === "category" || activeField === "notes") {
+      if (activeField === "name" && subscriptionSuggestion) {
+        // keep explicit user text; template application only happens on tap
+      }
       updateField(activeField, draftText);
       closeSheet();
       return;
@@ -340,6 +399,10 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     }
 
     await addCategory(payload.category);
+    await addTemplate({
+      name: payload.name,
+      category: payload.category,
+    });
 
     navigation.goBack();
   };
@@ -427,6 +490,55 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             {t("subscription.suggestion")}
           </Text>
           <Text style={[typography.body, styles.singleSuggestionValue]}>{categorySuggestion}</Text>
+        </Pressable>
+      ) : null}
+    </EditorSheet>
+  );
+
+  const renderNameSheet = () => (
+    <EditorSheet
+      visible={activeField === "name"}
+      title={t("subscription.name")}
+      onClose={closeSheet}
+      onConfirm={saveActiveField}
+      confirmLabel={t("common.save")}
+      contentStyle={styles.categorySheetContent}
+    >
+      <TextInput
+        value={draftText}
+        onChangeText={setDraftText}
+        placeholderTextColor={colors.textMuted}
+        autoFocus
+        style={[inputs.input, styles.sheetInput]}
+      />
+      {subscriptionSuggestion ? (
+        <Pressable
+          style={[surfaces.subtlePanel, styles.singleSuggestionRow]}
+          onPress={() => {
+            setDraftText(subscriptionSuggestion.name);
+            if (!formState.category.trim()) {
+              updateField("category", subscriptionSuggestion.category);
+            }
+          }}
+        >
+          <View style={styles.templateSuggestionMain}>
+            <SubscriptionAvatar
+              name={subscriptionSuggestion.name}
+              category={subscriptionSuggestion.category}
+              size={38}
+            />
+            <View style={styles.templateSuggestionCopy}>
+              <Text style={[typography.secondary, styles.singleSuggestionLabel]}>
+                {language === "de" ? "Vorlage" : "Template"}
+              </Text>
+              <Text style={[typography.body, styles.singleSuggestionValue]}>
+                {subscriptionSuggestion.name}
+              </Text>
+              <Text style={[typography.meta, styles.templateSuggestionMeta]}>
+                {subscriptionSuggestion.category}
+              </Text>
+            </View>
+          </View>
         </Pressable>
       ) : null}
     </EditorSheet>
@@ -550,7 +662,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         </View>
       </ScrollView>
 
-      {activeField === "name" ? renderTextSheet(t("subscription.name")) : null}
+      {activeField === "name" ? renderNameSheet() : null}
       {activeField === "category" ? renderCategorySheet() : null}
       {activeField === "notes" ? renderTextSheet(t("subscription.notes"), true) : null}
 
@@ -797,10 +909,23 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingVertical: spacing.sm,
       gap: spacing.xxs,
     },
+    templateSuggestionMain: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    templateSuggestionCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
     singleSuggestionLabel: {
       color: colors.textMuted,
     },
     singleSuggestionValue: {
       color: colors.textPrimary,
+    },
+    templateSuggestionMeta: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
     },
   });

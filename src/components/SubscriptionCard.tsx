@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useI18n } from "@/hooks/useI18n";
 import { createSurfaceStyles, radius, spacing } from "@/theme";
@@ -12,11 +13,13 @@ import { formatDate } from "@/utils/date";
 interface SubscriptionCardProps {
   subscription: Subscription;
   onPress?: () => void;
+  showStatus?: boolean;
 }
 
 export const SubscriptionCard = ({
   subscription,
   onPress,
+  showStatus = true,
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -34,15 +37,23 @@ export const SubscriptionCard = ({
     <View style={[surfaces.panel, styles.card]}>
       <Pressable onPress={onPress} style={styles.contentArea}>
         <View style={styles.topRow}>
-          <View style={styles.titleBlock}>
-            <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
-            <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
+          <View style={styles.headerMain}>
+            <SubscriptionAvatar
+              name={subscription.name}
+              category={subscription.category}
+            />
+            <View style={styles.titleBlock}>
+              <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
+              <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
+            </View>
           </View>
-          <View style={[styles.badge, { backgroundColor: `${status.color}20` }]}>
-            <Text style={[typography.meta, styles.badgeText, { color: status.color }]}>
-              {status.label}
-            </Text>
-          </View>
+          {showStatus ? (
+            <View style={[styles.badge, { backgroundColor: `${status.color}20` }]}>
+              <Text style={[typography.meta, styles.badgeText, { color: status.color }]}>
+                {status.label}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.metaGrid}>
@@ -90,6 +101,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: spacing.md,
+  },
+  headerMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
   titleBlock: {

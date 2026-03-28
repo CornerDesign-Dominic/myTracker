@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -180,7 +181,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
           onChange={setTheme}
         />
         <View style={[surfaces.panel, styles.groupCard]}>
-          <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
+            <View style={styles.lockBadge}>
+              <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
+            </View>
+          </View>
           <View style={styles.accentGrid}>
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
@@ -219,7 +225,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                       isActive ? styles.optionTextActive : null,
                     ]}
                   >
-                    {getAccentLabel(option, t)}
+                    {getAccentLabel(option, locale)}
                   </Text>
                 </Pressable>
               );
@@ -245,23 +251,65 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
 const getAccentLabel = (
   option: AccentColor,
-  t: (key: "settings.accentIndigo" | "settings.accentBlue" | "settings.accentTeal" | "settings.accentGreen" | "settings.accentPurple" | "settings.accentOrange") => string,
-) => {
-  switch (option) {
-    case "indigo":
-      return t("settings.accentIndigo");
-    case "blue":
-      return t("settings.accentBlue");
-    case "teal":
-      return t("settings.accentTeal");
-    case "green":
-      return t("settings.accentGreen");
-    case "purple":
-      return t("settings.accentPurple");
-    case "orange":
-      return t("settings.accentOrange");
-  }
-};
+  language: "de" | "en",
+) =>
+  (
+    language === "de"
+      ? {
+          indigo: "Indigo",
+          slate: "Slate",
+          blue: "Blau",
+          sage: "Sage",
+          steel: "Steel",
+          teal: "Teal",
+          mint: "Mint",
+          olive: "Olive",
+          forest: "Forest",
+          sand: "Sand",
+          clay: "Clay",
+          amber: "Amber",
+          coral: "Koralle",
+          terracotta: "Terrakotta",
+          peach: "Pfirsich",
+          rose: "Rose",
+          ruby: "Rubin",
+          green: "Gruen",
+          purple: "Lila",
+          orange: "Orange",
+          violet: "Violett",
+          lavender: "Lavendel",
+          cyan: "Cyan",
+          gold: "Gold",
+          graphite: "Graphit",
+        }
+      : {
+          indigo: "Indigo",
+          slate: "Slate",
+          blue: "Blue",
+          sage: "Sage",
+          steel: "Steel",
+          teal: "Teal",
+          mint: "Mint",
+          olive: "Olive",
+          forest: "Forest",
+          sand: "Sand",
+          clay: "Clay",
+          amber: "Amber",
+          coral: "Coral",
+          terracotta: "Terracotta",
+          peach: "Peach",
+          rose: "Rose",
+          ruby: "Ruby",
+          green: "Green",
+          purple: "Purple",
+          orange: "Orange",
+          violet: "Violet",
+          lavender: "Lavender",
+          cyan: "Cyan",
+          gold: "Gold",
+          graphite: "Graphite",
+        }
+  )[option];
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
@@ -282,6 +330,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     groupTitle: {
       color: colors.textPrimary,
+    },
+    cardHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
     },
     optionRow: {
       flexDirection: "row",
@@ -320,12 +374,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accentGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: spacing.sm,
+      justifyContent: "space-between",
+      rowGap: spacing.sm,
     },
     accentOption: {
-      width: "30%",
-      minWidth: 92,
-      paddingHorizontal: spacing.sm,
+      width: "18%",
+      minWidth: 0,
+      paddingHorizontal: spacing.xs,
       paddingVertical: spacing.sm,
       borderRadius: radius.md,
       borderWidth: 1,
@@ -336,22 +391,35 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accentOptionActive: {
       backgroundColor: colors.accentSoft,
     },
+    lockBadge: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     accentSwatch: {
-      width: 34,
-      height: 34,
+      width: 28,
+      height: 28,
       borderRadius: radius.pill,
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
     },
     accentSwatchInner: {
-      width: 16,
-      height: 16,
+      width: 14,
+      height: 14,
       borderRadius: radius.pill,
     },
     accentOptionLabel: {
       color: colors.textPrimary,
       textTransform: "capitalize",
+      fontSize: 11,
+      lineHeight: 14,
+      textAlign: "center",
     },
     legalLinks: {
       gap: spacing.md,

@@ -10,12 +10,11 @@ import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 import {
-  getScheduledDueDatesUntil,
-  getScheduledHistoryEventId,
-  isSubscriptionActiveOnDate,
   parseCalendarDate,
   toCalendarDateString,
 } from "./schedule";
+import { getMissingPaymentHistoryEvents } from "./paymentSync";
+export { getMissingPaymentHistoryEvents } from "./paymentSync";
 
 const getEventDate = (event: Pick<SubscriptionHistoryEvent, "effectiveDate" | "occurredAt" | "createdAt">) =>
   event.effectiveDate ?? event.occurredAt ?? event.createdAt;
@@ -113,53 +112,6 @@ export const buildChangeEvents = (
   }
 
   return events;
-};
-
-export const getMissingPaymentHistoryEvents = (
-  subscription: SubscriptionHistoryAware,
-  history: SubscriptionHistoryEvent[],
-  untilDate = new Date(),
-) => {
-  const existingScheduledEventIds = new Set(
-    history
-      .filter(
-        (event) =>
-          event.type === "payment_booked" || event.type === "payment_skipped_inactive",
-      )
-      .map((event) => event.id),
-  );
-
-  return getScheduledDueDatesUntil(subscription, untilDate).flatMap((dueDate) => {
-    const eventType = isSubscriptionActiveOnDate(subscription, history, dueDate)
-      ? "payment_booked"
-      : "payment_skipped_inactive";
-    const eventId = getScheduledHistoryEventId(eventType, dueDate);
-
-    if (existingScheduledEventIds.has(eventId)) {
-      return [];
-    }
-
-    return [
-      {
-        id: eventId,
-        subscriptionId: subscription.id,
-        type: eventType,
-        occurredAt: dueDate,
-        effectiveDate: dueDate,
-        amount: subscription.amount,
-        dueDate,
-        bookedAt: eventType === "payment_booked" ? dueDate : undefined,
-        reason: eventType === "payment_skipped_inactive" ? "inactive" : undefined,
-        billingCycleSnapshot: subscription.billingCycle,
-        snapshot: {
-          amount: subscription.amount,
-          billingCycle: subscription.billingCycle,
-          nextPaymentDate: subscription.nextPaymentDate,
-          status: subscription.status,
-        },
-      } satisfies HistoryEventInput,
-    ];
-  });
 };
 
 export const getHistorySyncSummary = (

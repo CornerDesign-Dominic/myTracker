@@ -21,6 +21,68 @@ const DEVELOPMENT_MONTHS = 6;
 const CHART_HEIGHT = 180;
 const Y_AXIS_STEPS = 4;
 
+const getChartScaleMax = (value: number) => {
+  if (value <= 0) {
+    return 300;
+  }
+
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+
+  if (normalized <= 1) {
+    return 1 * magnitude;
+  }
+
+  if (normalized <= 1.5) {
+    return 1.5 * magnitude;
+  }
+
+  if (normalized <= 2) {
+    return 2 * magnitude;
+  }
+
+  if (normalized <= 2.5) {
+    return 2.5 * magnitude;
+  }
+
+  if (normalized <= 5) {
+    return 5 * magnitude;
+  }
+
+  if (normalized <= 7.5) {
+    return 7.5 * magnitude;
+  }
+
+  return 10 * magnitude;
+};
+
+const getAxisRoundingUnit = (value: number) => {
+  if (value >= 5000) {
+    return 500;
+  }
+
+  if (value >= 1000) {
+    return 100;
+  }
+
+  if (value >= 500) {
+    return 50;
+  }
+
+  return 10;
+};
+
+const roundToUnit = (value: number, unit: number) =>
+  Math.round(value / unit) * unit;
+
+const formatAxisCurrency = (value: number, currency: "EUR" | "Dollar", language: "de" | "en") =>
+  new Intl.NumberFormat(language === "de" ? "de-DE" : "en-US", {
+    style: "currency",
+    currency: currency === "Dollar" ? "USD" : "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export const StatsScreen = () => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -50,13 +112,15 @@ export const StatsScreen = () => {
     () => buildCostDevelopmentSeries(subscriptions, DEVELOPMENT_MONTHS),
     [subscriptions],
   );
-  const maxDevelopmentValue = Math.max(
+  const rawMaxDevelopmentValue = Math.max(
     ...developmentSeries.map((item) => item.totalAmount),
     1,
   );
+  const chartScaleMax = getChartScaleMax(rawMaxDevelopmentValue);
+  const axisRoundingUnit = getAxisRoundingUnit(chartScaleMax);
   const yAxisValues = Array.from({ length: Y_AXIS_STEPS }, (_, index) => {
     const ratio = (Y_AXIS_STEPS - index - 1) / (Y_AXIS_STEPS - 1);
-    return maxDevelopmentValue * ratio;
+    return roundToUnit(chartScaleMax * ratio, axisRoundingUnit);
   });
 
   const billingStructure = useMemo(
@@ -182,7 +246,7 @@ export const StatsScreen = () => {
               <View style={styles.yAxis}>
                 {yAxisValues.map((value, index) => (
                   <Text key={index} style={[typography.meta, styles.axisLabel]}>
-                    {formatCurrency(value, currency)}
+                    {formatAxisCurrency(value, currency, language)}
                   </Text>
                 ))}
               </View>
@@ -202,7 +266,7 @@ export const StatsScreen = () => {
                           style={[
                             styles.bar,
                             {
-                              height: `${Math.max((item.totalAmount / maxDevelopmentValue) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
+                              height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
                             },
                           ]}
                         />
@@ -368,7 +432,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     axisLabel: {
       color: colors.textSecondary,
-      width: 56,
+      width: 68,
     },
     chartArea: {
       flex: 1,

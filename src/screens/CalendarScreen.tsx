@@ -16,6 +16,8 @@ const WEEKDAY_LABELS = {
   de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
   en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 } as const;
+const DAY_DOT_SIZE = 6;
+const DAY_DOT_CONTAINER_SIZE = 10;
 
 type CalendarDay = {
   date: Date;
@@ -200,13 +202,16 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
                     >
                       {calendarDay.day}
                     </Text>
-                    <View
-                      style={[
-                        styles.dayDotSlot,
-                        hasDuePayment ? styles.dueDotSlot : null,
-                        hasDuePayment && isSelected ? styles.selectedDueDotSlot : null,
-                      ]}
-                    />
+                    <View style={styles.dayDotSlot}>
+                      {hasDuePayment ? (
+                        <View
+                          style={[
+                            styles.dayDot,
+                            isSelected ? styles.selectedDueDot : styles.dueDot,
+                          ]}
+                        />
+                      ) : null}
+                    </View>
                   </Pressable>
                 </View>
               );
@@ -265,24 +270,29 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: "100%",
     },
     pageTitle: {
+      flex: 1,
       color: colors.textPrimary,
+      fontSize: 24,
+      lineHeight: 30,
     },
     calendarCard: {
       gap: spacing.md,
     },
     titleRow: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
-      gap: spacing.md,
+      justifyContent: "space-between",
+      gap: 16,
+      minHeight: 40,
     },
     todayButton: {
-      minHeight: 34,
+      minHeight: 40,
       paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xxs,
+      paddingVertical: 0,
       borderRadius: radius.pill,
       alignItems: "center",
       justifyContent: "center",
+      marginRight: -spacing.xxs,
     },
     todayButtonText: {
       color: colors.accent,
@@ -365,16 +375,22 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
     },
     dayDotSlot: {
-      width: 6,
-      height: 6,
-      borderRadius: radius.pill,
-      backgroundColor: "transparent",
+      width: DAY_DOT_CONTAINER_SIZE,
+      height: DAY_DOT_CONTAINER_SIZE,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    selectedDueDotSlot: {
-      backgroundColor: colors.accentSoft,
+    dayDot: {
+      width: DAY_DOT_SIZE,
+      height: DAY_DOT_SIZE,
+      borderRadius: DAY_DOT_SIZE / 2,
     },
-    dueDotSlot: {
+    dueDot: {
       backgroundColor: colors.accent,
+    },
+    selectedDueDot: {
+      backgroundColor: colors.accent,
+      opacity: 0.9,
     },
     dueCard: {
       gap: spacing.md,

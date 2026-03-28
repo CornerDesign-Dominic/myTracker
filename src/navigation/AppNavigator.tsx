@@ -36,6 +36,7 @@ const TabsNavigator = () => {
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarShowLabel: false,
         tabBarLabelStyle: {
           ...typography.meta,
           marginTop: 2,

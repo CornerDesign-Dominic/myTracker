@@ -165,13 +165,17 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     pageTitle: {
+      flex: 1,
       color: colors.textPrimary,
+      fontSize: 24,
+      lineHeight: 30,
     },
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: spacing.md,
+      gap: 16,
+      minHeight: 40,
     },
     contentWithTabBar: {
       minHeight: "100%",
@@ -199,6 +203,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "center",
       padding: 0,
+      marginRight: -spacing.xxs,
     },
     addButtonText: {
       color: colors.accent,

@@ -31,6 +31,11 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+    const todayKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
 
     const currentMonthSubscriptions = subscriptions.filter((subscription) => {
       if (subscription.status !== "active") {
@@ -53,13 +58,19 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
       monthLabel: new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
         month: "long",
       }).format(now),
+      subscriptionCount: currentMonthSubscriptions.length,
       totalAmount: currentMonthSubscriptions.reduce(
         (sum, subscription) => sum + subscription.amount,
         0,
       ),
-      paymentCount: currentMonthSubscriptions.length,
+      dueAmount: currentMonthSubscriptions
+        .filter((subscription) => subscription.nextPaymentDate >= todayKey)
+        .reduce((sum, subscription) => sum + subscription.amount, 0),
+      paidAmount: currentMonthSubscriptions
+        .filter((subscription) => subscription.nextPaymentDate < todayKey)
+        .reduce((sum, subscription) => sum + subscription.amount, 0),
     };
-  }, [subscriptions]);
+  }, [language, subscriptions]);
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -77,15 +88,41 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
-          <Text style={[typography.metric, styles.summaryAmount]}>
-            {formatCurrency(monthlySummary.totalAmount, currency)}
-          </Text>
-          <Text style={[typography.secondary, styles.summaryCount]}>
-            {monthlySummary.paymentCount}{" "}
-            {monthlySummary.paymentCount === 1
-              ? t("home.monthPaymentSingular")
-              : t("home.monthPaymentPlural")}
-          </Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryPrimaryBlock}>
+              <Text style={[typography.meta, styles.summaryLabel]}>
+                {language === "de" ? "Gesamt" : "Total"}
+              </Text>
+              <Text style={[typography.metric, styles.summaryAmount]}>
+                {formatCurrency(monthlySummary.totalAmount, currency)}
+              </Text>
+              <Text style={[typography.secondary, styles.summaryCount]}>
+                {monthlySummary.subscriptionCount}{" "}
+                {monthlySummary.subscriptionCount === 1
+                  ? t("home.monthPaymentSingular")
+                  : t("home.monthPaymentPlural")}
+              </Text>
+            </View>
+
+            <View style={styles.summarySecondaryBlock}>
+              <View style={styles.summarySecondaryItem}>
+                <Text style={[typography.meta, styles.summaryLabel]}>
+                  {language === "de" ? "Noch fällig" : "Due"}
+                </Text>
+                <Text style={[typography.body, styles.summaryDueValue]}>
+                  {formatCurrency(monthlySummary.dueAmount, currency)}
+                </Text>
+              </View>
+              <View style={styles.summarySecondaryItem}>
+                <Text style={[typography.meta, styles.summaryLabel]}>
+                  {language === "de" ? "Schon bezahlt" : "Paid"}
+                </Text>
+                <Text style={[typography.body, styles.summarySecondaryValue]}>
+                  {formatCurrency(monthlySummary.paidAmount, currency)}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {errorMessage ? (
@@ -128,6 +165,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "space-between",
       gap: 16,
+      minHeight: 40,
     },
     pageTitle: {
       flex: 1,
@@ -136,11 +174,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 30,
     },
     settingsTrigger: {
-      padding: spacing.xs,
+      width: 40,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
       marginRight: -spacing.xxs,
     },
     summaryCard: {
-      gap: 8,
+      gap: spacing.sm,
     },
     summaryMonth: {
       color: colors.textSecondary,
@@ -148,11 +189,43 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       fontSize: 22,
       lineHeight: 28,
     },
+    summaryRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    summaryPrimaryBlock: {
+      flex: 1,
+      gap: spacing.xxs,
+      minWidth: 0,
+    },
+    summarySecondaryBlock: {
+      minWidth: 108,
+      gap: spacing.xs,
+      paddingTop: 2,
+    },
+    summarySecondaryItem: {
+      gap: 2,
+    },
+    summaryLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
     summaryAmount: {
       color: colors.textPrimary,
+      fontSize: 28,
+      lineHeight: 34,
+      flexShrink: 1,
     },
     summaryCount: {
       color: colors.textSecondary,
+    },
+    summarySecondaryValue: {
+      color: colors.textPrimary,
+    },
+    summaryDueValue: {
+      color: colors.accent,
     },
     list: {
       gap: 20,

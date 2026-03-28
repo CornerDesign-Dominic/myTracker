@@ -9,6 +9,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
+import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { RegisterScreen } from "@/screens/RegisterScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
@@ -157,6 +158,50 @@ export const AppNavigator = () => {
             title: t("common.settings"),
           }}
         />
+        <Stack.Screen
+          name="Terms"
+          options={{
+            title: language === "de" ? "AGB" : "Terms",
+          }}
+        >
+          {() => (
+            <LegalPlaceholderScreen
+              message={language === "de" ? "Hier kommen die AGB hin." : "Terms will go here."}
+            />
+          )}
+        </Stack.Screen>
+        <Stack.Screen
+          name="Privacy"
+          options={{
+            title: language === "de" ? "Datenschutz" : "Privacy",
+          }}
+        >
+          {() => (
+            <LegalPlaceholderScreen
+              message={
+                language === "de"
+                  ? "Hier kommt der Datenschutz hin."
+                  : "Privacy information will go here."
+              }
+            />
+          )}
+        </Stack.Screen>
+        <Stack.Screen
+          name="Imprint"
+          options={{
+            title: language === "de" ? "Impressum" : "Imprint",
+          }}
+        >
+          {() => (
+            <LegalPlaceholderScreen
+              message={
+                language === "de"
+                  ? "Hier kommt das Impressum hin."
+                  : "Imprint information will go here."
+              }
+            />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );

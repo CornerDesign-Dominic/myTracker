@@ -9,6 +9,9 @@ export type RootStackParamList = {
   SubscriptionForm: { subscriptionId?: string } | undefined;
   SubscriptionDetails: { subscriptionId: string };
   Settings: undefined;
+  Terms: undefined;
+  Privacy: undefined;
+  Imprint: undefined;
 };
 
 export type RootTabParamList = {

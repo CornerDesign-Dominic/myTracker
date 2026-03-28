@@ -75,19 +75,29 @@ export const SettingsScreen = ({ navigation }: Props) => {
     locale === "de"
       ? {
           title: "Konto",
-          anonymous: "Du nutzt die App aktuell anonym.",
-          signedIn: `Angemeldet als ${currentUser?.email ?? "-"}`,
+          anonymous:
+            "Wenn du dich nicht registrierst oder einloggst, koennen deine Daten verloren gehen. Mit einer E-Mail koennen deine Daten einem Nutzer zugeordnet und auf anderen Geraeten wiederhergestellt werden.",
+          signedIn:
+            "Mit deiner E-Mail sind deine Daten deinem Konto zugeordnet und koennen auf anderen Geraeten wiederhergestellt werden.",
           login: "Login",
           register: "Registrieren",
           logout: "Abmelden",
+          terms: "AGB",
+          privacy: "Datenschutz",
+          imprint: "Impressum",
         }
       : {
           title: "Account",
-          anonymous: "You are currently using the app anonymously.",
-          signedIn: `Signed in as ${currentUser?.email ?? "-"}`,
+          anonymous:
+            "If you do not register or sign in, your data may be lost. With an email address, your data can be linked to your account and restored on other devices.",
+          signedIn:
+            "Your data is linked to your account and can be restored on other devices.",
           login: "Login",
           register: "Register",
           logout: "Log out",
+          terms: "Terms",
+          privacy: "Privacy",
+          imprint: "Imprint",
         };
 
   return (
@@ -96,8 +106,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         contentContainerStyle={[layout.content, styles.contentWithTabBar]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[typography.pageTitle, styles.title]}>{t("settings.title")}</Text>
-
         <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{accountCopy.title}</Text>
@@ -159,6 +167,18 @@ export const SettingsScreen = ({ navigation }: Props) => {
           }
           onChange={setTheme}
         />
+
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => navigation.navigate("Terms")}>
+            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.terms}</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate("Privacy")}>
+            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.privacy}</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate("Imprint")}>
+            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.imprint}</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,13 +186,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
-    title: {
-      color: colors.textPrimary,
-      fontSize: 24,
-      lineHeight: 30,
-    },
     contentWithTabBar: {
       minHeight: "100%",
+      paddingTop: 0,
     },
     accountText: {
       color: colors.textSecondary,
@@ -221,5 +237,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     optionTextActive: {
       color: colors.accent,
+    },
+    legalLinks: {
+      gap: spacing.md,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.sm,
+    },
+    legalLink: {
+      color: colors.textSecondary,
     },
   });

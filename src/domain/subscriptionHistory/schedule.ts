@@ -1,19 +1,14 @@
 import { BillingCycle } from "@/types/subscription";
 import { SubscriptionHistoryAware, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 import { formatLocalDateInput, parseLocalDateInput } from "@/utils/date";
+import { getRecurringAnchorDay, shiftRecurringDate } from "@/utils/recurringDates";
 
-const BILLING_MONTHS: Record<BillingCycle, number> = {
-  monthly: 1,
-  quarterly: 3,
-  yearly: 12,
-};
-
-export const addBillingMonths = (value: Date, billingCycle: BillingCycle, amount = 1) =>
-  new Date(
-    value.getFullYear(),
-    value.getMonth() + BILLING_MONTHS[billingCycle] * amount,
-    value.getDate(),
-  );
+export const addBillingMonths = (
+  value: Date,
+  billingCycle: BillingCycle,
+  amount = 1,
+  anchorDay = value.getDate(),
+) => shiftRecurringDate(value, billingCycle, amount, anchorDay);
 
 export const parseCalendarDate = (value?: string | null) => {
   if (!value) {
@@ -51,6 +46,7 @@ export const getScheduledDueDatesUntil = (
   }
 
   let cursor = anchor;
+  const anchorDay = getRecurringAnchorDay(anchor);
   const earliestAllowed = createdAtDate;
 
   while (cursor >= earliestAllowed) {
@@ -59,7 +55,7 @@ export const getScheduledDueDatesUntil = (
       dueDates.push(dueDate);
     }
 
-    cursor = addBillingMonths(cursor, subscription.billingCycle, -1);
+    cursor = addBillingMonths(cursor, subscription.billingCycle, -1, anchorDay);
   }
 
   return dueDates.reverse();

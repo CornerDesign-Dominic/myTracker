@@ -39,6 +39,23 @@ Die automatische Sync-Logik erstellt keine historischen Payment- oder Skipped-Pa
 - Das System bleibt deterministisch, kontrollierbar und nachvollziehbar
 - Automatische History-Sync soll nur sichere, aktuelle oder zukuenftige Termine erfassen
 
+## Monatsend-Logik bei wiederkehrenden Faelligkeiten
+
+Bei monatlichen und quartalsweisen Faelligkeiten gilt ein fester Soll-Tag im Monat.
+
+Wenn dieser Soll-Tag im Zielmonat nicht existiert, wird automatisch der letzte gueltige Tag des Monats verwendet.
+
+Beispiele:
+
+- `31. Januar -> 28./29. Februar`
+- `31. Maerz -> 30. April`
+- `31. Mai -> 30. Juni`
+
+Wichtig:
+
+- Diese Regel gilt fuer die wiederkehrende Fortschreibung von Faelligkeiten.
+- Die Logik verwendet weiter den urspruenglichen Soll-Tag, damit nach einem kurzen Monat wieder korrekt auf spaetere Monatsenden zurueckgesprungen werden kann.
+
 ## Konsequenzen
 
 Historie vor dem heutigen Tag ist nur vorhanden, wenn sie:

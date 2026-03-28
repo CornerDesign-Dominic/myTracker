@@ -1,22 +1,14 @@
 import { BillingCycle, Subscription } from "@/types/subscription";
+import { getRecurringAnchorDay, shiftRecurringDate } from "@/utils/recurringDates";
 
 import { getMonthlyEquivalent } from "./metrics";
 
 export type DevelopmentRange = 6 | 12 | 24 | 36 | 60 | "all";
 
-const BILLING_MONTHS: Record<BillingCycle, number> = {
-  monthly: 1,
-  quarterly: 3,
-  yearly: 12,
-};
-
 const toMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
-
-const addMonths = (date: Date, amount: number) =>
-  new Date(date.getFullYear(), date.getMonth() + amount, date.getDate());
 
 const parseDate = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
@@ -96,8 +88,8 @@ export const buildCostDevelopmentSeries = (
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
   activeSubscriptions.forEach((subscription) => {
-      const step = BILLING_MONTHS[subscription.billingCycle] ?? 1;
       let cursor = parseDate(subscription.nextPaymentDate);
+      const anchorDay = getRecurringAnchorDay(cursor);
 
       while (cursor >= startMonth) {
         const bucket = bucketMap.get(toMonthKey(cursor));
@@ -105,7 +97,7 @@ export const buildCostDevelopmentSeries = (
           bucket.totalAmount += subscription.amount;
         }
 
-        cursor = addMonths(cursor, -step);
+        cursor = shiftRecurringDate(cursor, subscription.billingCycle, -1, anchorDay);
       }
     });
 

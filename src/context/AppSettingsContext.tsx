@@ -15,20 +15,13 @@ import {
   subscribeToUserSettings,
   updateUserSettings,
 } from "@/services/firestore/userFirestore";
+import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type LanguageOption = AppLanguage;
 type CurrencyOption = "EUR" | "Dollar";
 type ThemeOption = "Dark" | "Light";
 
 const STORAGE_KEY = "tracker.app-settings";
-
-const getErrorDetails = (error: unknown) => ({
-  code:
-    error && typeof error === "object" && "code" in error
-      ? String(error.code)
-      : undefined,
-  message: error instanceof Error ? error.message : String(error),
-});
 
 interface AppSettingsContextValue {
   language: LanguageOption;
@@ -119,13 +112,9 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     };
 
     syncInitialSettings().catch((error) => {
-      const details = getErrorDetails(error);
-      console.error("[Settings] ensureSettingsDocument:error", {
+      logFirestoreError("Settings.ensureSettingsDocument", error, {
         userId: currentUser.uid,
         settings: defaults,
-        code: details.code,
-        message: details.message,
-        error,
       });
     });
 
@@ -149,12 +138,8 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         }
       },
       (error) => {
-        const details = getErrorDetails(error);
-        console.error("[Settings] subscribeToUserSettings:error", {
+        logFirestoreError("Settings.subscribeToUserSettings", error, {
           userId: currentUser.uid,
-          code: details.code,
-          message: details.message,
-          error,
         });
       },
     );
@@ -185,21 +170,36 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const setLanguage = (value: LanguageOption) => {
     setLanguageState(value);
     if (currentUser) {
-      updateUserSettings(currentUser.uid, { language: value }).catch(() => undefined);
+      updateUserSettings(currentUser.uid, { language: value }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.language", error, {
+          userId: currentUser.uid,
+          language: value,
+        });
+      });
     }
   };
 
   const setCurrency = (value: CurrencyOption) => {
     setCurrencyState(value);
     if (currentUser) {
-      updateUserSettings(currentUser.uid, { currency: value }).catch(() => undefined);
+      updateUserSettings(currentUser.uid, { currency: value }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.currency", error, {
+          userId: currentUser.uid,
+          currency: value,
+        });
+      });
     }
   };
 
   const setTheme = (value: ThemeOption) => {
     setThemeState(value);
     if (currentUser) {
-      updateUserSettings(currentUser.uid, { theme: value }).catch(() => undefined);
+      updateUserSettings(currentUser.uid, { theme: value }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.theme", error, {
+          userId: currentUser.uid,
+          theme: value,
+        });
+      });
     }
   };
 

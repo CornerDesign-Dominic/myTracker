@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { subscriptionRepository, usingFirebase } from "@/services/subscriptionRepository";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
+import { logFirestoreError } from "@/utils/firestoreDebug";
 import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 
 export const useSubscriptions = () => {
@@ -32,6 +33,9 @@ export const useSubscriptions = () => {
         setErrorMessage(null);
       },
       (error) => {
+        logFirestoreError("useSubscriptions.subscribe", error, {
+          userId: currentUser.uid,
+        });
         setSubscriptions([]);
         setIsLoading(false);
         setErrorMessage(
@@ -53,6 +57,9 @@ export const useSubscriptions = () => {
       setErrorMessage(null);
       await action();
     } catch (error) {
+      logFirestoreError("useSubscriptions.action", error, {
+        userId: currentUser?.uid ?? null,
+      });
       setErrorMessage(
         error instanceof Error ? error.message : "Aktion konnte nicht ausgefuehrt werden.",
       );

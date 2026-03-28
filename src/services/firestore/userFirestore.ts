@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 
 import { firestoreDb } from "@/firebase/config";
+import { logFirestoreError } from "@/utils/firestoreDebug";
 
 export type UserSettingsDocument = {
   language: "de" | "en";
@@ -43,18 +44,26 @@ export const ensureUserDocument = async (params: {
     upgradedAt: Boolean(params.upgradedAt),
   });
 
-  await setDoc(
-    userDocRef(params.userId),
-    {
-      email: params.email,
-      isAnonymous: params.isAnonymous,
-      providerIds: params.providerIds ?? [],
-      ...(params.upgradedAt ? { upgradedAt: serverTimestamp() } : {}),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+  try {
+    await setDoc(
+      userDocRef(params.userId),
+      {
+        email: params.email,
+        isAnonymous: params.isAnonymous,
+        providerIds: params.providerIds ?? [],
+        ...(params.upgradedAt ? { upgradedAt: serverTimestamp() } : {}),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    logFirestoreError("userFirestore.ensureUserDocument", error, {
+      path: `users/${params.userId}`,
+      userId: params.userId,
+    });
+    throw error;
+  }
 
   console.log("[Firestore] setDoc users/{userId}:success", {
     path: `users/${params.userId}`,
@@ -72,15 +81,24 @@ export const ensureSettingsDocument = async (
     settings,
   });
 
-  await setDoc(
-    settingsDocRef(userId),
-    {
-      ...settings,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+  try {
+    await setDoc(
+      settingsDocRef(userId),
+      {
+        ...settings,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    logFirestoreError("userFirestore.ensureSettingsDocument", error, {
+      path: `users/${userId}/settings/app`,
+      userId,
+      settings,
+    });
+    throw error;
+  }
 
   console.log("[Firestore] setDoc users/{userId}/settings/app:success", {
     path: `users/${userId}/settings/app`,
@@ -104,6 +122,10 @@ export const subscribeToUserSettings = (
       callback(snapshot.data() as UserSettingsDocument);
     },
     (error) => {
+      logFirestoreError("userFirestore.subscribeToUserSettings", error, {
+        path: `users/${userId}/settings/app`,
+        userId,
+      });
       onError?.(error);
     },
   );
@@ -113,14 +135,23 @@ export const updateUserSettings = async (
   userId: string,
   settings: Partial<Omit<UserSettingsDocument, "createdAt" | "updatedAt">>,
 ) => {
-  await setDoc(
-    settingsDocRef(userId),
-    {
-      ...settings,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+  try {
+    await setDoc(
+      settingsDocRef(userId),
+      {
+        ...settings,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    logFirestoreError("userFirestore.updateUserSettings", error, {
+      path: `users/${userId}/settings/app`,
+      userId,
+      settings,
+    });
+    throw error;
+  }
 };
 
 export const serializeTimestamp = (value: unknown) => {

@@ -19,6 +19,7 @@ import {
 
 import { firebaseAuth, hasRequiredFirebaseConfig } from "@/firebase/config";
 import { ensureUserDocument } from "@/services/firestore/userFirestore";
+import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type AuthContextValue = {
   currentUser: User | null;
@@ -43,14 +44,6 @@ const ensureAuth = () => {
   return firebaseAuth;
 };
 
-const getErrorDetails = (error: unknown) => ({
-  code:
-    error && typeof error === "object" && "code" in error
-      ? String(error.code)
-      : undefined,
-  message: error instanceof Error ? error.message : String(error),
-});
-
 const syncUserDocument = async (user: User, upgradedAt = false) => {
   if (!hasRequiredFirebaseConfig) {
     return;
@@ -70,13 +63,7 @@ const syncUserDocument = async (user: User, upgradedAt = false) => {
     await ensureUserDocument(payload);
     console.log("[Auth] ensureUserDocument:success", payload);
   } catch (error) {
-    const details = getErrorDetails(error);
-    console.error("[Auth] ensureUserDocument:error", {
-      ...payload,
-      code: details.code,
-      message: details.message,
-      error,
-    });
+    logFirestoreError("Auth.ensureUserDocument", error, payload);
   }
 };
 

@@ -13,6 +13,7 @@ import {
 
 import { firestoreDb } from "@/firebase/config";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
+import { logFirestoreError } from "@/utils/firestoreDebug";
 import { serializeTimestamp } from "./userFirestore";
 
 const ensureFirestore = () => {
@@ -64,18 +65,31 @@ export const subscribeToFirestoreSubscriptions = (
       callback(items);
     },
     (error) => {
+      logFirestoreError("subscriptionFirestore.subscribeToFirestoreSubscriptions", error, {
+        path: `users/${userId}/subscriptions`,
+        userId,
+      });
       onError?.(error);
     },
   );
 };
 
 export const createFirestoreSubscription = async (userId: string, input: SubscriptionInput) => {
-  await addDoc(subscriptionsCollection(userId), {
-    ...input,
-    archivedAt: null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await addDoc(subscriptionsCollection(userId), {
+      ...input,
+      archivedAt: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.createFirestoreSubscription", error, {
+      path: `users/${userId}/subscriptions`,
+      userId,
+      input,
+    });
+    throw error;
+  }
 };
 
 export const updateFirestoreSubscription = async (
@@ -83,15 +97,34 @@ export const updateFirestoreSubscription = async (
   id: string,
   input: Partial<SubscriptionInput>,
 ) => {
-  await updateDoc(subscriptionDoc(userId, id), {
-    ...input,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(subscriptionDoc(userId, id), {
+      ...input,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.updateFirestoreSubscription", error, {
+      path: `users/${userId}/subscriptions/${id}`,
+      userId,
+      subscriptionId: id,
+      input,
+    });
+    throw error;
+  }
 };
 
 export const archiveFirestoreSubscription = async (userId: string, id: string) => {
-  await updateDoc(subscriptionDoc(userId, id), {
-    archivedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await updateDoc(subscriptionDoc(userId, id), {
+      archivedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.archiveFirestoreSubscription", error, {
+      path: `users/${userId}/subscriptions/${id}`,
+      userId,
+      subscriptionId: id,
+    });
+    throw error;
+  }
 };

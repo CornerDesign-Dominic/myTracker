@@ -1,4 +1,4 @@
-import { BillingCycle, Subscription, SubscriptionStatus } from "./subscription";
+import type { BillingCycle, Subscription, SubscriptionStatus } from "./subscription.ts";
 
 export type SubscriptionHistoryEventType =
   | "payment_booked"

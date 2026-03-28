@@ -5,6 +5,10 @@ import {
   getMissingPaymentHistoryEvents,
   sortHistoryNewestFirst,
 } from "@/domain/subscriptionHistory/events";
+import {
+  buildEditablePaymentEventFields,
+  isEditablePaymentEventType,
+} from "@/domain/subscriptionHistory/paymentEvents";
 import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 
 import { seedSubscriptions } from "./seedSubscriptions";
@@ -123,6 +127,7 @@ class MockSubscriptionStore {
   async createManualPayment(
     subscriptionId: string,
     input: {
+      type: "payment_booked" | "payment_skipped_inactive";
       amount: number;
       dueDate: string;
       notes?: string;
@@ -141,16 +146,14 @@ class MockSubscriptionStore {
     }
 
     await this.createHistoryEvent(subscriptionId, {
-      id: `payment_booked_${input.dueDate}`,
+      id: `${input.type}_${input.dueDate}`,
       subscriptionId,
-      type: "payment_booked",
-      source: "manual",
-      amount: input.amount,
-      dueDate: input.dueDate,
-      bookedAt: new Date().toISOString(),
-      occurredAt: input.dueDate,
-      effectiveDate: input.dueDate,
-      notes: input.notes,
+      ...buildEditablePaymentEventFields({
+        type: input.type,
+        amount: input.amount,
+        dueDate: input.dueDate,
+        notes: input.notes,
+      }),
       updatedAt: new Date().toISOString(),
     });
   }
@@ -159,6 +162,7 @@ class MockSubscriptionStore {
     subscriptionId: string,
     eventId: string,
     input: {
+      type: "payment_booked" | "payment_skipped_inactive";
       amount: number;
       dueDate: string;
       notes?: string;
@@ -167,8 +171,8 @@ class MockSubscriptionStore {
     const currentHistory = this.history.get(subscriptionId) ?? [];
     const currentEvent = currentHistory.find((event) => event.id === eventId);
 
-    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
-      throw new Error("Only payment_booked events can be updated.");
+    if (!currentEvent || !isEditablePaymentEventType(currentEvent.type) || currentEvent.deletedAt) {
+      throw new Error("Only editable payment events can be updated.");
     }
 
     const hasDuplicate = currentHistory.some(
@@ -185,21 +189,40 @@ class MockSubscriptionStore {
 
     const nextHistory = currentHistory.map((event) =>
       event.id === eventId
-        ? {
-            ...event,
-            amount: input.amount,
-            dueDate: input.dueDate,
-            notes: input.notes,
-            occurredAt: input.dueDate,
-            effectiveDate: input.dueDate,
-            updatedAt: new Date().toISOString(),
-            syncSuppressedDueDates: Array.from(
-              new Set([
-                ...(event.syncSuppressedDueDates ?? []),
-                ...(event.dueDate && event.dueDate !== input.dueDate ? [event.dueDate] : []),
-              ]),
-            ),
-          }
+        ? (() => {
+            const nextEventFields = buildEditablePaymentEventFields({
+              type: input.type,
+              amount: input.amount,
+              dueDate: input.dueDate,
+              notes: input.notes,
+              source: event.source,
+            });
+
+            return {
+              ...event,
+              ...nextEventFields,
+              notes: input.notes,
+              updatedAt: new Date().toISOString(),
+              syncSuppressedDueDates: Array.from(
+                new Set([
+                  ...(event.syncSuppressedDueDates ?? []),
+                  ...(event.dueDate && event.dueDate !== input.dueDate ? [event.dueDate] : []),
+                ]),
+              ),
+              bookedAt:
+                nextEventFields.type === "payment_booked"
+                  ? ("bookedAt" in nextEventFields ? nextEventFields.bookedAt : undefined)
+                  : undefined,
+              reason:
+                nextEventFields.type === "payment_skipped_inactive"
+                  ? ("reason" in nextEventFields ? nextEventFields.reason : undefined)
+                  : undefined,
+              source:
+                nextEventFields.type === "payment_booked"
+                  ? ("source" in nextEventFields ? nextEventFields.source : undefined)
+                  : undefined,
+            };
+          })()
         : event,
     );
 
@@ -211,8 +234,8 @@ class MockSubscriptionStore {
     const currentHistory = this.history.get(subscriptionId) ?? [];
     const currentEvent = currentHistory.find((event) => event.id === eventId);
 
-    if (!currentEvent || currentEvent.type !== "payment_booked" || currentEvent.deletedAt) {
-      throw new Error("Only payment_booked events can be deleted.");
+    if (!currentEvent || !isEditablePaymentEventType(currentEvent.type) || currentEvent.deletedAt) {
+      throw new Error("Only editable payment events can be deleted.");
     }
 
     const nextHistory = currentHistory.map((event) =>

@@ -14,6 +14,7 @@ import {
   toCalendarDateString,
 } from "./schedule";
 import { getMissingPaymentHistoryEvents } from "./paymentSync";
+import { isEditablePaymentEventType } from "./paymentEvents";
 export { getMissingPaymentHistoryEvents } from "./paymentSync";
 
 const getEventDate = (event: Pick<SubscriptionHistoryEvent, "effectiveDate" | "occurredAt" | "createdAt">) =>
@@ -146,7 +147,7 @@ export const formatHistoryEvent = (
       : undefined;
   const dateKey = getEventDate(event);
   const dateLabel = formatDate(dateKey);
-  const canEdit = event.type === "payment_booked";
+  const canEdit = isEditablePaymentEventType(event.type);
 
   if (options.language === "de") {
     switch (event.type) {

@@ -3,14 +3,13 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
-import { formatHistoryEvent } from "@/domain/subscriptionHistory/events";
 import { useAppSettings } from "@/context/AppSettingsContext";
+import { formatHistoryEvent } from "@/domain/subscriptionHistory/events";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptionHistory } from "@/hooks/useSubscriptionHistory";
 import { RootStackParamList } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
-import { formatCurrency } from "@/utils/currency";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionHistory">;
 
@@ -21,37 +20,13 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
-  const { history, summary, isLoading, errorMessage } = useSubscriptionHistory(
+  const { history, isLoading, errorMessage } = useSubscriptionHistory(
     route.params.subscriptionId,
   );
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.content]}>
-        <View style={[surfaces.panel, styles.summaryCard]}>
-          <Text style={[typography.cardTitle, styles.sectionTitle]}>
-            {language === "de" ? "Ausgesetzte Zahlungen" : "Skipped payments"}
-          </Text>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={[typography.meta, styles.summaryLabel]}>
-                {language === "de" ? "Anzahl" : "Count"}
-              </Text>
-              <Text style={[typography.sectionTitle, styles.summaryValue]}>
-                {summary.skippedPaymentsCount}
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={[typography.meta, styles.summaryLabel]}>
-                {language === "de" ? "Gespart" : "Saved"}
-              </Text>
-              <Text style={[typography.sectionTitle, styles.summaryValue]}>
-                {formatCurrency(summary.skippedPaymentsAmount, currency)}
-              </Text>
-            </View>
-          </View>
-        </View>
-
         <Pressable
           style={[surfaces.panel, styles.actionCard]}
           onPress={() =>
@@ -66,7 +41,7 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
             </Text>
             <Text style={[typography.secondary, styles.historySubtitle]}>
               {language === "de"
-                ? "Vergangene oder heutige Zahlung manuell erfassen"
+                ? "Vergangene Zahlungen der Historie hinzufügen"
                 : "Add a past or current payment manually"}
             </Text>
           </View>
@@ -154,27 +129,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     content: {
       minHeight: "100%",
-    },
-    summaryCard: {
-      gap: spacing.md,
-    },
-    sectionTitle: {
-      color: colors.textPrimary,
-    },
-    summaryRow: {
-      flexDirection: "row",
-      gap: spacing.lg,
-    },
-    summaryItem: {
-      flex: 1,
-      gap: spacing.xxs,
-    },
-    summaryLabel: {
-      color: colors.textSecondary,
-      textTransform: "uppercase",
-    },
-    summaryValue: {
-      color: colors.textPrimary,
     },
     actionCard: {
       flexDirection: "row",

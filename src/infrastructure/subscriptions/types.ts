@@ -1,5 +1,6 @@
 import { Subscription, SubscriptionInput } from "@/types/subscription";
 import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
+import { EditablePaymentEventType } from "@/domain/subscriptionHistory/paymentEvents";
 
 export type SubscriptionListListener = (subscriptions: Subscription[]) => void;
 export type SubscriptionErrorListener = (error: Error) => void;
@@ -31,6 +32,7 @@ export interface SubscriptionDataSource {
     userId: string,
     subscriptionId: string,
     input: {
+      type: EditablePaymentEventType;
       amount: number;
       dueDate: string;
       notes?: string;
@@ -41,6 +43,7 @@ export interface SubscriptionDataSource {
     subscriptionId: string,
     eventId: string,
     input: {
+      type: EditablePaymentEventType;
       amount: number;
       dueDate: string;
       notes?: string;

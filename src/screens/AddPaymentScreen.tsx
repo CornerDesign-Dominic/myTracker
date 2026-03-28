@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
 import { createSubscriptionService } from "@/application/subscriptions/service";
+import { EditablePaymentEventType } from "@/domain/subscriptionHistory/paymentEvents";
 import { useAuth } from "@/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -37,7 +38,7 @@ import { formatCurrency } from "@/utils/currency";
 import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AddPayment">;
-type EditableField = "amount" | "date" | "notes" | null;
+type EditableField = "status" | "amount" | "date" | "notes" | null;
 type WheelOption<T extends string | number> = { label: string; value: T };
 
 const subscriptionService = createSubscriptionService(subscriptionRepository);
@@ -154,6 +155,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   const isEditing = Boolean(route.params.eventId);
 
   const [activeField, setActiveField] = useState<EditableField>(null);
+  const [paymentType, setPaymentType] = useState<EditablePaymentEventType>("payment_booked");
   const [amountInput, setAmountInput] = useState(subscription ? String(subscription.amount.toFixed(2)) : "");
   const [notesInput, setNotesInput] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -167,9 +169,15 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   }, [subscription]);
 
   useEffect(() => {
-    if (!existingPayment || existingPayment.type !== "payment_booked") {
+    if (
+      !existingPayment ||
+      (existingPayment.type !== "payment_booked" &&
+        existingPayment.type !== "payment_skipped_inactive")
+    ) {
       return;
     }
+
+    setPaymentType(existingPayment.type);
 
     if (typeof existingPayment.amount === "number") {
       setAmountInput(String(existingPayment.amount.toFixed(2)));
@@ -211,6 +219,14 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   );
 
   const selectedDateValue = formatLocalDateInput(selectedDate);
+  const paymentTypeLabel =
+    paymentType === "payment_skipped_inactive"
+      ? language === "de"
+        ? "Während inaktiv"
+        : "While inactive"
+      : language === "de"
+        ? "Gebucht"
+        : "Booked";
 
   const updateDraftDay = (day: number) => {
     setSelectedDate((current) => new Date(current.getFullYear(), current.getMonth(), day));
@@ -274,6 +290,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
           subscription.id,
           route.params.eventId,
           {
+            type: paymentType,
             amount,
             dueDate: selectedDateValue,
             notes: notesInput.trim() || undefined,
@@ -281,6 +298,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
         );
       } else {
         await subscriptionService.createManualPaymentForUser(currentUser.uid, subscription.id, {
+          type: paymentType,
           amount,
           dueDate: selectedDateValue,
           notes: notesInput.trim() || undefined,
@@ -362,10 +380,15 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
 
         <View style={[surfaces.panel, styles.cardGroup]}>
           <FormRow
+            label={language === "de" ? "Status" : "Status"}
+            value={paymentTypeLabel}
+            onPress={() => setActiveField("status")}
+            isFirst
+          />
+          <FormRow
             label={t("subscription.amount")}
             value={amountInput ? formatCurrency(Number(amountInput.replace(",", ".")) || 0, currency) : ""}
             onPress={() => setActiveField("amount")}
-            isFirst
           />
           <FormRow
             label={language === "de" ? "Zahlungsdatum" : "Payment date"}
@@ -401,6 +424,60 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
           </Pressable>
         ) : null}
       </ScrollView>
+
+      <EditorSheet
+        visible={activeField === "status"}
+        title={language === "de" ? "Status" : "Status"}
+        onClose={() => setActiveField(null)}
+        confirmLabel={t("common.save")}
+      >
+        <View style={styles.statusOptions}>
+          <Pressable
+            style={[
+              surfaces.subtlePanel,
+              styles.statusOption,
+              paymentType === "payment_booked" ? styles.statusOptionActive : null,
+            ]}
+            onPress={() => {
+              setPaymentType("payment_booked");
+              setActiveField(null);
+            }}
+          >
+            <Text
+              style={[
+                typography.body,
+                styles.statusOptionLabel,
+                paymentType === "payment_booked" ? styles.statusOptionLabelActive : null,
+              ]}
+            >
+              {language === "de" ? "Gebucht" : "Booked"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              surfaces.subtlePanel,
+              styles.statusOption,
+              paymentType === "payment_skipped_inactive" ? styles.statusOptionActive : null,
+            ]}
+            onPress={() => {
+              setPaymentType("payment_skipped_inactive");
+              setActiveField(null);
+            }}
+          >
+            <Text
+              style={[
+                typography.body,
+                styles.statusOptionLabel,
+                paymentType === "payment_skipped_inactive"
+                  ? styles.statusOptionLabelActive
+                  : null,
+              ]}
+            >
+              {language === "de" ? "Während inaktiv" : "While inactive"}
+            </Text>
+          </Pressable>
+        </View>
+      </EditorSheet>
 
       <EditorSheet
         visible={activeField === "amount"}
@@ -497,6 +574,25 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingVertical: spacing.xs,
       paddingHorizontal: 0,
       overflow: "hidden",
+    },
+    statusOptions: {
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    statusOption: {
+      minHeight: 52,
+      justifyContent: "center",
+      borderRadius: radius.md,
+    },
+    statusOptionActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    statusOptionLabel: {
+      color: colors.textPrimary,
+    },
+    statusOptionLabelActive: {
+      color: colors.accent,
     },
     saveButton: {
       width: "100%",

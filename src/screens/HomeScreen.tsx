@@ -61,15 +61,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
     };
   }, [subscriptions]);
 
-  const handleCancel = async (id: string) => {
-    const subscription = subscriptions.find((item) => item.id === id);
-
-    await updateSubscription(id, {
-      status: "cancelled",
-      endDate: subscription?.endDate ?? subscription?.nextPaymentDate,
-    });
-  };
-
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
@@ -121,16 +112,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
                 navigation.navigate("SubscriptionDetails", {
                   subscriptionId: subscription.id,
                 })
-              }
-              onEdit={() =>
-                navigation.navigate("SubscriptionForm", {
-                  subscriptionId: subscription.id,
-                })
-              }
-              onCancel={
-                subscription.status === "cancelled"
-                  ? undefined
-                  : () => handleCancel(subscription.id)
               }
             />
           ))}

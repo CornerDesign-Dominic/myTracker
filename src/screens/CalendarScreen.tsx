@@ -3,14 +3,25 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
+import { CalendarTabScreenProps } from "@/navigation/types";
+import { formatCurrency } from "@/utils/currency";
+import { formatLocalDateInput } from "@/utils/date";
 
 const WEEKDAY_LABELS = {
   de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
   en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 } as const;
+
+type CalendarDay = {
+  date: Date;
+  day: number;
+  isCurrentMonth: boolean;
+};
 
 const getMonthLabel = (date: Date, language: "de" | "en") =>
   new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
@@ -23,53 +34,112 @@ const getCalendarDays = (date: Date) => {
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
+  const previousMonthLastDay = new Date(year, month, 0);
   const leadingEmptyDays = (firstDay.getDay() + 6) % 7;
   const daysInMonth = lastDay.getDate();
+  const trailingDays = (7 - ((leadingEmptyDays + daysInMonth) % 7)) % 7;
 
-  const days = Array.from({ length: leadingEmptyDays }, () => null as number | null);
-  days.push(...Array.from({ length: daysInMonth }, (_, index) => index + 1));
+  const days: CalendarDay[] = Array.from({ length: leadingEmptyDays }, (_, index) => {
+    const day = previousMonthLastDay.getDate() - leadingEmptyDays + index + 1;
+    const previousMonthDate = new Date(year, month - 1, day);
+    return {
+      date: previousMonthDate,
+      day,
+      isCurrentMonth: false,
+    };
+  });
 
-  while (days.length % 7 !== 0) {
-    days.push(null);
-  }
+  days.push(
+    ...Array.from({ length: daysInMonth }, (_, index) => {
+      const currentDate = new Date(year, month, index + 1);
+      return {
+        date: currentDate,
+        day: index + 1,
+        isCurrentMonth: true,
+      };
+    }),
+  );
+
+  days.push(
+    ...Array.from({ length: trailingDays }, (_, index) => {
+      const nextMonthDate = new Date(year, month + 1, index + 1);
+      return {
+        date: nextMonthDate,
+        day: index + 1,
+        isCurrentMonth: false,
+      };
+    }),
+  );
 
   return days;
 };
 
-export const CalendarScreen = () => {
+const getDisplayDate = (date: Date, language: "de" | "en") =>
+  new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+
+export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const { colors, typography } = useAppTheme();
   const { language, t } = useI18n();
+  const { currency } = useAppSettings();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
-  const [visibleMonth, setVisibleMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
+  const { subscriptions } = useSubscriptions();
+  const today = useMemo(() => new Date(), []);
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [selectedDate, setSelectedDate] = useState(() => new Date(today));
 
   const monthLabel = useMemo(() => getMonthLabel(visibleMonth, language), [language, visibleMonth]);
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
-  const today = new Date();
   const isCurrentMonth =
     today.getFullYear() === visibleMonth.getFullYear() &&
     today.getMonth() === visibleMonth.getMonth();
+  const selectedDateKey = formatLocalDateInput(selectedDate);
+  const selectedDayLabel = getDisplayDate(selectedDate, language);
+  const dueSubscriptions = useMemo(
+    () =>
+      subscriptions.filter(
+        (subscription) =>
+          subscription.status !== "cancelled" &&
+          subscription.nextPaymentDate === selectedDateKey,
+      ),
+    [selectedDateKey, subscriptions],
+  );
+  const dueDateKeys = useMemo(
+    () =>
+      new Set(
+        subscriptions
+          .filter((subscription) => subscription.status !== "cancelled")
+          .map((subscription) => subscription.nextPaymentDate),
+      ),
+    [subscriptions],
+  );
 
   const changeMonth = (direction: -1 | 1) => {
-    setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1));
+    const nextMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + direction, 1);
+    setVisibleMonth(nextMonth);
+  };
+
+  const selectCalendarDate = (date: Date) => {
+    setSelectedDate(date);
+    setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
-        <Text style={[typography.pageTitle, styles.pageTitle]}>{t("calendar.title")}</Text>
-
-        <View style={styles.topActionRow}>
-          <View />
+        <View style={styles.titleRow}>
+          <Text style={[typography.pageTitle, styles.pageTitle]}>{t("calendar.title")}</Text>
           <Pressable
             style={[surfaces.subtlePanel, styles.todayButton]}
             onPress={() => {
               const now = new Date();
-              setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+              selectCalendarDate(now);
             }}
           >
             <Text style={[typography.meta, styles.todayButtonText]}>{t("calendar.today")}</Text>
@@ -104,31 +174,86 @@ export const CalendarScreen = () => {
           </View>
 
           <View style={styles.grid}>
-            {calendarDays.map((day, index) => {
-              const isToday = isCurrentMonth && day === today.getDate();
+            {calendarDays.map((calendarDay, index) => {
+              const dayDate = calendarDay.date;
+              const dayKey = formatLocalDateInput(dayDate);
+              const isToday = formatLocalDateInput(dayDate) === formatLocalDateInput(today);
+              const isSelected = dayKey === selectedDateKey;
+              const hasDuePayment = dueDateKeys.has(dayKey);
 
               return (
                 <View key={`${visibleMonth.getFullYear()}-${visibleMonth.getMonth()}-${index}`} style={styles.dayCell}>
-                  <View style={styles.dayInner}>
+                  <Pressable
+                    style={styles.dayInner}
+                    onPress={() => selectCalendarDate(dayDate)}
+                  >
                     <Text
                       style={[
                         typography.body,
                         styles.dayText,
-                        !day ? styles.dayTextEmpty : null,
+                        !calendarDay.isCurrentMonth ? styles.outsideMonthText : null,
                         isToday ? styles.todayText : null,
+                        isSelected ? styles.selectedDayText : null,
+                        isToday && isSelected ? styles.todaySelectedText : null,
+                        isSelected && !calendarDay.isCurrentMonth ? styles.selectedOutsideMonthText : null,
                       ]}
                     >
-                      {day ?? ""}
+                      {calendarDay.day}
                     </Text>
-                    {day ? (
-                      <View style={[styles.dayDotSlot, isToday ? styles.todayDotSlot : null]} />
-                    ) : null}
-                  </View>
+                    <View
+                      style={[
+                        styles.dayDotSlot,
+                        hasDuePayment ? styles.dueDotSlot : null,
+                        hasDuePayment && isSelected ? styles.selectedDueDotSlot : null,
+                      ]}
+                    />
+                  </Pressable>
                 </View>
               );
             })}
           </View>
         </View>
+
+        {dueSubscriptions.length > 0 ? (
+          <View style={[surfaces.panel, styles.dueCard]}>
+            <Text style={[typography.cardTitle, styles.dueTitle]}>
+              {language === "de"
+                ? `Fälligkeiten am ${selectedDayLabel}`
+                : `Due on ${selectedDayLabel}`}
+            </Text>
+            <View style={styles.dueList}>
+              {dueSubscriptions.map((subscription, index) => (
+                <Pressable
+                  key={subscription.id}
+                  style={[
+                    styles.dueRow,
+                    index < dueSubscriptions.length - 1 ? styles.dueRowDivider : null,
+                  ]}
+                  onPress={() =>
+                    navigation.navigate("SubscriptionDetails", {
+                      subscriptionId: subscription.id,
+                    })
+                  }
+                >
+                  <View style={styles.dueRowLeft}>
+                    <Text style={[typography.body, styles.dueName]}>{subscription.name}</Text>
+                    <Text style={[typography.secondary, styles.dueMeta]}>
+                      {subscription.category}
+                    </Text>
+                  </View>
+                  <View style={styles.dueRowRight}>
+                    <Text style={[typography.body, styles.dueAmount]}>
+                      {formatCurrency(subscription.amount, currency)}
+                    </Text>
+                    <Text style={[typography.secondary, styles.dueMeta]}>
+                      {t(`subscription.billing_${subscription.billingCycle}`)}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -145,10 +270,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     calendarCard: {
       gap: spacing.md,
     },
-    topActionRow: {
+    titleRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+      gap: spacing.md,
     },
     todayButton: {
       minHeight: 34,
@@ -213,19 +339,30 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     dayText: {
       color: colors.textPrimary,
-    },
-    todayText: {
-      color: colors.accent,
       width: 30,
       height: 30,
       textAlign: "center",
       textAlignVertical: "center",
       lineHeight: 30,
       borderRadius: radius.pill,
-      backgroundColor: colors.accentSoft,
     },
-    dayTextEmpty: {
-      color: "transparent",
+    todayText: {
+      color: colors.accent,
+    },
+    outsideMonthText: {
+      color: colors.textMuted,
+    },
+    selectedDayText: {
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      color: colors.accent,
+    },
+    todaySelectedText: {
+      color: colors.accent,
+    },
+    selectedOutsideMonthText: {
+      color: colors.accent,
     },
     dayDotSlot: {
       width: 6,
@@ -233,7 +370,47 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderRadius: radius.pill,
       backgroundColor: "transparent",
     },
-    todayDotSlot: {
+    selectedDueDotSlot: {
       backgroundColor: colors.accentSoft,
+    },
+    dueDotSlot: {
+      backgroundColor: colors.accent,
+    },
+    dueCard: {
+      gap: spacing.md,
+    },
+    dueTitle: {
+      color: colors.textPrimary,
+    },
+    dueList: {
+      gap: spacing.xs,
+    },
+    dueRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    dueRowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    dueRowLeft: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    dueRowRight: {
+      alignItems: "flex-end",
+      gap: spacing.xxs,
+    },
+    dueName: {
+      color: colors.textPrimary,
+    },
+    dueAmount: {
+      color: colors.textPrimary,
+    },
+    dueMeta: {
+      color: colors.textSecondary,
     },
   });

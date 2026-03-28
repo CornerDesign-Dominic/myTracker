@@ -56,7 +56,15 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
-        <Text style={[typography.pageTitle, styles.pageTitle]}>{t("allSubscriptions.title")}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[typography.pageTitle, styles.pageTitle]}>{t("allSubscriptions.title")}</Text>
+          <Pressable
+            style={[surfaces.subtlePanel, styles.addButton]}
+            onPress={() => navigation.navigate("SubscriptionForm")}
+          >
+            <Text style={[typography.cardTitle, styles.addButtonText]}>+</Text>
+          </Pressable>
+        </View>
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <View style={styles.summaryCopy}>
@@ -72,27 +80,8 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           </View>
         </View>
 
-        <View style={[surfaces.panel, styles.searchCard]}>
-          <Pressable
-            style={[buttons.buttonBase, buttons.primaryButton]}
-            onPress={() => navigation.navigate("SubscriptionForm")}
-          >
-            <Text style={[typography.button, styles.primaryButtonText]}>
-              {t("allSubscriptions.createAnother")}
-            </Text>
-          </Pressable>
-        </View>
-
         <View style={[surfaces.panel, styles.listCard]}>
-          <View style={styles.listHeader}>
-            <Text style={[typography.cardTitle, styles.listTitle]}>{t("allSubscriptions.management")}</Text>
-            <Text style={[typography.secondary, styles.listMeta]}>
-              {t("allSubscriptions.entries", { count: filteredSubscriptions.length })}
-            </Text>
-          </View>
-
           <View style={styles.listSearch}>
-            <Text style={[typography.cardTitle, styles.searchTitle]}>{t("allSubscriptions.searchTitle")}</Text>
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -100,7 +89,12 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               placeholderTextColor={colors.textSecondary}
               style={[inputs.input, styles.searchInput]}
             />
+            <Text style={[typography.secondary, styles.listMeta]}>
+              {t("allSubscriptions.entries", { count: filteredSubscriptions.length })}
+            </Text>
           </View>
+
+          <View style={styles.searchDivider} />
 
           {filteredSubscriptions.length === 0 ? (
             <EmptyState
@@ -173,6 +167,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     pageTitle: {
       color: colors.textPrimary,
     },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
     contentWithTabBar: {
       minHeight: "100%",
     },
@@ -192,17 +192,19 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryAmount: {
       color: colors.accent,
     },
-    primaryButtonText: {
+    addButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 0,
+    },
+    addButtonText: {
       color: colors.accent,
     },
-    searchCard: {
-      gap: spacing.md,
-    },
     listSearch: {
-      gap: spacing.md,
-    },
-    searchTitle: {
-      color: colors.textPrimary,
+      gap: spacing.sm,
     },
     searchInput: {
       color: colors.textPrimary,
@@ -210,17 +212,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     listCard: {
       gap: spacing.lg,
     },
-    listHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: spacing.md,
-    },
-    listTitle: {
-      color: colors.textPrimary,
-    },
     listMeta: {
       color: colors.textSecondary,
+    },
+    searchDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginTop: -spacing.xs,
     },
     subscriptionList: {
       gap: spacing.xs,

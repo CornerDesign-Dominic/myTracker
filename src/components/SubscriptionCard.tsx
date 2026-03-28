@@ -1,8 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useI18n } from "@/hooks/useI18n";
-import { createButtonStyles, createSurfaceStyles, radius, spacing } from "@/theme";
+import { createSurfaceStyles, radius, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Subscription } from "@/types/subscription";
 import { formatCurrency } from "@/utils/currency";
@@ -11,24 +12,19 @@ import { formatDate } from "@/utils/date";
 interface SubscriptionCardProps {
   subscription: Subscription;
   onPress?: () => void;
-  onEdit?: () => void;
-  onCancel?: () => void;
 }
 
 export const SubscriptionCard = ({
   subscription,
   onPress,
-  onEdit,
-  onCancel,
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
   const { t } = useI18n();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
-  const buttons = createButtonStyles(colors);
   const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
-    active: { label: t("subscription.status_active"), color: colors.success },
+    active: { label: t("subscription.status_active"), color: colors.accent },
     paused: { label: t("subscription.status_paused"), color: colors.warning },
     cancelled: { label: t("subscription.status_cancelled"), color: colors.danger },
   };
@@ -58,7 +54,7 @@ export const SubscriptionCard = ({
           </View>
           <View style={styles.metaItem}>
             <Text style={[typography.meta, styles.metaLabel]}>
-              {t("subscription.billingCycle")}
+              {t("subscription.formBillingCycle")}
             </Text>
             <Text style={[typography.body, styles.metaValue]}>
               {t(`subscription.billing_${subscription.billingCycle}`)}
@@ -66,33 +62,19 @@ export const SubscriptionCard = ({
           </View>
           <View style={styles.metaItem}>
             <Text style={[typography.meta, styles.metaLabel]}>
-              {t("allSubscriptions.nextPayment")}
+              {t("subscription.formNextPaymentDate")}
             </Text>
             <Text style={[typography.body, styles.metaValue]}>
               {formatDate(subscription.nextPaymentDate)}
             </Text>
           </View>
-          <View style={styles.metaItem}>
-            <Text style={[typography.meta, styles.metaLabel]}>{t("subscription.endDate")}</Text>
-            <Text style={[typography.body, styles.metaValue]}>{formatDate(subscription.endDate)}</Text>
+          <View style={[styles.metaItem, styles.iconMetaItem]}>
+            <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
+              <Ionicons name="pencil-outline" size={18} color={colors.textPrimary} />
+            </Pressable>
           </View>
         </View>
       </Pressable>
-
-      <View style={styles.actions}>
-        {onEdit ? (
-          <Pressable style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]} onPress={onEdit}>
-            <Text style={[typography.button, styles.secondaryButtonText]}>{t("subscription.edit")}</Text>
-          </Pressable>
-        ) : null}
-        {onCancel ? (
-          <Pressable style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]} onPress={onCancel}>
-            <Text style={[typography.button, styles.primaryButtonText]}>
-              {t("subscription.markCancelled")}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
     </View>
   );
 };
@@ -100,10 +82,10 @@ export const SubscriptionCard = ({
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
   card: {
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   contentArea: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   topRow: {
     flexDirection: "row",
@@ -116,6 +98,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   },
   name: {
     color: colors.textPrimary,
+    fontSize: 22,
+    lineHeight: 28,
   },
   category: {
     color: colors.textSecondary,
@@ -131,11 +115,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   metaGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   metaItem: {
     width: "48%",
-    gap: 4,
+    gap: 2,
   },
   metaLabel: {
     color: colors.textSecondary,
@@ -144,18 +128,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   metaValue: {
     color: colors.textPrimary,
   },
-  actions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.md,
+  iconMetaItem: {
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
   },
-  actionButton: {
-    flex: 1,
-  },
-  primaryButtonText: {
-    color: colors.accent,
-  },
-  secondaryButtonText: {
-    color: colors.accent,
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
   },
   });

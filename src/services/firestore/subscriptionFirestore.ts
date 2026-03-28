@@ -130,7 +130,7 @@ const readSubscription = async (userId: string, subscriptionId: string) => {
 
 const readSubscriptionHistory = async (userId: string, subscriptionId: string) => {
   const snapshot = await getDocs(
-    query(historyCollection(userId, subscriptionId), orderBy("effectiveDate", "asc")),
+    query(historyCollection(userId, subscriptionId), orderBy("createdAt", "desc")),
   );
 
   return snapshot.docs.map((eventSnapshot) =>
@@ -173,7 +173,10 @@ export const subscribeToFirestoreSubscriptionHistory = (
   callback: (history: SubscriptionHistoryEvent[]) => void,
   onError?: (error: Error) => void,
 ) => {
-  const historyQuery = query(historyCollection(userId, subscriptionId), orderBy("effectiveDate", "desc"));
+  const historyQuery = query(
+    historyCollection(userId, subscriptionId),
+    orderBy("createdAt", "desc"),
+  );
 
   return onSnapshot(
     historyQuery,

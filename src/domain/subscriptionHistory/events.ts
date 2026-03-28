@@ -1,24 +1,46 @@
-import { AppLanguage } from "@/i18n/translations";
-import {
+import type { AppLanguage } from "../../i18n/translations";
+import type {
   HistoryEventInput,
   HistorySyncSummary,
   SubscriptionHistoryAware,
   SubscriptionHistoryEvent,
   SubscriptionHistoryPresentation,
-} from "@/types/subscriptionHistory";
-import { formatCurrency } from "@/utils/currency";
-import { formatDate } from "@/utils/date";
+} from "../../types/subscriptionHistory.ts";
+import { formatCurrency } from "../../utils/currency.ts";
+import { formatDate } from "../../utils/date.ts";
 
 import {
   parseCalendarDate,
   toCalendarDateString,
-} from "./schedule";
-import { getMissingPaymentHistoryEvents } from "./paymentSync";
-import { isEditablePaymentEventType } from "./paymentEvents";
-export { getMissingPaymentHistoryEvents } from "./paymentSync";
+} from "./schedule.ts";
+import { getMissingPaymentHistoryEvents } from "./paymentSync.ts";
+import { isEditablePaymentEventType } from "./paymentEvents.ts";
+export { getMissingPaymentHistoryEvents } from "./paymentSync.ts";
 
-const getEventDate = (event: Pick<SubscriptionHistoryEvent, "effectiveDate" | "occurredAt" | "createdAt">) =>
-  event.effectiveDate ?? event.occurredAt ?? event.createdAt;
+const getEventDate = (
+  event: Pick<SubscriptionHistoryEvent, "effectiveDate" | "occurredAt" | "createdAt">,
+) => event.effectiveDate ?? event.occurredAt ?? event.createdAt;
+
+const toSortableTimestamp = (value?: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const getEventSortTimestamp = (
+  event: Pick<
+    SubscriptionHistoryEvent,
+    "updatedAt" | "createdAt" | "effectiveDate" | "occurredAt"
+  >,
+) =>
+  toSortableTimestamp(event.updatedAt) ??
+  toSortableTimestamp(event.createdAt) ??
+  toSortableTimestamp(event.occurredAt) ??
+  toSortableTimestamp(event.effectiveDate) ??
+  Number.NEGATIVE_INFINITY;
 
 export const buildCreatedEvent = (
   subscriptionId: string,
@@ -132,7 +154,27 @@ export const getHistorySyncSummary = (
     );
 
 export const sortHistoryNewestFirst = (history: SubscriptionHistoryEvent[]) =>
-  [...history].sort((left, right) => getEventDate(right).localeCompare(getEventDate(left)));
+  [...history].sort((left, right) => {
+    const timestampDifference = getEventSortTimestamp(right) - getEventSortTimestamp(left);
+
+    if (timestampDifference !== 0) {
+      return timestampDifference;
+    }
+
+    const createdAtDifference =
+      (toSortableTimestamp(right.createdAt) ?? Number.NEGATIVE_INFINITY) -
+      (toSortableTimestamp(left.createdAt) ?? Number.NEGATIVE_INFINITY);
+    if (createdAtDifference !== 0) {
+      return createdAtDifference;
+    }
+
+    const effectiveDateDifference = getEventDate(right).localeCompare(getEventDate(left));
+    if (effectiveDateDifference !== 0) {
+      return effectiveDateDifference;
+    }
+
+    return right.id.localeCompare(left.id);
+  });
 
 export const formatHistoryEvent = (
   event: SubscriptionHistoryEvent,

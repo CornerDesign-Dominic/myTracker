@@ -21,8 +21,10 @@ import {
   getAverageMonthlyCost,
   getBillingStructure,
   getCurrentMonthCost,
+  getProjectedYearlyCost,
   getTopExpensiveSubscriptions,
 } from "@/domain/subscriptions/statistics";
+import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 
@@ -116,15 +118,6 @@ export const StatsScreen = () => {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [developmentRange, setDevelopmentRange] = useState<DevelopmentRange>(6);
 
-  const summary = useMemo(
-    () => ({
-      currentMonthCost: getCurrentMonthCost(subscriptions),
-      averageMonthlyCost: getAverageMonthlyCost(subscriptions),
-      yearlyTotal: metrics.yearlyTotal,
-    }),
-    [metrics.yearlyTotal, subscriptions],
-  );
-
   const categoryItems = useMemo(
     () => (showAllCategories ? metrics.byCategory : metrics.byCategory.slice(0, 3)),
     [metrics.byCategory, showAllCategories],
@@ -163,6 +156,14 @@ export const StatsScreen = () => {
   const skippedPayments = useMemo(
     () => getTotalSkippedPayments(savedHistory),
     [savedHistory],
+  );
+  const summary = useMemo(
+    () => ({
+      currentMonthCost: getCurrentMonthCost(subscriptions),
+      averageMonthlyCost: getAverageMonthlyCost(subscriptions),
+      yearlyTotal: getProjectedYearlyCost(subscriptions, allHistory),
+    }),
+    [allHistory, subscriptions],
   );
 
   const copy =
@@ -434,7 +435,9 @@ export const StatsScreen = () => {
                     </View>
                   </View>
                   <Text style={[typography.body, styles.topValue]}>
-                    {formatCurrency(subscription.amount, currency)}
+                    {`${formatCurrency(getMonthlyEquivalent(subscription), currency)} ${
+                      language === "de" ? "/ Monat" : "/ month"
+                    }`}
                   </Text>
                 </View>
               ))}

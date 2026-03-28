@@ -1,7 +1,9 @@
-import { BillingCycle, Subscription } from "@/types/subscription";
-import { getRecurringAnchorDay, shiftRecurringDate } from "@/utils/recurringDates";
+import type { Subscription } from "../../types/subscription.ts";
+import type { SubscriptionHistoryEvent } from "../../types/subscriptionHistory.ts";
+import { formatLocalDateInput, parseLocalDateInput } from "../../utils/date.ts";
+import { getRecurringAnchorDay, shiftRecurringDate } from "../../utils/recurringDates.ts";
 
-import { getMonthlyEquivalent } from "./metrics";
+import { getMonthlyEquivalent } from "./metrics.ts";
 
 export type DevelopmentRange = 6 | 12 | 24 | 36 | 60 | "all";
 
@@ -13,6 +15,69 @@ const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(
 const parseDate = (value: string) => {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, (month ?? 1) - 1, day ?? 1);
+};
+
+const isBookedPaymentEvent = (event: SubscriptionHistoryEvent) =>
+  event.type === "payment_booked" && !event.deletedAt;
+
+const isWithinCurrentYear = (date: Date, now: Date) => date.getFullYear() === now.getFullYear();
+
+export const getProjectedYearlyCost = (
+  subscriptions: Subscription[],
+  history: SubscriptionHistoryEvent[],
+  now = new Date(),
+) =>
+  subscriptions.reduce(
+    (sum, subscription) =>
+      sum + getProjectedSubscriptionYearlyCost(subscription, history, now),
+    0,
+  );
+
+export const getProjectedSubscriptionYearlyCost = (
+  subscription: Subscription,
+  history: SubscriptionHistoryEvent[],
+  now = new Date(),
+) => {
+  const todayKey = formatLocalDateInput(now);
+  const yearEnd = new Date(now.getFullYear(), 11, 31);
+  const bookedEvents = history.filter(
+    (event) =>
+      event.subscriptionId === subscription.id &&
+      isBookedPaymentEvent(event) &&
+      !!event.dueDate &&
+      isWithinCurrentYear(parseDate(event.dueDate), now),
+  );
+
+  const bookedAmount = bookedEvents.reduce((sum, event) => sum + (event.amount ?? 0), 0);
+
+  if (subscription.status !== "active") {
+    return bookedAmount;
+  }
+
+  const bookedDueDates = new Set(bookedEvents.map((event) => event.dueDate));
+  const anchorDay = getRecurringAnchorDay(subscription.nextPaymentDate);
+  let cursor = parseLocalDateInput(subscription.nextPaymentDate);
+  let forecastAmount = 0;
+
+  if (!cursor) {
+    return bookedAmount;
+  }
+
+  while (cursor <= yearEnd) {
+    const dueDate = formatLocalDateInput(cursor);
+
+    if (
+      dueDate >= todayKey &&
+      cursor.getFullYear() === now.getFullYear() &&
+      !bookedDueDates.has(dueDate)
+    ) {
+      forecastAmount += subscription.amount;
+    }
+
+    cursor = shiftRecurringDate(cursor, subscription.billingCycle, 1, anchorDay);
+  }
+
+  return bookedAmount + forecastAmount;
 };
 
 export const getCurrentMonthCost = (subscriptions: Subscription[], now = new Date()) => {
@@ -57,7 +122,7 @@ export const getTopExpensiveSubscriptions = (
   limit = 3,
 ) =>
   [...subscriptions]
-    .filter((subscription) => subscription.status !== "cancelled")
+    .filter((subscription) => subscription.status === "active")
     .sort((left, right) => getMonthlyEquivalent(right) - getMonthlyEquivalent(left))
     .slice(0, limit);
 

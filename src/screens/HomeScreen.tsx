@@ -22,10 +22,30 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const surfaces = createSurfaceStyles(colors);
   const { subscriptions, updateSubscription, errorMessage, isLoading } = useSubscriptions();
 
-  const visibleSubscriptions = useMemo(
-    () => subscriptions.filter((subscription) => subscription.status === "active"),
-    [subscriptions],
-  );
+  const visibleSubscriptions = useMemo(() => {
+    const now = new Date();
+    const todayKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+    const monthEndKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0"),
+    ].join("-");
+
+    return subscriptions.filter((subscription) => {
+      if (subscription.status !== "active") {
+        return false;
+      }
+
+      return (
+        subscription.nextPaymentDate >= todayKey &&
+        subscription.nextPaymentDate <= monthEndKey
+      );
+    });
+  }, [subscriptions]);
 
   const monthlySummary = useMemo(() => {
     const now = new Date();

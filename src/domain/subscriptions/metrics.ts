@@ -1,4 +1,4 @@
-import { Subscription, SubscriptionMetrics } from "@/types/subscription";
+import type { Subscription, SubscriptionMetrics } from "../../types/subscription.ts";
 
 export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {

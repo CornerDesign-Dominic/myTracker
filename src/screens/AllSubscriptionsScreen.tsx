@@ -7,8 +7,10 @@ import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { AllSubscriptionsTabScreenProps } from "@/navigation/types";
+import { getProjectedYearlyCost } from "@/domain/subscriptions/statistics";
 import {
   createButtonStyles,
   createInputStyles,
@@ -18,7 +20,6 @@ import {
 } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
-import { getYearlyEquivalent } from "@/utils/subscriptionMetrics";
 
 export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreenProps) => {
   const { colors, typography } = useAppTheme();
@@ -30,6 +31,9 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const styles = getStyles(colors);
   const { currency } = useAppSettings();
   const { subscriptions } = useSubscriptions();
+  const { history: allHistory } = useSubscriptionsHistory(
+    subscriptions.map((subscription) => subscription.id),
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredSubscriptions = useMemo(() => {
@@ -46,12 +50,8 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   }, [searchQuery, subscriptions]);
 
   const totalYearlyAmount = useMemo(
-    () =>
-      subscriptions.reduce(
-        (sum, subscription) => sum + getYearlyEquivalent(subscription),
-        0,
-      ),
-    [subscriptions],
+    () => getProjectedYearlyCost(subscriptions, allHistory),
+    [allHistory, subscriptions],
   );
 
   return (

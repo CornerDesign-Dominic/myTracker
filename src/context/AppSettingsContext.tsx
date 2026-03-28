@@ -22,6 +22,14 @@ type ThemeOption = "Dark" | "Light";
 
 const STORAGE_KEY = "tracker.app-settings";
 
+const getErrorDetails = (error: unknown) => ({
+  code:
+    error && typeof error === "object" && "code" in error
+      ? String(error.code)
+      : undefined,
+  message: error instanceof Error ? error.message : String(error),
+});
+
 interface AppSettingsContextValue {
   language: LanguageOption;
   currency: CurrencyOption;
@@ -88,16 +96,37 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
+    console.log("[Settings] currentUser:available", {
+      uid: currentUser.uid,
+      isAnonymous: currentUser.isAnonymous,
+      email: currentUser.email,
+    });
+
     let isActive = true;
 
     const defaults = { language, currency, theme };
 
     const syncInitialSettings = async () => {
+      console.log("[Settings] ensureSettingsDocument:start", {
+        userId: currentUser.uid,
+        settings: defaults,
+      });
       await ensureSettingsDocument(currentUser.uid, defaults);
+      console.log("[Settings] ensureSettingsDocument:success", {
+        userId: currentUser.uid,
+        settings: defaults,
+      });
     };
 
-    syncInitialSettings().catch(() => {
-      // Keep current in-memory settings if Firestore bootstrap fails.
+    syncInitialSettings().catch((error) => {
+      const details = getErrorDetails(error);
+      console.error("[Settings] ensureSettingsDocument:error", {
+        userId: currentUser.uid,
+        settings: defaults,
+        code: details.code,
+        message: details.message,
+        error,
+      });
     });
 
     const unsubscribe = subscribeToUserSettings(
@@ -119,8 +148,14 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
           setThemeState(settings.theme);
         }
       },
-      () => {
-        // Keep local settings usable if Firestore rules are not deployed yet.
+      (error) => {
+        const details = getErrorDetails(error);
+        console.error("[Settings] subscribeToUserSettings:error", {
+          userId: currentUser.uid,
+          code: details.code,
+          message: details.message,
+          error,
+        });
       },
     );
 

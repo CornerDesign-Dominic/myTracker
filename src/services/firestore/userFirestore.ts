@@ -34,6 +34,15 @@ export const ensureUserDocument = async (params: {
   upgradedAt?: boolean;
   providerIds?: string[];
 }) => {
+  console.log("[Firestore] setDoc users/{userId}:start", {
+    path: `users/${params.userId}`,
+    userId: params.userId,
+    email: params.email,
+    isAnonymous: params.isAnonymous,
+    providerIds: params.providerIds ?? [],
+    upgradedAt: Boolean(params.upgradedAt),
+  });
+
   await setDoc(
     userDocRef(params.userId),
     {
@@ -46,12 +55,23 @@ export const ensureUserDocument = async (params: {
     },
     { merge: true },
   );
+
+  console.log("[Firestore] setDoc users/{userId}:success", {
+    path: `users/${params.userId}`,
+    userId: params.userId,
+  });
 };
 
 export const ensureSettingsDocument = async (
   userId: string,
   settings: Omit<UserSettingsDocument, "createdAt" | "updatedAt">,
 ) => {
+  console.log("[Firestore] setDoc users/{userId}/settings/app:start", {
+    path: `users/${userId}/settings/app`,
+    userId,
+    settings,
+  });
+
   await setDoc(
     settingsDocRef(userId),
     {
@@ -61,6 +81,11 @@ export const ensureSettingsDocument = async (
     },
     { merge: true },
   );
+
+  console.log("[Firestore] setDoc users/{userId}/settings/app:success", {
+    path: `users/${userId}/settings/app`,
+    userId,
+  });
 };
 
 export const subscribeToUserSettings = (

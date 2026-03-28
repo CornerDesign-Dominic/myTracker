@@ -30,6 +30,11 @@ const subscriptionsCollection = (userId: string) =>
 const subscriptionDoc = (userId: string, subscriptionId: string) =>
   doc(ensureFirestore(), "users", userId, "subscriptions", subscriptionId);
 
+const removeUndefinedFields = <T extends Record<string, unknown>>(value: T) =>
+  Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+  ) as T;
+
 const mapSubscription = (id: string, data: Record<string, unknown>): Subscription => ({
   id,
   name: String(data.name ?? ""),
@@ -75,18 +80,20 @@ export const subscribeToFirestoreSubscriptions = (
 };
 
 export const createFirestoreSubscription = async (userId: string, input: SubscriptionInput) => {
+  const payload = removeUndefinedFields({
+    ...input,
+    archivedAt: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   try {
-    await addDoc(subscriptionsCollection(userId), {
-      ...input,
-      archivedAt: null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await addDoc(subscriptionsCollection(userId), payload);
   } catch (error) {
     logFirestoreError("subscriptionFirestore.createFirestoreSubscription", error, {
       path: `users/${userId}/subscriptions`,
       userId,
-      input,
+      input: payload,
     });
     throw error;
   }
@@ -97,17 +104,19 @@ export const updateFirestoreSubscription = async (
   id: string,
   input: Partial<SubscriptionInput>,
 ) => {
+  const payload = removeUndefinedFields({
+    ...input,
+    updatedAt: serverTimestamp(),
+  });
+
   try {
-    await updateDoc(subscriptionDoc(userId, id), {
-      ...input,
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(subscriptionDoc(userId, id), payload);
   } catch (error) {
     logFirestoreError("subscriptionFirestore.updateFirestoreSubscription", error, {
       path: `users/${userId}/subscriptions/${id}`,
       userId,
       subscriptionId: id,
-      input,
+      input: payload,
     });
     throw error;
   }

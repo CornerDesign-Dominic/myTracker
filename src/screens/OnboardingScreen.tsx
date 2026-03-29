@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
-import { createButtonStyles, radius, spacing } from "@/theme";
+import { radius, spacing } from "@/theme";
 
 type CompletionTarget = "tabs" | "subscription-form";
 
@@ -34,7 +34,6 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
   const { width } = useWindowDimensions();
   const { colors, typography } = useAppTheme();
   const { t } = useI18n();
-  const buttons = createButtonStyles(colors);
   const styles = getStyles(colors);
   const listRef = useRef<FlatList<Slide> | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -141,16 +140,18 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
               <View style={styles.copyBlock}>
                 <Text style={[typography.pageTitle, styles.title]}>{item.title}</Text>
                 {item.renderStatusOverview ? (
-                  <View style={styles.statusList}>
+                  <View style={styles.statusPanel}>
                     <StatusCard
                       icon="checkmark-circle-outline"
                       title={t("onboarding.statusActiveTitle")}
                       description={t("onboarding.statusActiveDescription")}
+                      showDivider
                     />
                     <StatusCard
                       icon="pause-circle-outline"
                       title={t("onboarding.statusPausedTitle")}
                       description={t("onboarding.statusPausedDescription")}
+                      showDivider
                     />
                     <StatusCard
                       icon="close-circle-outline"
@@ -168,21 +169,23 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
       />
 
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.footerButton, !isFirstSlide ? styles.footerButtonVisible : null]}
-          onPress={handleBack}
-          disabled={isFirstSlide}
-        >
-          <Text
-            style={[
-              typography.meta,
-              styles.footerButtonLabel,
-              isFirstSlide ? styles.footerButtonHidden : null,
-            ]}
+        <View style={[styles.footerSide, styles.footerSideLeft]}>
+          <Pressable
+            style={[styles.navTextAction, isFirstSlide ? styles.navTextActionHidden : null]}
+            onPress={handleBack}
+            disabled={isFirstSlide}
           >
-            {t("common.back")}
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                typography.meta,
+                styles.backActionLabel,
+                isFirstSlide ? styles.navButtonLabelHidden : null,
+              ]}
+            >
+              {t("common.back")}
+            </Text>
+          </Pressable>
+        </View>
 
         <View style={styles.dots}>
           {slides.map((slide, index) => (
@@ -193,23 +196,18 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
           ))}
         </View>
 
-        <Pressable
-          style={[
-            buttons.buttonBase,
-            isLastSlide ? buttons.primaryButton : buttons.secondaryButton,
-            styles.ctaButton,
-          ]}
-          onPress={handleContinue}
-        >
-          <Text
-            style={[
-              typography.button,
-              isLastSlide ? styles.primaryCtaLabel : styles.secondaryCtaLabel,
-            ]}
-          >
-            {isLastSlide ? t("onboarding.startCta") : t("common.next")}
-          </Text>
-        </Pressable>
+        <View style={[styles.footerSide, styles.footerSideRight]}>
+          <Pressable style={styles.navTextAction} onPress={handleContinue}>
+            <Text
+              style={[
+                typography.meta,
+                isLastSlide ? styles.primaryCtaLabel : styles.nextActionLabel,
+              ]}
+            >
+              {isLastSlide ? t("onboarding.startCta") : t("common.next")}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -219,22 +217,26 @@ const StatusCard = ({
   icon,
   title,
   description,
+  showDivider = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
+  showDivider?: boolean;
 }) => {
   const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
 
   return (
-    <View style={styles.statusCard}>
-      <View style={styles.statusIconWrap}>
-        <Ionicons name={icon} size={18} color={colors.accent} />
-      </View>
-      <View style={styles.statusCopy}>
-        <Text style={[typography.cardTitle, styles.statusTitle]}>{title}</Text>
-        <Text style={[typography.secondary, styles.statusDescription]}>{description}</Text>
+    <View style={[styles.statusCard, showDivider ? styles.statusCardDivider : null]}>
+      <View style={styles.statusCardRow}>
+        <View style={styles.statusIconWrap}>
+          <Ionicons name={icon} size={18} color={colors.accent} />
+        </View>
+        <View style={styles.statusCopy}>
+          <Text style={[typography.cardTitle, styles.statusTitle]}>{title}</Text>
+          <Text style={[typography.secondary, styles.statusDescription]}>{description}</Text>
+        </View>
       </View>
     </View>
   );
@@ -267,9 +269,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     slideContent: {
       flex: 1,
-      justifyContent: "center",
+      justifyContent: "flex-start",
       alignItems: "center",
       gap: spacing.xl,
+      paddingTop: spacing.xxxl,
       paddingBottom: spacing.xl,
     },
     visualWrap: {
@@ -311,20 +314,25 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 24,
       maxWidth: 320,
     },
-    statusList: {
+    statusPanel: {
       width: "100%",
-      gap: spacing.sm,
-      marginTop: spacing.xs,
-    },
-    statusCard: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: spacing.sm,
-      padding: spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.lg,
       backgroundColor: colors.surface,
+      marginTop: spacing.xs,
+    },
+    statusCard: {
+      padding: spacing.md,
+    },
+    statusCardDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    statusCardRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
     },
     statusIconWrap: {
       width: 32,
@@ -349,25 +357,34 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     footer: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       gap: spacing.md,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.sm,
       paddingBottom: spacing.lg,
     },
-    footerButton: {
-      minWidth: 72,
-      minHeight: 48,
+    footerSide: {
+      width: 148,
+      minHeight: 44,
       justifyContent: "center",
     },
-    footerButtonVisible: {
-      opacity: 1,
+    footerSideLeft: {
+      alignItems: "flex-start",
     },
-    footerButtonLabel: {
-      color: colors.textSecondary,
+    footerSideRight: {
+      alignItems: "flex-end",
+    },
+    navTextAction: {
+      minHeight: 44,
+      justifyContent: "center",
+    },
+    navTextActionHidden: {
+      opacity: 0,
+    },
+    backActionLabel: {
+      color: colors.textPrimary,
       textTransform: "uppercase",
     },
-    footerButtonHidden: {
+    navButtonLabelHidden: {
       color: "transparent",
     },
     dots: {
@@ -376,6 +393,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
       gap: spacing.xs,
       flex: 1,
+      minWidth: 0,
     },
     dot: {
       width: 8,
@@ -387,13 +405,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       width: 22,
       backgroundColor: colors.accent,
     },
-    ctaButton: {
-      minWidth: 120,
-    },
     primaryCtaLabel: {
-      color: colors.textPrimary,
+      color: colors.accent,
+      textTransform: "uppercase",
     },
-    secondaryCtaLabel: {
-      color: colors.textPrimary,
+    nextActionLabel: {
+      color: colors.accent,
+      textTransform: "uppercase",
     },
   });

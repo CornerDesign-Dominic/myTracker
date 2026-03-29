@@ -1,85 +1,86 @@
 # Payment Rules
 
+Diese Datei ist die verbindliche fachliche Quelle fuer Payment-, History- und Sync-Regeln.
+
 ## 1) Grundprinzip Payment-Events
 
 - eine Zahlung = genau ein Datensatz
-- eine Zahlung wird nicht ersetzt, sondern immer direkt bearbeitet
+- eine Zahlung wird nicht ersetzt, sondern direkt bearbeitet
 - keine Replace-/Kettenlogik
-- keine `replacementEventId` / `replacedEventId`
-- eine Zahlung kann beliebig oft geändert werden
-- bezahlt ↔ ausgesetzt
-- Datum ändern
-- Betrag ändern
-- Notiz ändern
+- keine `replacementEventId`
+- keine `replacedEventId`
+- eine einzelne Zahlung kann mehrfach geaendert werden
+- moegliche direkte Aenderungen sind:
+- `payment_booked` ↔ `payment_skipped_inactive`
+- `dueDate`
+- `amount`
+- `notes`
 
-## 2) Löschen von Zahlungen
+## 2) Gueltige Payment-Events
 
-- löscht der User eine Zahlung, wird sie entfernt
-- es gibt keine Tombstone- oder Suppression-Logik für Sync
-- gelöschte Zahlungen werden nicht künstlich geschützt
+- echte gebuchte Zahlung = `payment_booked`
+- ausgesetzte Zahlung wegen inaktivem Status = `payment_skipped_inactive`
+- geloeschte Events (`deletedAt`) gelten fachlich nicht mehr als aktiv
+- pro `dueDate` soll es fachlich hoechstens ein aktives Payment-Event geben
 
-### Verhalten im Zusammenspiel mit Sync
+## 3) Loeschen von Zahlungen
 
-- löscht der User die letzte Zahlung, kann sie beim nächsten Sync wieder entstehen
-- löscht der User eine ältere Zahlung vor der letzten vorhandenen Zahlung, wird sie nicht wieder erzeugt
-- Grund: sie liegt außerhalb des Sync-Zeitraums
+- loescht der User eine Zahlung, wird sie entfernt
+- es gibt keine Tombstone-Logik fuer geloeschte Zahlungen
+- es gibt keine Suppression-Logik fuer geloeschte Zahlungen
+- geloeschte Zahlungen werden nicht kuenstlich vor spaeterem Sync geschuetzt
 
-## 3) Sync-Auslösung
+### Verhalten mit Sync
 
-- Sync wird beim Login ausgelöst
-- Sync läuft über alle Abos des Users
+- loescht der User die letzte vorhandene Zahlung, kann sie beim naechsten Sync wieder entstehen
+- loescht der User eine aeltere Zahlung vor der letzten vorhandenen Zahlung, wird sie in der Regel nicht wieder erzeugt
+- Grund: Sync arbeitet nur fuer Faelligkeiten nach dem aktuellen Sync-Anker
 
-## 4) Sync-Logik (zentrale Regel)
+## 4) Sync-Ausloesung
 
-- für jedes Abo wird die letzte vorhandene Zahlung bestimmt
+- Sync wird beim Login ausgelost
+- Sync laeuft ueber alle Abos des Users
+
+## 5) Sync-Anker
+
+- primaerer Sync-Anker ist die letzte vorhandene Zahlung
 - relevant ist der neueste `payment_booked` oder `payment_skipped_inactive`
 - Grundlage ist das `dueDate`
-- danach wird geprüft, welche Fälligkeiten nach dieser Zahlung bis heute fehlen
-- für jede fehlende Fälligkeit wird genau ein Payment-Event erzeugt
+- wenn eine neuere explizite `due_date_changed`-Basis nach der letzten Zahlung existiert, wird diese als neue Sync-Basis verwendet
+- wenn noch keine Payment-Historie existiert, wird auf `nextPaymentDate` oder auf `initialNextPaymentDate` aus `subscription_created` zurueckgegriffen
 
-## 5) Verhalten nach Status
+## 6) Sync-Zeitraum
+
+- Sync erzeugt nur fehlende Faelligkeiten nach dem aktuellen Sync-Anker bis heute
+- es wird keine komplette Altvergangenheit automatisch erzeugt
+- es werden keine zukuenftigen Payment-Events automatisch erzeugt
+- Sync erzeugt keine Termine vor `createdAt` der Subscription
+
+## 7) Verhalten pro fehlender Faelligkeit
 
 - `active` → `payment_booked`
 - `paused` → `payment_skipped_inactive`
 - `cancelled` → kein neues Payment-Event
-- `paused` = temporär deaktiviert und kann wieder aktiviert werden
-- `cancelled` = beendet und erzeugt keine weiteren Zahlungen oder skipped Events
+- der Status wird pro Faelligkeit auf dem jeweiligen Datum bewertet
 
-## 6) Rolle von `nextPaymentDate`
+## 8) Rolle von `nextPaymentDate`
 
-- `nextPaymentDate` ist nicht der primäre Sync-Anker
-- `nextPaymentDate` wird nur verwendet, wenn noch keine Payment-Historie existiert
-- `nextPaymentDate` wird nur als initiale Basis beim Anlegen oder Reset verwendet
-- der normale Sync basiert auf der letzten vorhandenen Zahlung
+- `nextPaymentDate` ist nicht der normale laufende Sync-Anker
+- `nextPaymentDate` dient als Initial-/Fallback-Basis, wenn noch keine Payment-Historie existiert
+- bei Intervall- oder Faelligkeitsaenderungen kann `nextPaymentDate` Teil der neuen Basis fuer den weiteren Zyklus sein
 
-## 7) Sync-Zeitraum
+## 9) Intervallaenderung
 
-- Sync läuft von der letzten vorhandenen Zahlung bis heute
-- es wird keine komplette Altvergangenheit automatisch erzeugt
-- nur der relevante Zeitraum innerhalb der App wird betrachtet
+- bei Aenderung des `billingCycle` muss `nextPaymentDate` neu gesetzt oder bestaetigt werden
+- dieses Datum ist die neue Basis fuer den kuenftigen Zahlungszyklus
+- Sync und weitere Faelligkeiten orientieren sich ab dann an dieser aktualisierten Basis
 
-## 8) Statusänderungen von Abos
-
-- Status beeinflusst zukünftige Zahlungen
-- aktiv → Zahlungen werden gebucht
-- pausiert → Zahlungen werden ausgesetzt (`payment_skipped_inactive`)
-- gekündigt → keine weiteren Zahlungen
-- der Status wird pro Fälligkeit berücksichtigt
-
-## 9) Intervalländerung
-
-- bei Änderung des `billingCycle` muss `nextPaymentDate` neu gesetzt oder bestätigt werden
-- dieses Datum ist die neue Basis für den Zahlungszyklus
-- zukünftige Zahlungen werden ab diesem Datum berechnet
-
-## 10) Ziel der Logik
+## 10) Ziele der Logik
 
 - einfache, nachvollziehbare Payment-Historie
-- keine versteckten technischen Sonderfälle
-- keine impliziten Suppression-Mechaniken
-- klare Trennung zwischen echten Zahlungen, ausgesetzten Zahlungen und keiner künstlichen Rekonstruktion außerhalb des relevanten Zeitraums
-
-## Widersprüche im aktuellen Code
-
-- `src/domain/subscriptionHistory/paymentSync.ts` nutzt neben der letzten vorhandenen Zahlung aktuell auch `due_date_changed` als mögliche neuere Sync-Basis
-- `src/domain/subscriptionHistory/paymentSync.ts` fällt auf `subscription.nextPaymentDate` zurück, wenn keine Payment-Historie vorhanden ist; das passt zur Regel, ist aber aktuell nicht als eigener Reset-/Initialfall getrennt modelliert
+- keine versteckten technischen Sonderfaelle
+- keine stillen Suppression-Mechaniken
+- klare Trennung zwischen:
+- echten Zahlungen
+- ausgesetzten Zahlungen
+- nicht erzeugten Terminen

@@ -12,6 +12,7 @@ export type RootStackParamList = {
   SubscriptionHistory: { subscriptionId: string };
   AddPayment: { subscriptionId: string; eventId?: string };
   Savings: undefined;
+  MonthlyPreview: undefined;
   Settings: undefined;
   Terms: undefined;
   Privacy: undefined;

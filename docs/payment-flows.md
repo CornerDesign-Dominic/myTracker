@@ -1,77 +1,43 @@
-# Payment- und Subscription-Flows
+# Payment Flows
 
-Diese Datei beschreibt die wichtigsten fachlichen Zahlungs- und Status-Flows der App in kurzer Form.
+Diese Datei beschreibt die wichtigsten fachlichen Flows aus Produkt- und User-Sicht.
+Die verbindlichen Detailregeln stehen in [`payment-rules.md`](payment-rules.md).
 
-## 1. Normale aktive Zahlungskette
+## 1) Erstes Sync-Verhalten ohne Payment-Historie
 
-Auslöser:
-- Der User legt ein Abo an.
-- Das Abo ist aktiv.
-- Ein Fälligkeitstermin wird erreicht.
+- der User hat ein Abo ohne vorhandene Payment-History
+- die App nutzt `nextPaymentDate` bzw. die initiale Due-Date-Basis als Startpunkt
+- beim Sync werden fehlende vergangene Faelligkeiten bis heute erzeugt
+- zukuenftige Termine werden dabei nicht angelegt
 
-Erwartetes Verhalten:
-- Für den fälligen Termin wird eine Zahlung als gebucht gespeichert.
-- Die Zahlung wird als `payment_booked` in der History abgelegt.
-- Der nächste Termin folgt aus dem Intervall des Abos.
+## 2) Normaler laufender Sync
 
-Ergebnis:
-- Die History enthält pro fälligem Termin eine gebuchte Zahlung.
-- Der Zahlungszyklus läuft im gewählten Intervall weiter.
+- es existiert bereits Payment-History fuer das Abo
+- Sync orientiert sich an der letzten aktiven Zahlung in der History
+- nur fehlende Faelligkeiten nach diesem Anker bis heute werden erzeugt
+- vorhandene Payment-Events fuer dieselbe Due-Date werden nicht dupliziert
 
-## 2. Abo pausiert / gekündigt / nicht aktiv
+## 3) Verhalten nach Status
 
-Auslöser:
-- Der User setzt ein Abo auf pausiert, gekündigt oder anderweitig nicht aktiv.
-- Ein theoretischer Fälligkeitstermin wird erreicht.
+- aktives Abo erzeugt fuer fehlende vergangene Faelligkeiten `payment_booked`
+- pausiertes Abo erzeugt fuer fehlende vergangene Faelligkeiten `payment_skipped_inactive`
+- gekuendigtes Abo erzeugt keine weiteren Payment-Events
 
-Erwartetes Verhalten:
-- Die Zahlung wird nicht als gebucht gespeichert.
-- Stattdessen wird sie als ausgesetzt gespeichert.
-- In der History entsteht ein `payment_skipped_inactive`.
+## 4) Manuelle Korrektur einer Zahlung
 
-Ergebnis:
-- Der Termin gilt fachlich als ausgesetzte Zahlung.
-- Diese ausgesetzte Zahlung kann später in die Sparsumme einfließen.
+- der User bearbeitet eine bestehende Zahlung direkt
+- dieselbe Zahlung bleibt derselbe Datensatz
+- moegliche direkte Korrekturen sind Typ, Betrag, Due-Date und Notiz
+- es entsteht keine Replace-Kette
 
-## 3. Zahlung wurde wegen falschem Status falsch verbucht
+## 5) Loeschen einer Zahlung
 
-Auslöser:
-- Der Status eines Abos wurde zu spät oder zu früh geändert.
-- Eine Zahlung wurde dadurch falsch als gebucht oder ausgesetzt gespeichert.
+- loescht der User die letzte vorhandene Zahlung, kann sie beim naechsten Sync wieder auftauchen
+- loescht der User eine aeltere Zahlung vor dem letzten aktiven Sync-Anker, bleibt sie in der Regel geloescht
+- Grund ist der begrenzte Sync-Zeitraum ab der letzten vorhandenen Zahlung
 
-Erwartetes Verhalten:
-- Der User kann die einzelne Zahlung in der History nachträglich korrigieren.
-- Mögliche Korrekturen:
-- `payment_booked` zu `payment_skipped_inactive`
-- `payment_skipped_inactive` zu `payment_booked`
+## 6) Wechsel von Intervall oder Due-Date
 
-Ergebnis:
-- Der einzelne Termin wird fachlich korrekt berichtigt.
-- Die History bleibt konsistent.
-
-## 4. Manuelle Zahlung bei Fälligkeit heute
-
-Auslöser:
-- Der User legt eine Zahlung manuell an.
-- Die Fälligkeit ist heute.
-
-Erwartetes Verhalten:
-- Die Zahlung wird direkt gespeichert.
-- Sie wird als gebuchte Zahlung angelegt.
-- In der History entsteht ein `payment_booked`.
-
-Ergebnis:
-- Der heutige Termin ist sofort korrekt in der History erfasst.
-
-## 5. Intervall wird geändert
-
-Auslöser:
-- Der User ändert das Intervall eines Abos.
-
-Erwartetes Verhalten:
-- Der User gibt die nächste Zahlung neu an.
-- Diese nächste Zahlung wird zur neuen Basis für den weiteren Zyklus.
-- Alle weiteren Termine bauen auf diesem neuen Startpunkt und dem neuen Intervall auf.
-
-Ergebnis:
-- Der künftige Zahlungsrhythmus richtet sich nach dem neuen Intervall und der neu gesetzten nächsten Zahlung.
+- bei Intervallaenderung muss die naechste Due-Date neu gesetzt oder bestaetigt werden
+- diese Basis steuert den weiteren Zahlungszyklus
+- eine spaetere Due-Date-Aenderung kann fuer den Sync zur neueren fachlichen Basis werden

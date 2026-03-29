@@ -13,6 +13,7 @@ import { CalendarScreen } from "@/screens/CalendarScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
 import { LoginScreen } from "@/screens/LoginScreen";
+import { MonthlyCostPreviewScreen } from "@/screens/MonthlyCostPreviewScreen";
 import { RegisterScreen } from "@/screens/RegisterScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { SavingsScreen } from "@/screens/SavingsScreen";
@@ -211,6 +212,13 @@ export const AppNavigator = ({
           component={SavingsScreen}
           options={{
             title: t("navigation.savings"),
+          }}
+        />
+        <Stack.Screen
+          name="MonthlyPreview"
+          component={MonthlyCostPreviewScreen}
+          options={{
+            title: t("navigation.monthlyPreview"),
           }}
         />
         <Stack.Screen

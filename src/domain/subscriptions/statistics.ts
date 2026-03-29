@@ -19,6 +19,12 @@ export type DevelopmentSeries = {
   hasHistory: boolean;
 };
 
+export type MonthlyCostPreviewItem = {
+  key: string;
+  date: Date;
+  totalAmount: number;
+};
+
 const toMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
@@ -54,6 +60,10 @@ const buildMonthBuckets = (startMonth: Date, endMonth: Date) => {
     };
   });
 };
+
+const isSameOrBeforeMonth = (left: Date, right: Date) =>
+  left.getFullYear() < right.getFullYear() ||
+  (left.getFullYear() === right.getFullYear() && left.getMonth() <= right.getMonth());
 
 const getAllRangeStartMonth = (
   history: SubscriptionHistoryEvent[],
@@ -233,6 +243,50 @@ export const getTopExpensiveSubscriptions = (
     .filter((subscription) => subscription.status === "active")
     .sort((left, right) => getMonthlyEquivalent(right) - getMonthlyEquivalent(left))
     .slice(0, limit);
+
+export const buildUpcomingMonthlyCostPreview = (
+  subscriptions: Subscription[],
+  monthCount = 12,
+  now = new Date(),
+): MonthlyCostPreviewItem[] => {
+  const startMonth = startOfMonth(now);
+  const endMonth = new Date(startMonth.getFullYear(), startMonth.getMonth() + monthCount - 1, 1);
+  const buckets = buildMonthBuckets(startMonth, endMonth);
+  const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+  subscriptions
+    .filter((subscription) => subscription.status === "active")
+    .forEach((subscription) => {
+      const nextPaymentDate = parseDate(subscription.nextPaymentDate);
+
+      if (!nextPaymentDate) {
+        return;
+      }
+
+      const anchorDay = getRecurringAnchorDay(subscription.nextPaymentDate);
+      let cursor = nextPaymentDate;
+
+      while (startOfMonth(cursor) < startMonth) {
+        cursor = shiftRecurringDate(cursor, subscription.billingCycle, 1, anchorDay);
+      }
+
+      while (isSameOrBeforeMonth(startOfMonth(cursor), endMonth)) {
+        const bucket = bucketMap.get(toMonthKey(startOfMonth(cursor)));
+
+        if (bucket) {
+          bucket.totalAmount += subscription.amount;
+        }
+
+        cursor = shiftRecurringDate(cursor, subscription.billingCycle, 1, anchorDay);
+      }
+    });
+
+  return buckets.map((bucket) => ({
+    key: bucket.key,
+    date: bucket.date,
+    totalAmount: bucket.totalAmount,
+  }));
+};
 
 export const buildCostDevelopmentSeries = (
   history: SubscriptionHistoryEvent[],

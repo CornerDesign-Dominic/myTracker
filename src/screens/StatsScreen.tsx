@@ -239,7 +239,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   );
   const billingStructure = useMemo(() => getBillingStructure(subscriptions), [subscriptions]);
   const topSubscriptions = useMemo(
-    () => getTopExpensiveSubscriptions(subscriptions, 3),
+    () => getTopExpensiveSubscriptions(subscriptions, 5),
     [subscriptions],
   );
   const skippedHistory = useMemo(
@@ -265,6 +265,13 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     }),
     [allHistory, subscriptions],
   );
+  const currentMonthLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+        month: "long",
+      }).format(new Date()),
+    [language],
+  );
 
   useEffect(() => {
     if (developmentSeries.points.length === 0) {
@@ -289,9 +296,12 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
         </View>
 
-        <View style={[surfaces.panel, styles.summaryCard]}>
+        <Pressable
+          style={[surfaces.panel, styles.summaryCard]}
+          onPress={() => navigation.navigate("MonthlyPreview")}
+        >
           <SummaryMetric
-            label={t("stats.currentMonthCost")}
+            label={t("stats.currentMonthCost", { month: currentMonthLabel })}
             value={formatCurrency(summary.currentMonthCost, currency)}
           />
           <View style={styles.summaryDivider} />
@@ -304,7 +314,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
             label={t("stats.yearlyTotal")}
             value={formatCurrency(summary.yearlyTotal, currency)}
           />
-        </View>
+        </Pressable>
 
         <Pressable
           style={[surfaces.panel, styles.card]}
@@ -355,10 +365,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           </View>
 
           {metrics.byCategory.length === 0 ? (
-            <EmptyState
-              title={t("stats.noCategories")}
-              description={t("stats.noCategoriesDescription")}
-            />
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noSubscriptionsAvailable")}
+            </Text>
           ) : (
             <View style={styles.chartList}>
               {categoryItems.map((item) => (

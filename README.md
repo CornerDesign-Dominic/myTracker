@@ -1,35 +1,34 @@
-# Abo Tracker MVP
+# Tracker
 
-Ein schlankes Expo-React-Native-MVP fuer die Verwaltung von Abonnements mit TypeScript, Firebase Auth und user-bezogener Firestore-Anbindung.
+Schlanke Expo-/React-Native-App zur Verwaltung von Abonnements mit Firebase Auth, user-bezogener Firestore-Datenhaltung, Payment-History und Sync fuer fehlende Faelligkeiten.
 
-## Features im MVP
+## Projektueberblick
 
-- Uebersicht fuer Abos, Ausgaben und naechste Zahlungen
+- Uebersicht ueber aktive und inaktive Abos
 - Kalender-, Statistik- und Verwaltungsansichten
-- Formular zum Anlegen und Bearbeiten von Abos
-- Detailansicht fuer einzelne Abos
+- Formulare zum Anlegen, Bearbeiten und Nachpflegen von Abos
+- Payment-History mit gebuchten und ausgesetzten Zahlungen
+- Sync fuer fehlende vergangene Payment-Events bis heute
 - Firebase Auth mit anonymem Start sowie E-Mail-/Passwort-Login
-- Account-Aufwertung von anonym zu E-Mail + Passwort ohne Datenverlust
-- User-bezogene Firestore-Daten unter `users/{userId}/...`
-- Lokale Seed-Daten als Fallback, wenn Firebase nicht konfiguriert ist
+- Fallback auf lokale Mock-/Seed-Daten, wenn Firebase nicht konfiguriert ist
 
 ## Setup
 
-1. Abhaengigkeiten installieren:
+1. Abhaengigkeiten installieren
 
 ```bash
 npm install
 ```
 
-2. Umgebungsvariablen anlegen:
+2. `.env` anlegen
 
 ```bash
 Copy-Item .env.example .env
 ```
 
-3. Firebase-Werte in `.env` eintragen.
+3. Firebase-Werte in `.env` eintragen
 
-4. App starten:
+4. App starten
 
 ```bash
 npm run start
@@ -43,7 +42,7 @@ npm run ios
 npm run web
 ```
 
-## Benoetigte Umgebungsvariablen
+## Umgebungsvariablen
 
 Die App nutzt Expo Public Env Variablen:
 
@@ -56,106 +55,55 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 ```
 
-Wenn diese Werte fehlen, laeuft die App automatisch mit lokalen Seed-Daten weiter. Das ist praktisch fuer UI-Tests und fruehe Entwicklung.
+Wenn diese Werte fehlen, arbeitet die App mit lokalen Seed-Daten weiter. Das ist fuer UI- und Flow-Entwicklung beabsichtigt.
 
-## Firebase-Konfiguration
+## Firebase und Datenmodell
 
-Die Firebase-Konfiguration liegt in [config.ts](C:/Users/domin/Desktop/Tracker/src/firebase/config.ts).
-
-- Firebase Auth nutzt auf React Native persistente Speicherung ueber `@react-native-async-storage/async-storage`.
-- Die App meldet Nutzer beim ersten Start automatisch anonym an.
+- Auth nutzt persistente Speicherung ueber `@react-native-async-storage/async-storage`
+- Nutzer starten anonym und koennen spaeter auf E-Mail + Passwort aufgewertet werden
 - Firestore-Daten liegen user-bezogen unter:
 
 ```text
 users/{userId}
 users/{userId}/settings/app
 users/{userId}/subscriptions/{subscriptionId}
+users/{userId}/subscriptions/{subscriptionId}/history/{eventId}
 ```
 
-- Abo-Dokumente werden per Soft Delete ueber `archivedAt` archiviert.
+- Abos werden ueber `archivedAt` soft archiviert
 
-## Firestore Rules
+## Scripts
 
-Wenn du `permission-denied` in Firestore siehst, sind sehr wahrscheinlich die Security Rules fuer die neue `users/{userId}`-Struktur noch nicht deployed.
+- `npm run start` startet Expo
+- `npm run android` startet Android
+- `npm run ios` startet iOS
+- `npm run web` startet Web
+- `npm run lint` fuehrt `tsc --noEmit` aus
 
-Die passenden Dateien liegen hier:
+## Architektur in Kurzform
 
-- [firestore.rules](C:/Users/domin/Desktop/Tracker/firestore.rules)
-- [firebase.json](C:/Users/domin/Desktop/Tracker/firebase.json)
+- `src/context/` enthaelt globalen Auth- und Settings-State
+- `src/screens/` bildet die App-Screens
+- `src/components/` enthaelt wiederverwendbare UI-Bausteine
+- `src/domain/` kapselt fachliche Regeln fuer Subscriptions, History und Statistik
+- `src/services/` und `src/infrastructure/` binden Firestore und lokale Stores an
+- `src/hooks/` verbindet Domain-Logik mit der UI
+- `src/theme/` enthaelt Design-Tokens und gemeinsame Pattern
 
-Rules deployen:
+## Payment- und Sync-Logik
 
-```bash
-firebase deploy --only firestore:rules
-```
+Kurzfassung:
 
-Die enthaltenen Rules erlauben einem authentifizierten Nutzer nur den Zugriff auf:
+- Payment-History besteht aus echten Events wie `payment_booked` und `payment_skipped_inactive`
+- Sync erzeugt fehlende vergangene Payment-Events bis heute
+- der normale Sync orientiert sich primaer an der letzten vorhandenen Payment-Historie
+- `nextPaymentDate` dient als Initial-/Fallback-Basis, wenn noch keine Payment-History existiert
 
-- `users/{uid}`
-- `users/{uid}/settings/app`
-- `users/{uid}/subscriptions/{subscriptionId}`
+Die verbindlichen Regeln stehen in den Dateien unter `docs/`.
 
-## Projektstruktur
+## Weiterfuehrende Doku
 
-```text
-.
-|-- App.tsx
-|-- app.json
-|-- firebase.json
-|-- firestore.rules
-|-- src
-|   |-- components
-|   |   `-- forms
-|   |-- constants
-|   |-- context
-|   |-- firebase
-|   |-- hooks
-|   |-- i18n
-|   |-- navigation
-|   |-- screens
-|   |-- services
-|   |   |-- firestore
-|   |   `-- storage
-|   |-- theme
-|   |-- types
-|   `-- utils
-`-- README.md
-```
-
-## Architekturhinweise
-
-- `src/context/AuthContext.tsx`: globaler Auth-State fuer anonymen Start, Login, Registrierung und Account-Aufwertung
-- `src/context/AppSettingsContext.tsx`: lokale und user-bezogene App-Einstellungen
-- `src/services/firestore`: Firestore CRUD und Live-Subscription ueber `onSnapshot`
-- `src/services/subscriptionRepository.ts`: schaltet zwischen Firestore und Mock-Store um
-- `src/hooks/useSubscriptions.ts`: UI-nahe Datenlogik, Loading/Error-Handling und CRUD-Aktionen
-- `src/utils/subscriptionMetrics.ts`: Berechnungen fuer monatliche und jaehrliche Kosten, Kategorien und naechste Zahlungen
-
-## Hinweise zum MVP
-
-- Anonyme Nutzer koennen spaeter per E-Mail + Passwort aufgewertet werden, ohne den Datenraum zu wechseln.
-- Reminder sind noch nicht aktiv, aber die Datenstruktur ist dafuer vorbereitet.
-- Wenn Firebase noch nicht vollstaendig konfiguriert ist, bleiben lokale Mock-/Seed-Daten verfuegbar.
-
-## TypeScript-Modell
-
-Das Kernmodell liegt in [subscription.ts](C:/Users/domin/Desktop/Tracker/src/types/subscription.ts).
-
-- `Subscription`
-- `SubscriptionInput`
-- `BillingCycle`
-- `SubscriptionStatus`
-- `SubscriptionMetrics`
-
-## Lokale Testdaten
-
-Die Seed-Daten liegen in [seedSubscriptions.ts](C:/Users/domin/Desktop/Tracker/src/services/storage/seedSubscriptions.ts) und decken mehrere Kategorien und Statuswerte ab.
-
-## Weiterer Ausbau
-
-Sinnvolle naechste Schritte nach dem MVP:
-
-- Firestore Rules und Indizes produktionsnah erweitern
-- Lokale Push-Reminder fuer Zahlungs- und Faelligkeitstermine
-- Filter und Sortierung erweitern
-- Echtes Charting mit einer dedizierten Bibliothek
+- [`docs/payment-rules.md`](docs/payment-rules.md) - verbindliche Payment-/Sync-Regeln
+- [`docs/payment-flows.md`](docs/payment-flows.md) - fachliche Flows aus Produkt-/User-Sicht
+- [`docs/subscription-history.md`](docs/subscription-history.md) - Event-Modell und History-spezifische Hinweise
+- [`docs/design-system.md`](docs/design-system.md) - visuelle Regeln und UI-System

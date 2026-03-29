@@ -26,6 +26,11 @@
       "@react-native-community/datetimepicker",
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4ede4e45-de83-4081-bfe5-ae4d812d6256"
+      }
+    }
   }
 }

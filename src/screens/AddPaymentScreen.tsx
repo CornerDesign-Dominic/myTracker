@@ -140,7 +140,7 @@ const DateWheel = <T extends string | number>({
 
 export const AddPaymentScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
-  const { currency, language } = useAppSettings();
+  const { currency } = useAppSettings();
   const { t } = useI18n();
   const { currentUser } = useAuth();
   const layout = createScreenLayout(colors);
@@ -220,13 +220,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
 
   const selectedDateValue = formatLocalDateInput(selectedDate);
   const paymentTypeLabel =
-    paymentType === "payment_skipped_inactive"
-      ? language === "de"
-        ? "Während inaktiv"
-        : "While inactive"
-      : language === "de"
-        ? "Gebucht"
-        : "Booked";
+    paymentType === "payment_skipped_inactive" ? t("addPayment.whileInactive") : t("addPayment.booked");
 
   const updateDraftDay = (day: number) => {
     setSelectedDate((current) => new Date(current.getFullYear(), current.getMonth(), day));
@@ -260,26 +254,17 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
     const amount = Number(amountInput.replace(",", "."));
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      Alert.alert(
-        language === "de" ? "Zahlung prüfen" : "Check payment",
-        language === "de" ? "Bitte einen gültigen Betrag angeben." : "Please enter a valid amount.",
-      );
+      Alert.alert(t("addPayment.checkTitle"), t("addPayment.invalidAmount"));
       return;
     }
 
     if (!isDateInputValid(selectedDateValue)) {
-      Alert.alert(
-        language === "de" ? "Zahlung prüfen" : "Check payment",
-        language === "de" ? "Bitte ein gültiges Datum wählen." : "Please select a valid date.",
-      );
+      Alert.alert(t("addPayment.checkTitle"), t("addPayment.invalidDate"));
       return;
     }
 
     if (!currentUser?.uid) {
-      Alert.alert(
-        language === "de" ? "Nicht verfügbar" : "Unavailable",
-        language === "de" ? "Es ist kein Nutzer angemeldet." : "No user is signed in.",
-      );
+      Alert.alert(t("common.unavailable"), t("addPayment.noUser"));
       return;
     }
 
@@ -306,14 +291,8 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       }
       navigation.goBack();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : language === "de"
-            ? "Die Zahlung konnte nicht gespeichert werden."
-            : "The payment could not be saved.";
-
-      Alert.alert(language === "de" ? "Zahlung prüfen" : "Check payment", message);
+      const message = error instanceof Error ? error.message : t("addPayment.saveError");
+      Alert.alert(t("addPayment.checkTitle"), message);
     }
   };
 
@@ -322,44 +301,26 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    Alert.alert(
-      language === "de" ? "Zahlung löschen?" : "Delete payment?",
-      language === "de"
-        ? "Zahlung wirklich löschen?"
-        : "Do you really want to delete this payment?",
-      [
-        {
-          text: t("common.cancel"),
-          style: "cancel",
+    Alert.alert(t("addPayment.deleteConfirmTitle"), t("addPayment.deleteConfirmMessage"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("addPayment.deleteAction"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await subscriptionService.deleteHistoryEventForUser(
+              currentUser.uid,
+              subscription.id,
+              route.params.eventId!,
+            );
+            navigation.goBack();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : t("addPayment.deleteError");
+            Alert.alert(t("addPayment.deleteErrorTitle"), message);
+          }
         },
-        {
-          text: language === "de" ? "Löschen" : "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await subscriptionService.deleteHistoryEventForUser(
-                currentUser.uid,
-                subscription.id,
-                route.params.eventId!,
-              );
-              navigation.goBack();
-            } catch (error) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : language === "de"
-                    ? "Die Zahlung konnte nicht gelöscht werden."
-                    : "The payment could not be deleted.";
-
-              Alert.alert(
-                language === "de" ? "Zahlung löschen" : "Delete payment",
-                message,
-              );
-            }
-          },
-        },
-      ],
-    );
+      },
+    ]);
   };
 
   return (
@@ -368,19 +329,13 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
         <View style={[surfaces.panel, styles.infoCard]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{subscription.name}</Text>
           <Text style={[typography.secondary, styles.helperText]}>
-            {isEditing
-              ? language === "de"
-                ? "Bestehende Zahlung korrigieren."
-                : "Adjust an existing payment."
-              : language === "de"
-                ? "Zahlung schnell manuell erfassen."
-                : "Add a payment quickly and manually."}
+            {isEditing ? t("addPayment.editHint") : t("addPayment.createHint")}
           </Text>
         </View>
 
         <View style={[surfaces.panel, styles.cardGroup]}>
           <FormRow
-            label={language === "de" ? "Status" : "Status"}
+            label={t("common.status")}
             value={paymentTypeLabel}
             onPress={() => setActiveField("status")}
             isFirst
@@ -391,7 +346,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
             onPress={() => setActiveField("amount")}
           />
           <FormRow
-            label={language === "de" ? "Zahlungsdatum" : "Payment date"}
+            label={t("addPayment.paymentDate")}
             value={formatDate(selectedDateValue)}
             onPress={() => setActiveField("date")}
           />
@@ -404,40 +359,26 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
           />
         </View>
 
-        <Pressable
-          style={[buttons.buttonBase, buttons.primaryButton, styles.saveButton]}
-          onPress={handleSave}
-        >
-          <Text style={[typography.button, styles.saveButtonText]}>
-            {language === "de" ? "Zahlung speichern" : "Save payment"}
-          </Text>
+        <Pressable style={[buttons.buttonBase, buttons.primaryButton, styles.saveButton]} onPress={handleSave}>
+          <Text style={[typography.button, styles.saveButtonText]}>{t("addPayment.saveAction")}</Text>
         </Pressable>
 
         {isEditing ? (
-          <Pressable
-            style={[buttons.buttonBase, buttons.secondaryButton, styles.deleteButton]}
-            onPress={handleDelete}
-          >
-            <Text style={[typography.button, styles.deleteButtonText]}>
-              {language === "de" ? "Zahlung löschen" : "Delete payment"}
-            </Text>
+          <Pressable style={[buttons.buttonBase, buttons.secondaryButton, styles.deleteButton]} onPress={handleDelete}>
+            <Text style={[typography.button, styles.deleteButtonText]}>{t("addPayment.deleteButton")}</Text>
           </Pressable>
         ) : null}
       </ScrollView>
 
       <EditorSheet
         visible={activeField === "status"}
-        title={language === "de" ? "Status" : "Status"}
+        title={t("common.status")}
         onClose={() => setActiveField(null)}
         confirmLabel={t("common.save")}
       >
         <View style={styles.statusOptions}>
           <Pressable
-            style={[
-              surfaces.subtlePanel,
-              styles.statusOption,
-              paymentType === "payment_booked" ? styles.statusOptionActive : null,
-            ]}
+            style={[surfaces.subtlePanel, styles.statusOption, paymentType === "payment_booked" ? styles.statusOptionActive : null]}
             onPress={() => {
               setPaymentType("payment_booked");
               setActiveField(null);
@@ -450,7 +391,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
                 paymentType === "payment_booked" ? styles.statusOptionLabelActive : null,
               ]}
             >
-              {language === "de" ? "Gebucht" : "Booked"}
+              {t("addPayment.booked")}
             </Text>
           </Pressable>
           <Pressable
@@ -468,12 +409,10 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
               style={[
                 typography.body,
                 styles.statusOptionLabel,
-                paymentType === "payment_skipped_inactive"
-                  ? styles.statusOptionLabelActive
-                  : null,
+                paymentType === "payment_skipped_inactive" ? styles.statusOptionLabelActive : null,
               ]}
             >
-              {language === "de" ? "Während inaktiv" : "While inactive"}
+              {t("addPayment.whileInactive")}
             </Text>
           </Pressable>
         </View>
@@ -514,7 +453,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
 
       <EditorSheet
         visible={activeField === "date"}
-        title={language === "de" ? "Zahlungsdatum" : "Payment date"}
+        title={t("addPayment.paymentDate")}
         onClose={() => setActiveField(null)}
         onConfirm={() => setActiveField(null)}
         confirmLabel={t("common.save")}
@@ -523,21 +462,21 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
         <View style={styles.datePickerWrap}>
           <View style={styles.dateSelectors}>
             <DateWheel
-              label={language === "de" ? "Tag" : "Day"}
+              label={t("common.day")}
               options={dayOptions}
               selectedValue={selectedDate.getDate()}
               onChange={updateDraftDay}
               colors={colors}
             />
             <DateWheel
-              label={language === "de" ? "Monat" : "Month"}
+              label={t("common.month")}
               options={monthOptions}
               selectedValue={selectedDate.getMonth()}
               onChange={updateDraftMonth}
               colors={colors}
             />
             <DateWheel
-              label={language === "de" ? "Jahr" : "Year"}
+              label={t("common.year")}
               options={yearOptions}
               selectedValue={selectedDate.getFullYear()}
               onChange={updateDraftYear}

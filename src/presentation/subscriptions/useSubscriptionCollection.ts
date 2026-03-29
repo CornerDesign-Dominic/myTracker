@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Subscription } from "@/types/subscription";
 import { SubscriptionService } from "@/application/subscriptions/service";
 import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
+import { useI18n } from "@/hooks/useI18n";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type Options = {
@@ -12,6 +13,7 @@ type Options = {
 };
 
 export const useSubscriptionCollection = ({ authIsReady, userId, service }: Options) => {
+  const { t } = useI18n();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,12 +44,12 @@ export const useSubscriptionCollection = ({ authIsReady, userId, service }: Opti
         });
         setSubscriptions([]);
         setIsLoading(false);
-        setErrorMessage(getSubscriptionErrorMessage(error));
+        setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
       },
     );
 
     return unsubscribe;
-  }, [authIsReady, service, userId]);
+  }, [authIsReady, service, t, userId]);
 
   useEffect(() => {
     if (!authIsReady || !hasUserScope(userId) || subscriptions.length === 0) {

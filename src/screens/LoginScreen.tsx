@@ -19,7 +19,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 export const LoginScreen = ({ navigation }: Props) => {
   const { colors, typography } = useAppTheme();
-  const { language } = useI18n();
+  const { t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
@@ -30,37 +30,14 @@ export const LoginScreen = ({ navigation }: Props) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const copy =
-    language === "de"
-      ? {
-          title: "Login",
-          email: "E-Mail",
-          password: "Passwort",
-          submit: "Einloggen",
-          switch: "Noch kein Konto? Registrieren",
-          emailError: "Bitte gib eine gültige E-Mail-Adresse ein.",
-          passwordError: "Das Passwort muss mindestens 6 Zeichen lang sein.",
-          genericError: "Login fehlgeschlagen.",
-        }
-      : {
-          title: "Login",
-          email: "Email",
-          password: "Password",
-          submit: "Sign in",
-          switch: "No account yet? Register",
-          emailError: "Please enter a valid email address.",
-          passwordError: "Password must be at least 6 characters.",
-          genericError: "Login failed.",
-        };
-
   const handleSubmit = async () => {
     if (!email.includes("@")) {
-      setError(copy.emailError);
+      setError(t("auth.emailError"));
       return;
     }
 
     if (password.length < 6) {
-      setError(copy.passwordError);
+      setError(t("auth.passwordError"));
       return;
     }
 
@@ -69,17 +46,17 @@ export const LoginScreen = ({ navigation }: Props) => {
       await login(email, password);
       navigation.goBack();
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : copy.genericError);
+      setError(submissionError instanceof Error ? submissionError.message : t("auth.loginError"));
     }
   };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
       <View style={layout.content}>
-        <Text style={[typography.pageTitle, styles.title]}>{copy.title}</Text>
+        <Text style={[typography.pageTitle, styles.title]}>{t("auth.loginTitle")}</Text>
 
         <View style={[surfaces.panel, styles.formCard]}>
-          <Text style={[typography.meta, styles.label]}>{copy.email}</Text>
+          <Text style={[typography.meta, styles.label]}>{t("auth.email")}</Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -88,7 +65,7 @@ export const LoginScreen = ({ navigation }: Props) => {
             style={[inputs.input, styles.input]}
           />
 
-          <Text style={[typography.meta, styles.label]}>{copy.password}</Text>
+          <Text style={[typography.meta, styles.label]}>{t("auth.password")}</Text>
           <TextInput
             value={password}
             onChangeText={setPassword}
@@ -99,11 +76,11 @@ export const LoginScreen = ({ navigation }: Props) => {
           {error ? <Text style={[typography.secondary, styles.error]}>{error}</Text> : null}
 
           <Pressable style={[buttons.buttonBase, buttons.primaryButton]} onPress={handleSubmit}>
-            <Text style={[typography.button, styles.primaryButtonText]}>{copy.submit}</Text>
+            <Text style={[typography.button, styles.primaryButtonText]}>{t("auth.loginSubmit")}</Text>
           </Pressable>
 
           <Pressable onPress={() => navigation.replace("Register")}>
-            <Text style={[typography.secondary, styles.link]}>{copy.switch}</Text>
+            <Text style={[typography.secondary, styles.link]}>{t("auth.loginSwitch")}</Text>
           </Pressable>
         </View>
       </View>

@@ -105,7 +105,7 @@ const TabsNavigator = () => {
 
 export const AppNavigator = () => {
   const { colors, navigationTheme, typography } = useAppTheme();
-  const { language, t } = useI18n();
+  const { t } = useI18n();
 
   return (
     <NavigationContainer theme={navigationTheme}>
@@ -133,12 +133,12 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ title: language === "de" ? "Login" : "Login" }}
+          options={{ title: t("common.login") }}
         />
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
-          options={{ title: language === "de" ? "Registrierung" : "Register" }}
+          options={{ title: t("common.register") }}
         />
         <Stack.Screen
           name="SubscriptionForm"
@@ -158,21 +158,21 @@ export const AppNavigator = () => {
           name="SubscriptionHistory"
           component={SubscriptionHistoryScreen}
           options={{
-            title: language === "de" ? "Historie" : "History",
+            title: t("navigation.subscriptionHistory"),
           }}
         />
         <Stack.Screen
           name="AddPayment"
           component={AddPaymentScreen}
           options={{
-            title: language === "de" ? "Zahlung hinzufügen" : "Add payment",
+            title: t("navigation.addPayment"),
           }}
         />
         <Stack.Screen
           name="Savings"
           component={SavingsScreen}
           options={{
-            title: language === "de" ? "Sparen" : "Savings",
+            title: t("navigation.savings"),
           }}
         />
         <Stack.Screen
@@ -185,44 +185,36 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="Terms"
           options={{
-            title: language === "de" ? "AGB" : "Terms",
+            title: t("common.terms"),
           }}
         >
           {() => (
             <LegalPlaceholderScreen
-              message={language === "de" ? "Hier kommen die AGB hin." : "Terms will go here."}
+              message={t("legal.termsPlaceholder")}
             />
           )}
         </Stack.Screen>
         <Stack.Screen
           name="Privacy"
           options={{
-            title: language === "de" ? "Datenschutz" : "Privacy",
+            title: t("common.privacy"),
           }}
         >
           {() => (
             <LegalPlaceholderScreen
-              message={
-                language === "de"
-                  ? "Hier kommt der Datenschutz hin."
-                  : "Privacy information will go here."
-              }
+              message={t("legal.privacyPlaceholder")}
             />
           )}
         </Stack.Screen>
         <Stack.Screen
           name="Imprint"
           options={{
-            title: language === "de" ? "Impressum" : "Imprint",
+            title: t("common.imprint"),
           }}
         >
           {() => (
             <LegalPlaceholderScreen
-              message={
-                language === "de"
-                  ? "Hier kommt das Impressum hin."
-                  : "Imprint information will go here."
-              }
+              message={t("legal.imprintPlaceholder")}
             />
           )}
         </Stack.Screen>
@@ -230,3 +222,4 @@ export const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+

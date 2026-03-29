@@ -17,9 +17,9 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { StatsTabScreenProps } from "@/navigation/types";
 import {
   DevelopmentRange,
-  buildCostDevelopmentSeries,
   DevelopmentPoint,
   DevelopmentSeries,
+  buildCostDevelopmentSeries,
   getAverageMonthlyCost,
   getBillingStructure,
   getCurrentMonthCost,
@@ -104,8 +104,7 @@ const getAxisRoundingUnit = (value: number) => {
   return 10;
 };
 
-const roundToUnit = (value: number, unit: number) =>
-  Math.round(value / unit) * unit;
+const roundToUnit = (value: number, unit: number) => Math.round(value / unit) * unit;
 
 const formatAxisCurrency = (value: number, currency: "EUR" | "Dollar", language: "de" | "en") =>
   new Intl.NumberFormat(language === "de" ? "de-DE" : "en-US", {
@@ -238,10 +237,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       ),
     [developmentChartWidth, developmentRange, developmentSeries.points, language],
   );
-  const billingStructure = useMemo(
-    () => getBillingStructure(subscriptions),
-    [subscriptions],
-  );
+  const billingStructure = useMemo(() => getBillingStructure(subscriptions), [subscriptions]);
   const topSubscriptions = useMemo(
     () => getTopExpensiveSubscriptions(subscriptions, 3),
     [subscriptions],
@@ -270,48 +266,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     [allHistory, subscriptions],
   );
 
-  const copy =
-    language === "de"
-      ? {
-          currentMonthCost: "Aktuelle Monatskosten",
-          averageMonthlyCost: "Durchschnittsmonatskosten",
-          yearlyTotal: "Jährliche Gesamtkosten",
-          development: "Entwicklung",
-          billingStructure: "Abrechnungsstruktur",
-          topSubscriptions: "Top 3 teuerste Abos",
-          noDevelopment: "Noch keine Zahlungsdaten vorhanden",
-          noTopSubscriptions: "Noch keine aktiven Abos vorhanden.",
-          saved: "Gespart",
-          monthly: "Monatlich",
-          quarterly: "Quartal",
-          yearly: "Jährlich",
-        }
-      : {
-          currentMonthCost: "Current month cost",
-          averageMonthlyCost: "Average monthly cost",
-          yearlyTotal: "Yearly total",
-          development: "Development",
-          billingStructure: "Billing structure",
-          topSubscriptions: "Top 3 most expensive subscriptions",
-          noDevelopment: "No payment history yet",
-          noTopSubscriptions: "No active subscriptions yet.",
-          saved: "Saved",
-          monthly: "Monthly",
-          quarterly: "Quarterly",
-          yearly: "Yearly",
-        };
-
-  const cycleLabel = (cycle: "monthly" | "quarterly" | "yearly") => {
-    switch (cycle) {
-      case "monthly":
-        return copy.monthly;
-      case "quarterly":
-        return copy.quarterly;
-      case "yearly":
-        return copy.yearly;
-    }
-  };
-
   useEffect(() => {
     if (developmentSeries.points.length === 0) {
       setSelectedDevelopmentKey(null);
@@ -335,17 +289,17 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <SummaryMetric
-            label={copy.currentMonthCost}
+            label={t("stats.currentMonthCost")}
             value={formatCurrency(summary.currentMonthCost, currency)}
           />
           <View style={styles.summaryDivider} />
           <SummaryMetric
-            label={copy.averageMonthlyCost}
+            label={t("stats.averageMonthlyCost")}
             value={formatCurrency(summary.averageMonthlyCost, currency)}
           />
           <View style={styles.summaryDivider} />
           <SummaryMetric
-            label={copy.yearlyTotal}
+            label={t("stats.yearlyTotal")}
             value={formatCurrency(summary.yearlyTotal, currency)}
           />
         </View>
@@ -355,9 +309,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           onPress={() => navigation.navigate("Savings")}
         >
           <View style={styles.cardHeader}>
-            <Text style={[typography.cardTitle, styles.cardTitle]}>
-              {language === "de" ? "Sparen" : "Savings"}
-            </Text>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.savings")}</Text>
             <Ionicons
               name="chevron-forward-outline"
               size={18}
@@ -366,23 +318,19 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           </View>
           {skippedHistory.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
-              {language === "de" ? "Keine Einsparungen vorhanden" : "No savings available"}
+              {t("stats.noSavingsAvailable")}
             </Text>
           ) : (
             <View style={styles.savedCardContent}>
               <View style={styles.savedMetric}>
-                <Text style={[typography.meta, styles.savedLabel]}>
-                  {language === "de" ? "Dieses Jahr" : "This year"}
-                </Text>
+                <Text style={[typography.meta, styles.savedLabel]}>{t("common.thisYear")}</Text>
                 <Text style={[typography.sectionTitle, styles.savedAmount]}>
                   {formatCurrency(currentYearSavedAmount, currency)}
                 </Text>
               </View>
               <View style={styles.savedDivider} />
               <View style={styles.savedMetric}>
-                <Text style={[typography.meta, styles.savedLabel]}>
-                  {language === "de" ? "Letzter Monat" : "Last month"}
-                </Text>
+                <Text style={[typography.meta, styles.savedLabel]}>{t("common.lastMonth")}</Text>
                 <Text style={[typography.body, styles.savedSecondaryAmount]}>
                   {formatCurrency(previousMonthSavedAmount, currency)}
                 </Text>
@@ -436,7 +384,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         </Pressable>
 
         <View style={[surfaces.panel, styles.card, styles.developmentCard]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.development}</Text>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.development")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -470,12 +418,8 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
 
           {!developmentSeries.hasHistory ? (
             <EmptyState
-              title={copy.noDevelopment}
-              description={
-                language === "de"
-                  ? "Sobald echte Zahlungen in der Historie vorhanden sind, erscheint hier die Entwicklung."
-                  : "As soon as real payments exist in history, the development chart will appear here."
-              }
+              title={t("stats.noDevelopment")}
+              description={t("stats.noDevelopmentDescription")}
             />
           ) : (
             <View style={styles.developmentWrap}>
@@ -508,14 +452,13 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                   selectedKey={selectedDevelopmentKey}
                   onSelect={setSelectedDevelopmentKey}
                 />
-
               </View>
             </View>
           )}
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.billingStructure}</Text>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.billingStructure")}</Text>
           <View style={styles.sectionDivider} />
           <View style={styles.structureList}>
             {billingStructure.map((item, index) => (
@@ -527,9 +470,11 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 ]}
               >
                 <View style={styles.structureCopy}>
-                  <Text style={[typography.body, styles.structureTitle]}>{cycleLabel(item.cycle)}</Text>
+                  <Text style={[typography.body, styles.structureTitle]}>
+                    {t(`subscription.billing_${item.cycle}`)}
+                  </Text>
                   <Text style={[typography.secondary, styles.structureMeta]}>
-                    {item.count} {language === "de" ? "Abos" : "subscriptions"}
+                    {item.count} {t("stats.subscriptionsCount")}
                   </Text>
                 </View>
                 <Text style={[typography.body, styles.structureValue]}>
@@ -541,9 +486,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.topSubscriptions}</Text>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.topSubscriptions")}</Text>
           {topSubscriptions.length === 0 ? (
-            <Text style={[typography.secondary, styles.helperText]}>{copy.noTopSubscriptions}</Text>
+            <Text style={[typography.secondary, styles.helperText]}>{t("stats.noActive")}</Text>
           ) : (
             <View style={styles.topList}>
               <View style={styles.sectionDivider} />
@@ -569,9 +514,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                     </View>
                   </View>
                   <Text style={[typography.body, styles.topValue]}>
-                    {`${formatCurrency(getMonthlyEquivalent(subscription), currency)} ${
-                      language === "de" ? "/ Monat" : "/ month"
-                    }`}
+                    {`${formatCurrency(getMonthlyEquivalent(subscription), currency)} ${t("stats.perMonth")}`}
                   </Text>
                 </View>
               ))}
@@ -629,44 +572,42 @@ const DevelopmentChart = ({
 
   if (mode === "bar") {
     return (
-      <>
-        <View style={styles.barRow}>
-          {points.map((item, index) => {
-            const isSelected = item.key === selectedKey;
+      <View style={styles.barRow}>
+        {points.map((item, index) => {
+          const isSelected = item.key === selectedKey;
 
-            return (
-              <Pressable key={item.key} style={styles.barColumn} onPress={() => onSelect(item.key)}>
-                <View style={styles.barSlot}>
-                  <View
-                    style={[
-                      styles.bar,
-                      isSelected ? styles.barSelected : null,
-                      {
-                        height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit={!isWideLabelRange}
-                  minimumFontScale={isWideLabelRange ? 1 : 0.8}
-                  ellipsizeMode="clip"
+          return (
+            <Pressable key={item.key} style={styles.barColumn} onPress={() => onSelect(item.key)}>
+              <View style={styles.barSlot}>
+                <View
                   style={[
-                    typography.meta,
-                    styles.barLabel,
-                    isWideLabelRange ? styles.wideBarLabel : null,
-                    isYearOnlyRange ? styles.yearOnlyBarLabel : null,
-                    !labels[index] ? styles.barLabelHidden : null,
+                    styles.bar,
+                    isSelected ? styles.barSelected : null,
+                    {
+                      height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
+                    },
                   ]}
-                >
-                  {labels[index] ?? " "}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </>
+                />
+              </View>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isWideLabelRange}
+                minimumFontScale={isWideLabelRange ? 1 : 0.8}
+                ellipsizeMode="clip"
+                style={[
+                  typography.meta,
+                  styles.barLabel,
+                  isWideLabelRange ? styles.wideBarLabel : null,
+                  isYearOnlyRange ? styles.yearOnlyBarLabel : null,
+                  !labels[index] ? styles.barLabelHidden : null,
+                ]}
+              >
+                {labels[index] ?? " "}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     );
   }
 
@@ -753,9 +694,7 @@ const getLinePoints = (
   }));
 };
 
-const getLineSegments = (
-  points: Array<{ key: string; x: number; y: number }>,
-) =>
+const getLineSegments = (points: Array<{ key: string; x: number; y: number }>) =>
   points.slice(0, -1).map((point, index) => {
     const nextPoint = points[index + 1];
     const dx = nextPoint.x - point.x;
@@ -770,7 +709,6 @@ const getLineSegments = (
       top: point.y + dy / 2 - 1,
     };
   });
-
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
@@ -1077,4 +1015,3 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "right",
     },
   });
-

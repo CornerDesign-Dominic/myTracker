@@ -19,6 +19,23 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       search: "Suche",
       loading: "Lade Abos...",
       none: "-",
+      login: "Login",
+      register: "Registrierung",
+      account: "Konto",
+      terms: "AGB",
+      privacy: "Datenschutz",
+      imprint: "Impressum",
+      status: "Status",
+      delete: "Löschen",
+      unavailable: "Nicht verfügbar",
+      day: "Tag",
+      month: "Monat",
+      year: "Jahr",
+      total: "Insgesamt",
+      thisYear: "Dieses Jahr",
+      lastMonth: "Letzter Monat",
+      nextMonth: "Nächster Monat",
+      actionFailed: "Aktion konnte nicht ausgeführt werden.",
     },
     tabs: {
       home: "Home",
@@ -26,9 +43,20 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       allSubscriptions: "Alle Abos",
       stats: "Statistik",
     },
+    navigation: {
+      subscriptionHistory: "Historie",
+      addPayment: "Zahlung hinzufügen",
+      savings: "Sparen",
+    },
+    legal: {
+      termsPlaceholder: "Hier kommen die AGB hin.",
+      privacyPlaceholder: "Hier kommt der Datenschutz hin.",
+      imprintPlaceholder: "Hier kommt das Impressum hin.",
+    },
     calendar: {
       title: "Kalender",
       today: "Heute",
+      dueOn: "Fälligkeiten am {{date}}",
     },
     settings: {
       title: "Einstellungen",
@@ -51,14 +79,36 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accentForest: "Forest",
       accentSand: "Sand",
       accentAmber: "Amber",
-      accentCoral: "Coral",
+      accentCoral: "Koralle",
       accentRose: "Rose",
-      accentGreen: "GrÃ¼n",
+      accentGreen: "Grün",
       accentOrange: "Orange",
       accentViolet: "Violett",
       accentCyan: "Cyan",
       accentGold: "Gold",
       accentGraphite: "Graphit",
+      accountTitle: "Konto",
+      accountAnonymous:
+        "Wenn du dich nicht registrierst oder einloggst, können deine Daten verloren gehen. Mit einer E-Mail können deine Daten deinem Konto zugeordnet und auf anderen Geräten wiederhergestellt werden.",
+      accountSignedIn:
+        "Mit deiner E-Mail sind deine Daten deinem Konto zugeordnet und können auf anderen Geräten wiederhergestellt werden.",
+      loginAction: "Login",
+      registerAction: "Registrieren",
+      logoutAction: "Abmelden",
+    },
+    auth: {
+      email: "E-Mail",
+      password: "Passwort",
+      loginTitle: "Login",
+      loginSubmit: "Einloggen",
+      loginSwitch: "Noch kein Konto? Registrieren",
+      loginError: "Login fehlgeschlagen.",
+      registerTitle: "Registrierung",
+      registerSubmit: "Konto erstellen",
+      registerSwitch: "Bereits ein Konto? Einloggen",
+      registerError: "Registrierung fehlgeschlagen.",
+      emailError: "Bitte gib eine gültige E-Mail-Adresse ein.",
+      passwordError: "Das Passwort muss mindestens 6 Zeichen lang sein.",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -66,6 +116,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       emptyTitle: "Noch keine Abos sichtbar",
       emptyDescription: "Lege dein erstes Abo an oder blende gekündigte Einträge wieder ein.",
       settingsA11y: "Einstellungen öffnen",
+      total: "Gesamt",
+      due: "Noch fällig",
+      paid: "Schon bezahlt",
     },
     allSubscriptions: {
       title: "Abonnements",
@@ -79,7 +132,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       emptyTitle: "Noch keine Abos vorhanden",
       emptyDescription: "Lege dein erstes Abo an oder passe die Suche an, um bestehende Einträge zu sehen.",
       amount: "Betrag",
-      billingCycle: "Billing Cycle",
+      billingCycle: "Abrechnungsintervall",
       nextPayment: "Nächste Zahlung",
     },
     stats: {
@@ -94,6 +147,69 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noCategoriesDescription: "Sobald du Abos anlegst, erscheinen hier einfache Auswertungen.",
       upcomingPayments: "Nächste Zahlungen",
       noUpcoming: "Keine nächsten Zahlungen vorhanden.",
+      currentMonthCost: "Aktuelle Monatskosten",
+      averageMonthlyCost: "Durchschnittsmonatskosten",
+      yearlyTotal: "Jährliche Gesamtkosten",
+      development: "Entwicklung",
+      billingStructure: "Abrechnungsstruktur",
+      topSubscriptions: "Top 3 teuerste Abos",
+      noDevelopment: "Noch keine Zahlungsdaten vorhanden",
+      noDevelopmentDescription:
+        "Sobald echte Zahlungen in der Historie vorhanden sind, erscheint hier die Entwicklung.",
+      savings: "Sparen",
+      noSavingsAvailable: "Keine Einsparungen vorhanden",
+      subscriptionsCount: "Abos",
+      perMonth: "/ Monat",
+    },
+    savings: {
+      title: "Sparen",
+      subscriptionsWithSavings: "Abos mit Einsparungen",
+      emptyTitle: "Noch keine Einsparungen",
+      emptyDescription: "Sobald pausierte Fälligkeiten entstehen, erscheinen die betroffenen Abos hier.",
+      savedLabel: "Gespart: {{amount}}",
+      statusLabel: "Status: {{status}}",
+      perMonthLabel: "{{amount}} / Monat",
+    },
+    history: {
+      addPaymentTitle: "Zahlung hinzuf�gen",
+      addPaymentDescription: "Vergangene oder aktuelle Zahlung manuell hinzuf�gen",
+      loading: "Historie wird geladen...",
+      emptyTitle: "Noch keine Historie vorhanden",
+      emptyDescription: "Sobald Ereignisse entstehen, erscheinen sie hier chronologisch.",
+      paymentBookedTitle: "Zahlung gebucht",
+      manualAdded: "Manuell erfasst",
+      dueOn: "F�llig am {{date}}",
+      paymentSkippedTitle: "Zahlung ausgesetzt",
+      originallyDueOn: "Eigentlich f�llig am {{date}}",
+      subscriptionDeactivatedTitle: "Abo deaktiviert",
+      subscriptionReactivatedTitle: "Abo reaktiviert",
+      amountChangedTitle: "Betrag ge�ndert",
+      amountChangedFromTo: "Von {{from}} auf {{to}}",
+      billingCycleChangedTitle: "Intervall ge�ndert",
+      billingCycleChangedFromTo: "Von {{from}} auf {{to}}",
+      dueDateChangedTitle: "F�lligkeit ge�ndert",
+      dueDateChangedFromTo: "Von {{from}} auf {{to}}",
+      subscriptionCreatedTitle: "Abo angelegt",
+      firstDueDate: "Erste F�lligkeit {{date}}",
+    },
+    addPayment: {
+      checkTitle: "Zahlung prüfen",
+      invalidAmount: "Bitte einen gültigen Betrag angeben.",
+      invalidDate: "Bitte ein gültiges Datum wählen.",
+      noUser: "Es ist kein Nutzer angemeldet.",
+      saveError: "Die Zahlung konnte nicht gespeichert werden.",
+      deleteConfirmTitle: "Zahlung löschen?",
+      deleteConfirmMessage: "Zahlung wirklich löschen?",
+      deleteAction: "Löschen",
+      deleteErrorTitle: "Zahlung löschen",
+      deleteError: "Die Zahlung konnte nicht gelöscht werden.",
+      editHint: "Bestehende Zahlung korrigieren.",
+      createHint: "Zahlung schnell manuell erfassen.",
+      saveAction: "Zahlung speichern",
+      deleteButton: "Zahlung löschen",
+      paymentDate: "Zahlungsdatum",
+      booked: "Gebucht",
+      whileInactive: "Während inaktiv",
     },
     subscription: {
       formCreateTitle: "Abo hinzufügen",
@@ -111,6 +227,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       endDate: "Läuft ab am",
       notes: "Notizen",
       suggestion: "Vorschlag",
+      template: "Vorlage",
       dateHelp: "Bitte im Format JJJJ-MM-TT eingeben.",
       optional: "Optional",
       create: "Abo anlegen",
@@ -128,6 +245,15 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       standardPlan: "Standard Plan",
       businessRenewal: "Business renewal due next month",
       markCancelled: "Als gekündigt markieren",
+      startDate: "Startdatum",
+      totalPaid: "Insgesamt",
+      skippedPaymentsSaved: "{{count}} ausgesetzte Zahlungen · {{amount}} gespart",
+      resumeTitle: "Abo fortführen",
+      pauseTitle: "Abo pausieren",
+      resumeConfirm: "Fortführen",
+      pauseConfirm: "Pausieren",
+      resumeDescription: "Kommende Fälligkeiten werden wieder normal als Zahlungen behandelt.",
+      pauseDescription: "Kommende Fälligkeiten werden während der Pause als ausgesetzt behandelt.",
       status_active: "Aktiv",
       status_paused: "Pausiert",
       status_cancelled: "Gekündigt",
@@ -149,6 +275,23 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       search: "Search",
       loading: "Loading subscriptions...",
       none: "-",
+      login: "Login",
+      register: "Register",
+      account: "Account",
+      terms: "Terms",
+      privacy: "Privacy",
+      imprint: "Imprint",
+      status: "Status",
+      delete: "Delete",
+      unavailable: "Unavailable",
+      day: "Day",
+      month: "Month",
+      year: "Year",
+      total: "Total",
+      thisYear: "This year",
+      lastMonth: "Last month",
+      nextMonth: "Next month",
+      actionFailed: "The action could not be completed.",
     },
     tabs: {
       home: "Home",
@@ -156,9 +299,20 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       allSubscriptions: "All subscriptions",
       stats: "Stats",
     },
+    navigation: {
+      subscriptionHistory: "History",
+      addPayment: "Add payment",
+      savings: "Savings",
+    },
+    legal: {
+      termsPlaceholder: "Terms will go here.",
+      privacyPlaceholder: "Privacy information will go here.",
+      imprintPlaceholder: "Imprint information will go here.",
+    },
     calendar: {
       title: "Calendar",
       today: "Today",
+      dueOn: "Due on {{date}}",
     },
     settings: {
       title: "Settings",
@@ -189,6 +343,28 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accentCyan: "Cyan",
       accentGold: "Gold",
       accentGraphite: "Graphite",
+      accountTitle: "Account",
+      accountAnonymous:
+        "If you do not register or sign in, your data may be lost. With an email address, your data can be linked to your account and restored on other devices.",
+      accountSignedIn:
+        "Your data is linked to your account and can be restored on other devices.",
+      loginAction: "Login",
+      registerAction: "Register",
+      logoutAction: "Log out",
+    },
+    auth: {
+      email: "Email",
+      password: "Password",
+      loginTitle: "Login",
+      loginSubmit: "Sign in",
+      loginSwitch: "No account yet? Register",
+      loginError: "Login failed.",
+      registerTitle: "Register",
+      registerSubmit: "Create account",
+      registerSwitch: "Already have an account? Sign in",
+      registerError: "Registration failed.",
+      emailError: "Please enter a valid email address.",
+      passwordError: "Password must be at least 6 characters.",
     },
     home: {
       monthPaymentSingular: "payment",
@@ -196,6 +372,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       emptyTitle: "No subscriptions visible yet",
       emptyDescription: "Create your first subscription or bring cancelled entries back into view.",
       settingsA11y: "Open settings",
+      total: "Total",
+      due: "Due",
+      paid: "Paid",
     },
     allSubscriptions: {
       title: "Subscriptions",
@@ -224,6 +403,69 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noCategoriesDescription: "As soon as you add subscriptions, simple evaluations will appear here.",
       upcomingPayments: "Upcoming payments",
       noUpcoming: "No upcoming payments available.",
+      currentMonthCost: "Current month cost",
+      averageMonthlyCost: "Average monthly cost",
+      yearlyTotal: "Yearly total",
+      development: "Development",
+      billingStructure: "Billing structure",
+      topSubscriptions: "Top 3 most expensive subscriptions",
+      noDevelopment: "No payment history yet",
+      noDevelopmentDescription:
+        "As soon as real payments exist in history, the development chart will appear here.",
+      savings: "Savings",
+      noSavingsAvailable: "No savings available",
+      subscriptionsCount: "subscriptions",
+      perMonth: "/ month",
+    },
+    savings: {
+      title: "Savings",
+      subscriptionsWithSavings: "Subscriptions with savings",
+      emptyTitle: "No savings yet",
+      emptyDescription: "Subscriptions will appear here once paused due dates are skipped.",
+      savedLabel: "Saved: {{amount}}",
+      statusLabel: "Status: {{status}}",
+      perMonthLabel: "{{amount}} / month",
+    },
+    history: {
+      addPaymentTitle: "Add payment",
+      addPaymentDescription: "Add a past or current payment manually",
+      loading: "Loading history...",
+      emptyTitle: "No history yet",
+      emptyDescription: "Events will appear here in chronological order as soon as they exist.",
+      paymentBookedTitle: "Payment booked",
+      manualAdded: "Added manually",
+      dueOn: "Due on {{date}}",
+      paymentSkippedTitle: "Payment skipped",
+      originallyDueOn: "Originally due on {{date}}",
+      subscriptionDeactivatedTitle: "Subscription deactivated",
+      subscriptionReactivatedTitle: "Subscription reactivated",
+      amountChangedTitle: "Amount changed",
+      amountChangedFromTo: "From {{from}} to {{to}}",
+      billingCycleChangedTitle: "Billing cycle changed",
+      billingCycleChangedFromTo: "From {{from}} to {{to}}",
+      dueDateChangedTitle: "Due date changed",
+      dueDateChangedFromTo: "From {{from}} to {{to}}",
+      subscriptionCreatedTitle: "Subscription created",
+      firstDueDate: "First due date {{date}}",
+    },
+    addPayment: {
+      checkTitle: "Check payment",
+      invalidAmount: "Please enter a valid amount.",
+      invalidDate: "Please select a valid date.",
+      noUser: "No user is signed in.",
+      saveError: "The payment could not be saved.",
+      deleteConfirmTitle: "Delete payment?",
+      deleteConfirmMessage: "Do you really want to delete this payment?",
+      deleteAction: "Delete",
+      deleteErrorTitle: "Delete payment",
+      deleteError: "The payment could not be deleted.",
+      editHint: "Adjust an existing payment.",
+      createHint: "Add a payment quickly and manually.",
+      saveAction: "Save payment",
+      deleteButton: "Delete payment",
+      paymentDate: "Payment date",
+      booked: "Booked",
+      whileInactive: "While inactive",
     },
     subscription: {
       formCreateTitle: "Add subscription",
@@ -241,6 +483,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       endDate: "Runs until",
       notes: "Notes",
       suggestion: "Suggestion",
+      template: "Template",
       dateHelp: "Please use the format YYYY-MM-DD.",
       optional: "Optional",
       create: "Create subscription",
@@ -258,6 +501,15 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       standardPlan: "Standard plan",
       businessRenewal: "Business renewal due next month",
       markCancelled: "Mark as cancelled",
+      startDate: "Start date",
+      totalPaid: "Total",
+      skippedPaymentsSaved: "{{count}} skipped payments · {{amount}} saved",
+      resumeTitle: "Resume subscription",
+      pauseTitle: "Pause subscription",
+      resumeConfirm: "Resume",
+      pauseConfirm: "Pause",
+      resumeDescription: "Upcoming due dates will be treated as regular payments again.",
+      pauseDescription: "Upcoming due dates will be treated as skipped while the subscription is paused.",
       status_active: "Active",
       status_paused: "Paused",
       status_cancelled: "Cancelled",
@@ -268,116 +520,6 @@ export const translations: Record<AppLanguage, TranslationTree> = {
   },
 };
 
-export type TranslationKey =
-  | "common.home"
-  | "common.subscriptions"
-  | "common.stats"
-  | "common.settings"
-  | "common.details"
-  | "common.history"
-  | "common.save"
-  | "common.cancel"
-  | "common.search"
-  | "common.loading"
-  | "common.none"
-  | "tabs.home"
-  | "tabs.calendar"
-  | "tabs.allSubscriptions"
-  | "tabs.stats"
-  | "calendar.title"
-  | "calendar.today"
-  | "settings.title"
-  | "settings.subtitle"
-  | "settings.language"
-  | "settings.currency"
-  | "settings.theme"
-  | "settings.accentColor"
-  | "settings.languageDe"
-  | "settings.languageEn"
-  | "settings.currencyEur"
-  | "settings.currencyDollar"
-  | "settings.themeDark"
-  | "settings.themeLight"
-  | "settings.accentIndigo"
-  | "settings.accentSlate"
-  | "settings.accentBlue"
-  | "settings.accentSage"
-  | "settings.accentTeal"
-  | "settings.accentForest"
-  | "settings.accentSand"
-  | "settings.accentAmber"
-  | "settings.accentCoral"
-  | "settings.accentRose"
-  | "settings.accentGreen"
-  | "settings.accentOrange"
-  | "settings.accentViolet"
-  | "settings.accentCyan"
-  | "settings.accentGold"
-  | "settings.accentGraphite"
-  | "home.monthPaymentSingular"
-  | "home.monthPaymentPlural"
-  | "home.emptyTitle"
-  | "home.emptyDescription"
-  | "home.settingsA11y"
-  | "allSubscriptions.title"
-  | "allSubscriptions.totalSubscriptions"
-  | "allSubscriptions.yearlySpend"
-  | "allSubscriptions.createAnother"
-  | "allSubscriptions.searchTitle"
-  | "allSubscriptions.searchPlaceholder"
-  | "allSubscriptions.management"
-  | "allSubscriptions.entries"
-  | "allSubscriptions.emptyTitle"
-  | "allSubscriptions.emptyDescription"
-  | "allSubscriptions.amount"
-  | "allSubscriptions.billingCycle"
-  | "allSubscriptions.nextPayment"
-  | "stats.title"
-  | "stats.subtitle"
-  | "stats.monthlySpend"
-  | "stats.yearlySpend"
-  | "stats.mostExpensive"
-  | "stats.noActive"
-  | "stats.byCategory"
-  | "stats.noCategories"
-  | "stats.noCategoriesDescription"
-  | "stats.upcomingPayments"
-  | "stats.noUpcoming"
-  | "subscription.formCreateTitle"
-  | "subscription.formEditTitle"
-  | "subscription.formSubtitle"
-  | "subscription.formBillingCycle"
-  | "subscription.formNextPaymentDate"
-  | "subscription.formCreateAction"
-  | "subscription.name"
-  | "subscription.category"
-  | "subscription.amount"
-  | "subscription.billingCycle"
-  | "subscription.nextPaymentDate"
-  | "subscription.status"
-  | "subscription.endDate"
-  | "subscription.notes"
-  | "subscription.suggestion"
-  | "subscription.dateHelp"
-  | "subscription.optional"
-  | "subscription.create"
-  | "subscription.edit"
-  | "subscription.detailsNotFound"
-  | "subscription.createdAt"
-  | "subscription.updatedAt"
-  | "subscription.editAction"
-  | "subscription.historyHint"
-  | "subscription.validationRequired"
-  | "subscription.validationAmount"
-  | "subscription.validationNextPayment"
-  | "subscription.validationEndDate"
-  | "subscription.formAlertTitle"
-  | "subscription.standardPlan"
-  | "subscription.businessRenewal"
-  | "subscription.markCancelled"
-  | "subscription.status_active"
-  | "subscription.status_paused"
-  | "subscription.status_cancelled"
-  | "subscription.billing_monthly"
-  | "subscription.billing_yearly"
-  | "subscription.billing_quarterly";
+export type TranslationKey = string;
+
+

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createSubscriptionService } from "@/application/subscriptions/service";
 import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/hooks/useI18n";
 import { subscriptionRepository } from "@/services/subscriptionRepository";
 import { SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 import { logFirestoreError } from "@/utils/firestoreDebug";
@@ -11,6 +12,7 @@ const subscriptionService = createSubscriptionService(subscriptionRepository);
 
 export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
   const { currentUser, authIsReady } = useAuth();
+  const { t } = useI18n();
   const [historyBySubscription, setHistoryBySubscription] = useState<
     Record<string, SubscriptionHistoryEvent[]>
   >({});
@@ -53,7 +55,7 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
             userId: currentUser.uid,
             subscriptionId,
           });
-          setErrorMessage(getSubscriptionErrorMessage(error));
+          setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
         },
       ),
     );
@@ -61,7 +63,7 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [authIsReady, currentUser?.uid, stableSubscriptionIdsKey]);
+  }, [authIsReady, currentUser?.uid, stableSubscriptionIdsKey, t]);
 
   const history = useMemo(
     () => Object.values(historyBySubscription).flat(),

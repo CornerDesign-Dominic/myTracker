@@ -17,7 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionHistory">;
 export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
@@ -38,12 +38,10 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
         >
           <View style={styles.historyCopy}>
             <Text style={[typography.body, styles.historyTitle]}>
-              {language === "de" ? "Zahlung hinzufügen" : "Add payment"}
+              {t("history.addPaymentTitle")}
             </Text>
             <Text style={[typography.secondary, styles.historySubtitle]}>
-              {language === "de"
-                ? "Vergangene Zahlungen der Historie hinzufügen"
-                : "Add a past or current payment manually"}
+              {t("history.addPaymentDescription")}
             </Text>
           </View>
           <Text style={[typography.body, styles.historyArrow]}>›</Text>
@@ -51,19 +49,13 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
 
         <View style={[surfaces.panel, styles.listCard]}>
           {isLoading ? (
-            <Text style={[typography.secondary, styles.helperText]}>
-              {language === "de" ? "Historie wird geladen..." : "Loading history..."}
-            </Text>
+            <Text style={[typography.secondary, styles.helperText]}>{t("history.loading")}</Text>
           ) : errorMessage ? (
             <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
           ) : history.length === 0 ? (
             <EmptyState
-              title={language === "de" ? "Noch keine Historie vorhanden" : "No history yet"}
-              description={
-                language === "de"
-                  ? "Sobald Ereignisse entstehen, erscheinen sie hier chronologisch."
-                  : "Events will appear here in chronological order as soon as they exist."
-              }
+              title={t("history.emptyTitle")}
+              description={t("history.emptyDescription")}
             />
           ) : (
             <View style={styles.historyList}>

@@ -20,7 +20,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
-  const { subscriptions, updateSubscription, errorMessage, isLoading } = useSubscriptions();
+  const { subscriptions, errorMessage, isLoading } = useSubscriptions();
 
   const visibleSubscriptions = useMemo(() => {
     const now = new Date();
@@ -110,9 +110,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryPrimaryBlock}>
-              <Text style={[typography.meta, styles.summaryLabel]}>
-                {language === "de" ? "Gesamt" : "Total"}
-              </Text>
+              <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>
               <Text style={[typography.metric, styles.summaryAmount]}>
                 {formatCurrency(monthlySummary.totalAmount, currency)}
               </Text>
@@ -126,17 +124,13 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
             <View style={styles.summarySecondaryBlock}>
               <View style={styles.summarySecondaryItem}>
-                <Text style={[typography.meta, styles.summaryLabel]}>
-                  {language === "de" ? "Noch fällig" : "Due"}
-                </Text>
+                <Text style={[typography.meta, styles.summaryLabel]}>{t("home.due")}</Text>
                 <Text style={[typography.body, styles.summaryDueValue]}>
                   {formatCurrency(monthlySummary.dueAmount, currency)}
                 </Text>
               </View>
               <View style={styles.summarySecondaryItem}>
-                <Text style={[typography.meta, styles.summaryLabel]}>
-                  {language === "de" ? "Schon bezahlt" : "Paid"}
-                </Text>
+                <Text style={[typography.meta, styles.summaryLabel]}>{t("home.paid")}</Text>
                 <Text style={[typography.body, styles.summarySecondaryValue]}>
                   {formatCurrency(monthlySummary.paidAmount, currency)}
                 </Text>

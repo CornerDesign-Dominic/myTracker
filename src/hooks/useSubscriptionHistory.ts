@@ -4,6 +4,7 @@ import { createSubscriptionService } from "@/application/subscriptions/service";
 import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
 import { getHistorySyncSummary, sortHistoryNewestFirst } from "@/domain/subscriptionHistory/events";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/hooks/useI18n";
 import { subscriptionRepository } from "@/services/subscriptionRepository";
 import { SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 import { logFirestoreError } from "@/utils/firestoreDebug";
@@ -12,6 +13,7 @@ const subscriptionService = createSubscriptionService(subscriptionRepository);
 
 export const useSubscriptionHistory = (subscriptionId?: string) => {
   const { currentUser, authIsReady } = useAuth();
+  const { t } = useI18n();
   const [history, setHistory] = useState<SubscriptionHistoryEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,12 +46,12 @@ export const useSubscriptionHistory = (subscriptionId?: string) => {
         });
         setHistory([]);
         setIsLoading(false);
-        setErrorMessage(getSubscriptionErrorMessage(error));
+        setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
       },
     );
 
     return unsubscribe;
-  }, [authIsReady, currentUser?.uid, subscriptionId]);
+  }, [authIsReady, currentUser?.uid, subscriptionId, t]);
 
   const summary = useMemo(() => getHistorySyncSummary(history), [history]);
 

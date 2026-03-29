@@ -16,7 +16,6 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
-import { formatLocalDateInput } from "@/utils/date";
 import { getRecurringDueDateForMonth } from "@/utils/recurringDates";
 
 type SavingsSubscriptionItem = {
@@ -31,7 +30,7 @@ type SavingsSubscriptionItem = {
 export const SavingsScreen = () => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { language } = useI18n();
+  const { t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
@@ -106,27 +105,21 @@ export const SavingsScreen = () => {
       <ScrollView contentContainerStyle={layout.content}>
         <View style={[surfaces.panel, styles.summaryCard]}>
           <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>
-              {language === "de" ? "Dieses Jahr" : "This year"}
-            </Text>
+            <Text style={[typography.meta, styles.metricLabel]}>{t("common.thisYear")}</Text>
             <Text style={[typography.sectionTitle, styles.metricValue]}>
               {formatCurrency(currentYearSavings, currency)}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>
-              {language === "de" ? "Letzter Monat" : "Last month"}
-            </Text>
+            <Text style={[typography.meta, styles.metricLabel]}>{t("common.lastMonth")}</Text>
             <Text style={[typography.sectionTitle, styles.metricValue]}>
               {formatCurrency(lastMonthSavings, currency)}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>
-              {language === "de" ? "Nächster Monat" : "Next month"}
-            </Text>
+            <Text style={[typography.meta, styles.metricLabel]}>{t("common.nextMonth")}</Text>
             <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
               {formatCurrency(nextMonthSavings, currency)}
             </Text>
@@ -135,19 +128,13 @@ export const SavingsScreen = () => {
 
         <View style={[surfaces.panel, styles.listCard]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>
-            {language === "de"
-              ? "Abos mit Einsparungen"
-              : "Subscriptions with savings"}
+            {t("savings.subscriptionsWithSavings")}
           </Text>
 
           {savingsSubscriptions.length === 0 ? (
             <EmptyState
-              title={language === "de" ? "Noch keine Einsparungen" : "No savings yet"}
-              description={
-                language === "de"
-                  ? "Sobald pausierte Fälligkeiten entstehen, erscheinen die betroffenen Abos hier."
-                  : "Subscriptions will appear here once paused due dates are skipped."
-              }
+              title={t("savings.emptyTitle")}
+              description={t("savings.emptyDescription")}
             />
           ) : (
             <View style={styles.list}>
@@ -163,39 +150,25 @@ export const SavingsScreen = () => {
                     <SubscriptionAvatar name={item.name} category={item.category} />
                     <View style={styles.rowCopy}>
                       <Text style={[typography.body, styles.rowTitle]}>{item.name}</Text>
-                      <Text style={[typography.secondary, styles.rowMeta]}>
-                        {item.category}
-                      </Text>
+                      <Text style={[typography.secondary, styles.rowMeta]}>{item.category}</Text>
                     </View>
                   </View>
 
                   <View style={styles.rowDetails}>
                     <Text style={[typography.secondary, styles.detailLine]}>
-                      {language === "de"
-                        ? `${formatCurrency(item.monthlyCost, currency)} / Monat`
-                        : `${formatCurrency(item.monthlyCost, currency)} / month`}
+                      {t("savings.perMonthLabel", {
+                        amount: formatCurrency(item.monthlyCost, currency),
+                      })}
                     </Text>
                     <Text style={[typography.body, styles.detailValue]}>
-                      {language === "de"
-                        ? `Gespart: ${formatCurrency(item.totalSaved, currency)}`
-                        : `Saved: ${formatCurrency(item.totalSaved, currency)}`}
+                      {t("savings.savedLabel", {
+                        amount: formatCurrency(item.totalSaved, currency),
+                      })}
                     </Text>
                     <Text style={[typography.secondary, styles.detailStatus]}>
-                      {language === "de"
-                        ? `Status: ${
-                            item.status === "paused"
-                              ? "Pausiert"
-                              : item.status === "active"
-                                ? "Aktiv"
-                                : "Gekündigt"
-                          }`
-                        : `Status: ${
-                            item.status === "paused"
-                              ? "Paused"
-                              : item.status === "active"
-                                ? "Active"
-                                : "Cancelled"
-                          }`}
+                      {t("savings.statusLabel", {
+                        status: t(`subscription.status_${item.status}`),
+                      })}
                     </Text>
                   </View>
                 </View>

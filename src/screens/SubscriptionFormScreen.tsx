@@ -609,7 +609,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             />
             <View style={styles.templateSuggestionCopy}>
               <Text style={[typography.secondary, styles.singleSuggestionLabel]}>
-                {language === "de" ? "Vorlage" : "Template"}
+                {t("subscription.template")}
               </Text>
               <Text style={[typography.body, styles.singleSuggestionValue]}>
                 {subscriptionSuggestion.name}
@@ -816,21 +816,21 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         <View style={styles.datePickerWrap}>
           <View style={styles.dateSelectors}>
             <DateWheel
-              label={language === "de" ? "Tag" : "Day"}
+              label={t("common.day")}
               options={dayOptions}
               selectedValue={draftDate.getDate()}
               onChange={updateDraftDay}
               colors={colors}
             />
             <DateWheel
-              label={language === "de" ? "Monat" : "Month"}
+              label={t("common.month")}
               options={monthOptions}
               selectedValue={draftDate.getMonth()}
               onChange={updateDraftMonth}
               colors={colors}
             />
             <DateWheel
-              label={language === "de" ? "Jahr" : "Year"}
+              label={t("common.year")}
               options={yearOptions}
               selectedValue={draftDate.getFullYear()}
               onChange={updateDraftYear}

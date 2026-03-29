@@ -14,10 +14,6 @@ import { formatCurrency } from "@/utils/currency";
 import { formatLocalDateInput } from "@/utils/date";
 import { getRecurringDueDateInputForMonth } from "@/utils/recurringDates";
 
-const WEEKDAY_LABELS = {
-  de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
-  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-} as const;
 const DAY_DOT_SIZE = 6;
 const DAY_DOT_CONTAINER_SIZE = 10;
 
@@ -84,6 +80,15 @@ const getDisplayDate = (date: Date, language: "de" | "en") =>
     month: "long",
   }).format(date);
 
+const getWeekdayLabels = (language: "de" | "en") => {
+  const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+    weekday: "short",
+  });
+  const monday = new Date(Date.UTC(2024, 0, 1));
+
+  return Array.from({ length: 7 }, (_, index) => formatter.format(new Date(monday.getTime() + index * 86400000)));
+};
+
 export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const { colors, typography } = useAppTheme();
   const { language, t } = useI18n();
@@ -99,6 +104,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date(today));
 
   const monthLabel = useMemo(() => getMonthLabel(visibleMonth, language), [language, visibleMonth]);
+  const weekdayLabels = useMemo(() => getWeekdayLabels(language), [language]);
   const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
   const visibleCalendarMonths = useMemo(() => {
     const months = new Map<string, Date>();
@@ -211,7 +217,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
           </View>
 
           <View style={styles.weekdayRow}>
-            {WEEKDAY_LABELS[language].map((label) => (
+            {weekdayLabels.map((label) => (
               <View key={label} style={styles.weekdayCell}>
                 <Text style={[typography.meta, styles.weekdayText]}>{label}</Text>
               </View>
@@ -265,9 +271,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
         {dueSubscriptions.length > 0 ? (
           <View style={[surfaces.panel, styles.dueCard]}>
             <Text style={[typography.cardTitle, styles.dueTitle]}>
-              {language === "de"
-                ? `Fälligkeiten am ${selectedDayLabel}`
-                : `Due on ${selectedDayLabel}`}
+              {t("calendar.dueOn", { date: selectedDayLabel })}
             </Text>
             <View style={styles.dueList}>
               {dueSubscriptions.map((subscription, index) => (

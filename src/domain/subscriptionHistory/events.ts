@@ -1,4 +1,4 @@
-import type { AppLanguage } from "../../i18n/translations";
+import { translations, type AppLanguage } from "../../i18n/translations.ts";
 import type {
   HistoryEventInput,
   HistorySyncSummary,
@@ -9,10 +9,7 @@ import type {
 import { formatCurrency } from "../../utils/currency.ts";
 import { formatDate } from "../../utils/date.ts";
 
-import {
-  parseCalendarDate,
-  toCalendarDateString,
-} from "./schedule.ts";
+import { parseCalendarDate, toCalendarDateString } from "./schedule.ts";
 import { getMissingPaymentHistoryEvents } from "./paymentSync.ts";
 import { isEditablePaymentEventType } from "./paymentEvents.ts";
 export { getMissingPaymentHistoryEvents } from "./paymentSync.ts";
@@ -176,6 +173,33 @@ export const sortHistoryNewestFirst = (history: SubscriptionHistoryEvent[]) =>
     return right.id.localeCompare(left.id);
   });
 
+const translateHistory = (
+  language: AppLanguage,
+  key: string,
+  variables?: Record<string, string | number | undefined>,
+) => {
+  const historyTranslations = translations[language]?.history as Record<string, unknown> | undefined;
+  const template = historyTranslations?.[key];
+  const text = typeof template === "string" ? template : key;
+
+  return Object.entries(variables ?? {}).reduce(
+    (result, [name, value]) => result.replaceAll(`{{${name}}}`, String(value ?? "")),
+    text,
+  );
+};
+
+const translateBillingCycle = (language: AppLanguage, cycle?: string) => {
+  if (!cycle) {
+    return undefined;
+  }
+
+  const subscriptionTranslations = translations[language]?.subscription as
+    | Record<string, unknown>
+    | undefined;
+  const template = subscriptionTranslations?.[`billing_${cycle}`];
+  return typeof template === "string" ? template : cycle;
+};
+
 export const formatHistoryEvent = (
   event: SubscriptionHistoryEvent,
   options: {
@@ -191,110 +215,18 @@ export const formatHistoryEvent = (
   const dateLabel = formatDate(dateKey);
   const canEdit = isEditablePaymentEventType(event.type);
 
-  if (options.language === "de") {
-    switch (event.type) {
-      case "payment_booked":
-        return {
-          id: event.id,
-          title: "Zahlung gebucht",
-          subtitle:
-            event.source === "manual"
-              ? "Manuell erfasst"
-              : event.dueDate
-                ? `FÃ¤llig am ${formatDate(event.dueDate)}`
-                : undefined,
-          amountLabel,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "payment_skipped_inactive":
-        return {
-          id: event.id,
-          title: "Zahlung ausgesetzt",
-          subtitle: event.dueDate ? `Eigentlich fällig am ${formatDate(event.dueDate)}` : undefined,
-          amountLabel,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "subscription_deactivated":
-        return {
-          id: event.id,
-          title: "Abo deaktiviert",
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "subscription_reactivated":
-        return {
-          id: event.id,
-          title: "Abo reaktiviert",
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "amount_changed":
-        return {
-          id: event.id,
-          title: "Betrag geändert",
-          subtitle:
-            event.previousAmount !== undefined && event.nextAmount !== undefined
-              ? `Von ${formatCurrency(event.previousAmount, options.currency)} auf ${formatCurrency(event.nextAmount, options.currency)}`
-              : undefined,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "billing_cycle_changed":
-        return {
-          id: event.id,
-          title: "Intervall geändert",
-          subtitle:
-            event.previousBillingCycle && event.nextBillingCycle
-              ? `Von ${event.previousBillingCycle} auf ${event.nextBillingCycle}`
-              : undefined,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "due_date_changed":
-        return {
-          id: event.id,
-          title: "Fälligkeit geändert",
-          subtitle:
-            event.previousNextPaymentDate && event.nextNextPaymentDate
-              ? `Von ${formatDate(event.previousNextPaymentDate)} auf ${formatDate(event.nextNextPaymentDate)}`
-              : undefined,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-      case "subscription_created":
-      default:
-        return {
-          id: event.id,
-          title: "Abo angelegt",
-          subtitle: event.initialNextPaymentDate
-            ? `Erste Fälligkeit ${formatDate(event.initialNextPaymentDate)}`
-            : undefined,
-          dateLabel,
-          canEdit,
-          occurredAt: dateKey,
-        };
-    }
-  }
-
   switch (event.type) {
     case "payment_booked":
       return {
         id: event.id,
-        title: "Payment booked",
+        title: translateHistory(options.language, "paymentBookedTitle"),
         subtitle:
           event.source === "manual"
-            ? "Added manually"
+            ? translateHistory(options.language, "manualAdded")
             : event.dueDate
-              ? `Due on ${formatDate(event.dueDate)}`
+              ? translateHistory(options.language, "dueOn", {
+                  date: formatDate(event.dueDate),
+                })
               : undefined,
         amountLabel,
         dateLabel,
@@ -304,8 +236,12 @@ export const formatHistoryEvent = (
     case "payment_skipped_inactive":
       return {
         id: event.id,
-        title: "Payment skipped",
-        subtitle: event.dueDate ? `Originally due on ${formatDate(event.dueDate)}` : undefined,
+        title: translateHistory(options.language, "paymentSkippedTitle"),
+        subtitle: event.dueDate
+          ? translateHistory(options.language, "originallyDueOn", {
+              date: formatDate(event.dueDate),
+            })
+          : undefined,
         amountLabel,
         dateLabel,
         canEdit,
@@ -314,7 +250,7 @@ export const formatHistoryEvent = (
     case "subscription_deactivated":
       return {
         id: event.id,
-        title: "Subscription deactivated",
+        title: translateHistory(options.language, "subscriptionDeactivatedTitle"),
         dateLabel,
         canEdit,
         occurredAt: dateKey,
@@ -322,7 +258,7 @@ export const formatHistoryEvent = (
     case "subscription_reactivated":
       return {
         id: event.id,
-        title: "Subscription reactivated",
+        title: translateHistory(options.language, "subscriptionReactivatedTitle"),
         dateLabel,
         canEdit,
         occurredAt: dateKey,
@@ -330,10 +266,13 @@ export const formatHistoryEvent = (
     case "amount_changed":
       return {
         id: event.id,
-        title: "Amount changed",
+        title: translateHistory(options.language, "amountChangedTitle"),
         subtitle:
           event.previousAmount !== undefined && event.nextAmount !== undefined
-            ? `From ${formatCurrency(event.previousAmount, options.currency)} to ${formatCurrency(event.nextAmount, options.currency)}`
+            ? translateHistory(options.language, "amountChangedFromTo", {
+                from: formatCurrency(event.previousAmount, options.currency),
+                to: formatCurrency(event.nextAmount, options.currency),
+              })
             : undefined,
         dateLabel,
         canEdit,
@@ -342,10 +281,13 @@ export const formatHistoryEvent = (
     case "billing_cycle_changed":
       return {
         id: event.id,
-        title: "Billing cycle changed",
+        title: translateHistory(options.language, "billingCycleChangedTitle"),
         subtitle:
           event.previousBillingCycle && event.nextBillingCycle
-            ? `From ${event.previousBillingCycle} to ${event.nextBillingCycle}`
+            ? translateHistory(options.language, "billingCycleChangedFromTo", {
+                from: translateBillingCycle(options.language, event.previousBillingCycle),
+                to: translateBillingCycle(options.language, event.nextBillingCycle),
+              })
             : undefined,
         dateLabel,
         canEdit,
@@ -354,10 +296,13 @@ export const formatHistoryEvent = (
     case "due_date_changed":
       return {
         id: event.id,
-        title: "Due date changed",
+        title: translateHistory(options.language, "dueDateChangedTitle"),
         subtitle:
           event.previousNextPaymentDate && event.nextNextPaymentDate
-            ? `From ${formatDate(event.previousNextPaymentDate)} to ${formatDate(event.nextNextPaymentDate)}`
+            ? translateHistory(options.language, "dueDateChangedFromTo", {
+                from: formatDate(event.previousNextPaymentDate),
+                to: formatDate(event.nextNextPaymentDate),
+              })
             : undefined,
         dateLabel,
         canEdit,
@@ -367,9 +312,11 @@ export const formatHistoryEvent = (
     default:
       return {
         id: event.id,
-        title: "Subscription created",
+        title: translateHistory(options.language, "subscriptionCreatedTitle"),
         subtitle: event.initialNextPaymentDate
-          ? `First due date ${formatDate(event.initialNextPaymentDate)}`
+          ? translateHistory(options.language, "firstDueDate", {
+              date: formatDate(event.initialNextPaymentDate),
+            })
           : undefined,
         dateLabel,
         canEdit,

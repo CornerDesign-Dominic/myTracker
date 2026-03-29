@@ -49,10 +49,7 @@ const OptionGroup = <T extends string>({
           return (
             <Pressable
               key={option}
-              style={[
-                styles.optionButton,
-                isActive ? styles.optionButtonActive : null,
-              ]}
+              style={[styles.optionButton, isActive ? styles.optionButtonActive : null]}
               onPress={() => onChange(option)}
             >
               <Text style={[typography.button, styles.optionText, isActive ? styles.optionTextActive : null]}>
@@ -68,7 +65,7 @@ const OptionGroup = <T extends string>({
 
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors, typography, mode } = useAppTheme();
-  const { language: locale, t } = useI18n();
+  const { t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
@@ -84,34 +81,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setAccentColor,
   } = useAppSettings();
   const { isAnonymous, logout } = useAuth();
-  const accountCopy =
-    locale === "de"
-      ? {
-          title: "Konto",
-          anonymous:
-            "Wenn du dich nicht registrierst oder einloggst, koennen deine Daten verloren gehen. Mit einer E-Mail koennen deine Daten einem Nutzer zugeordnet und auf anderen Geraeten wiederhergestellt werden.",
-          signedIn:
-            "Mit deiner E-Mail sind deine Daten deinem Konto zugeordnet und koennen auf anderen Geraeten wiederhergestellt werden.",
-          login: "Login",
-          register: "Registrieren",
-          logout: "Abmelden",
-          terms: "AGB",
-          privacy: "Datenschutz",
-          imprint: "Impressum",
-        }
-      : {
-          title: "Account",
-          anonymous:
-            "If you do not register or sign in, your data may be lost. With an email address, your data can be linked to your account and restored on other devices.",
-          signedIn:
-            "Your data is linked to your account and can be restored on other devices.",
-          login: "Login",
-          register: "Register",
-          logout: "Log out",
-          terms: "Terms",
-          privacy: "Privacy",
-          imprint: "Imprint",
-        };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
@@ -121,10 +90,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
       >
         <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.sectionHeader}>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>{accountCopy.title}</Text>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accountTitle")}</Text>
           </View>
           <Text style={[typography.secondary, styles.accountText]}>
-            {isAnonymous ? accountCopy.anonymous : accountCopy.signedIn}
+            {isAnonymous ? t("settings.accountAnonymous") : t("settings.accountSignedIn")}
           </Text>
           <View style={styles.optionRow}>
             {isAnonymous ? (
@@ -133,13 +102,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
                   onPress={() => navigation.navigate("Login")}
                 >
-                  <Text style={[typography.button, styles.optionText]}>{accountCopy.login}</Text>
+                  <Text style={[typography.button, styles.optionText]}>{t("settings.loginAction")}</Text>
                 </Pressable>
                 <Pressable
                   style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
                   onPress={() => navigation.navigate("Register")}
                 >
-                  <Text style={[typography.button, styles.optionTextActive]}>{accountCopy.register}</Text>
+                  <Text style={[typography.button, styles.optionTextActive]}>{t("settings.registerAction")}</Text>
                 </Pressable>
               </>
             ) : (
@@ -147,7 +116,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
                 onPress={logout}
               >
-                <Text style={[typography.button, styles.optionText]}>{accountCopy.logout}</Text>
+                <Text style={[typography.button, styles.optionText]}>{t("settings.logoutAction")}</Text>
               </Pressable>
             )}
           </View>
@@ -157,29 +126,24 @@ export const SettingsScreen = ({ navigation }: Props) => {
           title={t("settings.language")}
           value={language}
           options={["de", "en"] as const}
-          formatLabel={(option) =>
-            option === "de" ? t("settings.languageDe") : t("settings.languageEn")
-          }
+          formatLabel={(option) => (option === "de" ? t("settings.languageDe") : t("settings.languageEn"))}
           onChange={setLanguage}
         />
         <OptionGroup
           title={t("settings.currency")}
           value={currency}
           options={["EUR", "Dollar"] as const}
-          formatLabel={(option) =>
-            option === "EUR" ? t("settings.currencyEur") : t("settings.currencyDollar")
-          }
+          formatLabel={(option) => (option === "EUR" ? t("settings.currencyEur") : t("settings.currencyDollar"))}
           onChange={setCurrency}
         />
         <OptionGroup
           title={t("settings.theme")}
           value={theme}
           options={["Dark", "Light"] as const}
-          formatLabel={(option) =>
-            option === "Dark" ? t("settings.themeDark") : t("settings.themeLight")
-          }
+          formatLabel={(option) => (option === "Dark" ? t("settings.themeDark") : t("settings.themeLight"))}
           onChange={setTheme}
         />
+
         <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.cardHeaderRow}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
@@ -211,12 +175,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.accentSwatchInner,
-                        { backgroundColor: accentPreview.accent },
-                      ]}
-                    />
+                    <View style={[styles.accentSwatchInner, { backgroundColor: accentPreview.accent }]} />
                   </View>
                   <Text
                     style={[
@@ -225,7 +184,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                       isActive ? styles.optionTextActive : null,
                     ]}
                   >
-                    {getAccentLabel(option, locale)}
+                    {getAccentLabel(option, t)}
                   </Text>
                 </Pressable>
               );
@@ -235,13 +194,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
         <View style={styles.legalLinks}>
           <Pressable onPress={() => navigation.navigate("Terms")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.terms}</Text>
+            <Text style={[typography.secondary, styles.legalLink]}>{t("common.terms")}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate("Privacy")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.privacy}</Text>
+            <Text style={[typography.secondary, styles.legalLink]}>{t("common.privacy")}</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate("Imprint")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{accountCopy.imprint}</Text>
+            <Text style={[typography.secondary, styles.legalLink]}>{t("common.imprint")}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -249,48 +208,26 @@ export const SettingsScreen = ({ navigation }: Props) => {
   );
 };
 
-const getAccentLabel = (
-  option: AccentColor,
-  language: "de" | "en",
-) =>
+const getAccentLabel = (option: AccentColor, t: (key: string) => string) =>
   (
-    language === "de"
-      ? {
-          indigo: "Indigo",
-          slate: "Slate",
-          graphite: "Graphit",
-          blue: "Blau",
-          sage: "Sage",
-          cyan: "Cyan",
-          teal: "Teal",
-          green: "Gruen",
-          forest: "Forest",
-          sand: "Sand",
-          amber: "Amber",
-          orange: "Orange",
-          coral: "Koralle",
-          gold: "Gold",
-          violet: "Violett",
-          rose: "Rose",
-        }
-      : {
-          indigo: "Indigo",
-          slate: "Slate",
-          graphite: "Graphite",
-          blue: "Blue",
-          sage: "Sage",
-          cyan: "Cyan",
-          teal: "Teal",
-          green: "Green",
-          forest: "Forest",
-          sand: "Sand",
-          amber: "Amber",
-          orange: "Orange",
-          coral: "Coral",
-          gold: "Gold",
-          violet: "Violet",
-          rose: "Rose",
-        }
+    {
+      indigo: t("settings.accentIndigo"),
+      slate: t("settings.accentSlate"),
+      graphite: t("settings.accentGraphite"),
+      blue: t("settings.accentBlue"),
+      sage: t("settings.accentSage"),
+      cyan: t("settings.accentCyan"),
+      teal: t("settings.accentTeal"),
+      green: t("settings.accentGreen"),
+      forest: t("settings.accentForest"),
+      sand: t("settings.accentSand"),
+      amber: t("settings.accentAmber"),
+      orange: t("settings.accentOrange"),
+      coral: t("settings.accentCoral"),
+      gold: t("settings.accentGold"),
+      violet: t("settings.accentViolet"),
+      rose: t("settings.accentRose"),
+    } satisfies Record<AccentColor, string>
   )[option];
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>

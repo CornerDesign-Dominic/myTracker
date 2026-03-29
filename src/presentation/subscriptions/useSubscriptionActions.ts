@@ -1,6 +1,7 @@
 import { SubscriptionInput } from "@/types/subscription";
 import { SubscriptionService } from "@/application/subscriptions/service";
 import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
+import { useI18n } from "@/hooks/useI18n";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type Options = {
@@ -10,6 +11,8 @@ type Options = {
 };
 
 export const useSubscriptionActions = ({ userId, service, setErrorMessage }: Options) => {
+  const { t } = useI18n();
+
   const execute = async (action: () => Promise<void>) => {
     try {
       setErrorMessage(null);
@@ -18,7 +21,7 @@ export const useSubscriptionActions = ({ userId, service, setErrorMessage }: Opt
       logFirestoreError("useSubscriptionActions.execute", error, {
         userId: userId ?? null,
       });
-      setErrorMessage(getSubscriptionErrorMessage(error));
+      setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
     }
   };
 

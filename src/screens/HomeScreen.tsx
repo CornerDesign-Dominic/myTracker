@@ -203,6 +203,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.sm,
+      borderColor: colors.accent,
     },
     summaryMonth: {
       color: colors.textSecondary,

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -18,6 +18,8 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import {
   DevelopmentRange,
   buildCostDevelopmentSeries,
+  DevelopmentPoint,
+  DevelopmentSeries,
   getAverageMonthlyCost,
   getBillingStructure,
   getCurrentMonthCost,
@@ -117,6 +119,8 @@ export const StatsScreen = () => {
   );
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [developmentRange, setDevelopmentRange] = useState<DevelopmentRange>(6);
+  const [selectedDevelopmentKey, setSelectedDevelopmentKey] = useState<string | null>(null);
+  const [developmentChartWidth, setDevelopmentChartWidth] = useState(0);
 
   const categoryItems = useMemo(
     () => (showAllCategories ? metrics.byCategory : metrics.byCategory.slice(0, 3)),
@@ -125,20 +129,43 @@ export const StatsScreen = () => {
   const maxCategoryValue = categoryItems[0]?.monthlyTotal ?? 1;
 
   const developmentSeries = useMemo(
-    () => buildCostDevelopmentSeries(subscriptions, developmentRange),
-    [developmentRange, subscriptions],
+    () => buildCostDevelopmentSeries(subscriptions, allHistory, developmentRange, language),
+    [allHistory, developmentRange, language, subscriptions],
   );
   const rawMaxDevelopmentValue = Math.max(
-    ...developmentSeries.map((item) => item.totalAmount),
+    ...developmentSeries.points.map((item) => item.totalAmount),
     1,
   );
   const chartScaleMax = getChartScaleMax(rawMaxDevelopmentValue);
   const axisRoundingUnit = getAxisRoundingUnit(chartScaleMax);
-  const chartContentWidth = Math.max(developmentSeries.length * 34, 240);
   const yAxisValues = Array.from({ length: Y_AXIS_STEPS }, (_, index) => {
     const ratio = (Y_AXIS_STEPS - index - 1) / (Y_AXIS_STEPS - 1);
     return roundToUnit(chartScaleMax * ratio, axisRoundingUnit);
   });
+  const selectedDevelopmentPoint = useMemo(
+    () =>
+      developmentSeries.points.find((item) => item.key === selectedDevelopmentKey) ??
+      developmentSeries.points[developmentSeries.points.length - 1] ??
+      null,
+    [developmentSeries.points, selectedDevelopmentKey],
+  );
+  const selectedDevelopmentDelta = useMemo(() => {
+    if (!selectedDevelopmentPoint) {
+      return null;
+    }
+
+    const selectedIndex = developmentSeries.points.findIndex(
+      (item) => item.key === selectedDevelopmentPoint.key,
+    );
+    const previousPoint =
+      selectedIndex > 0 ? developmentSeries.points[selectedIndex - 1] : null;
+
+    if (!previousPoint) {
+      return null;
+    }
+
+    return selectedDevelopmentPoint.totalAmount - previousPoint.totalAmount;
+  }, [developmentSeries.points, selectedDevelopmentPoint]);
 
   const billingStructure = useMemo(
     () => getBillingStructure(subscriptions),
@@ -219,6 +246,22 @@ export const StatsScreen = () => {
         return copy.yearly;
     }
   };
+
+  useEffect(() => {
+    if (developmentSeries.points.length === 0) {
+      setSelectedDevelopmentKey(null);
+      return;
+    }
+
+    if (
+      selectedDevelopmentKey &&
+      developmentSeries.points.some((point) => point.key === selectedDevelopmentKey)
+    ) {
+      return;
+    }
+
+    setSelectedDevelopmentKey(developmentSeries.points[developmentSeries.points.length - 1]?.key ?? null);
+  }, [developmentSeries.points, selectedDevelopmentKey]);
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -335,7 +378,7 @@ export const StatsScreen = () => {
             })}
           </ScrollView>
 
-          {developmentSeries.every((item) => item.totalAmount === 0) ? (
+          {developmentSeries.points.every((item) => item.totalAmount === 0) ? (
             <Text style={[typography.secondary, styles.helperText]}>{copy.noDevelopment}</Text>
           ) : (
             <View style={styles.developmentWrap}>
@@ -346,38 +389,43 @@ export const StatsScreen = () => {
                   </Text>
                 ))}
               </View>
-
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartScroll}>
-                <View style={[styles.chartArea, { width: chartContentWidth }]}>
-                  <View style={styles.yGrid}>
-                    {yAxisValues.map((_, index) => (
-                      <View key={index} style={styles.gridLine} />
-                    ))}
-                  </View>
-
-                  <View style={styles.barRow}>
-                    {developmentSeries.map((item) => (
-                      <View key={item.key} style={styles.barColumn}>
-                        <View style={styles.barSlot}>
-                          <View
-                            style={[
-                              styles.bar,
-                              {
-                                height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text style={[typography.meta, styles.barLabel]}>
-                          {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-                            month: "short",
-                          }).format(item.date)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+              <View
+                style={styles.chartArea}
+                onLayout={(event: LayoutChangeEvent) =>
+                  setDevelopmentChartWidth(event.nativeEvent.layout.width)
+                }
+              >
+                <View style={styles.yGrid}>
+                  {yAxisValues.map((_, index) => (
+                    <View key={index} style={styles.gridLine} />
+                  ))}
                 </View>
-              </ScrollView>
+
+                <DevelopmentChart
+                  chartWidth={developmentChartWidth}
+                  chartScaleMax={chartScaleMax}
+                  points={developmentSeries.points}
+                  mode={developmentSeries.mode}
+                  selectedKey={selectedDevelopmentPoint?.key ?? null}
+                  onSelect={setSelectedDevelopmentKey}
+                />
+
+                {selectedDevelopmentPoint ? (
+                  <View style={styles.chartSelection}>
+                    <Text style={[typography.secondary, styles.chartSelectionLabel]}>
+                      {formatDevelopmentSelectionLabel(selectedDevelopmentPoint.date, language)}
+                    </Text>
+                    <Text style={[typography.body, styles.chartSelectionValue]}>
+                      {formatCurrency(selectedDevelopmentPoint.totalAmount, currency)}
+                    </Text>
+                    {selectedDevelopmentDelta !== null ? (
+                      <Text style={[typography.meta, styles.chartSelectionMeta]}>
+                        {formatDeltaLabel(selectedDevelopmentDelta, currency, language)}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
             </View>
           )}
         </View>
@@ -462,6 +510,179 @@ const SummaryMetric = ({ label, value }: { label: string; value: string }) => {
       </Text>
     </View>
   );
+};
+
+const DevelopmentChart = ({
+  chartWidth,
+  chartScaleMax,
+  points,
+  mode,
+  selectedKey,
+  onSelect,
+}: {
+  chartWidth: number;
+  chartScaleMax: number;
+  points: DevelopmentPoint[];
+  mode: DevelopmentSeries["mode"];
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}) => {
+  const { colors, typography } = useAppTheme();
+  const styles = getStyles(colors);
+  const linePoints = useMemo(
+    () => getLinePoints(points, chartWidth, chartScaleMax),
+    [chartScaleMax, chartWidth, points],
+  );
+  const lineSegments = useMemo(() => getLineSegments(linePoints), [linePoints]);
+
+  if (mode === "bar") {
+    return (
+      <>
+        <View style={styles.barRow}>
+          {points.map((item) => {
+            const isSelected = item.key === selectedKey;
+
+            return (
+              <Pressable key={item.key} style={styles.barColumn} onPress={() => onSelect(item.key)}>
+                <View style={styles.barSlot}>
+                  <View
+                    style={[
+                      styles.bar,
+                      isSelected ? styles.barSelected : null,
+                      {
+                        height: `${Math.max((item.totalAmount / chartScaleMax) * 100, item.totalAmount > 0 ? 8 : 0)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[typography.meta, styles.barLabel, !item.label ? styles.barLabelHidden : null]}>
+                  {item.label ?? " "}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <View style={styles.lineCanvas}>
+        {lineSegments.map((segment, index) => (
+          <View
+            key={`${segment.from.key}-${segment.to.key}-${index}`}
+            style={[
+              styles.lineSegment,
+              {
+                width: segment.length,
+                left: segment.left,
+                top: segment.top,
+                transform: [{ rotate: `${segment.angle}deg` }],
+              },
+            ]}
+          />
+        ))}
+        {linePoints.map((point) => {
+          const matchingDataPoint = points.find((item) => item.key === point.key);
+          const isSelected = point.key === selectedKey;
+
+          return (
+            <Pressable
+              key={point.key}
+              style={[
+                styles.linePointPressable,
+                {
+                  left: point.x - 12,
+                  top: point.y - 12,
+                },
+              ]}
+              onPress={() => onSelect(point.key)}
+            >
+              <View
+                style={[
+                  styles.linePoint,
+                  isSelected ? styles.linePointSelected : null,
+                  matchingDataPoint?.source === "history" ? styles.linePointHistory : null,
+                ]}
+              />
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={styles.lineLabelRow}>
+        {points.map((item) => (
+          <View key={item.key} style={styles.lineLabelCell}>
+            <Text style={[typography.meta, styles.barLabel, !item.label ? styles.barLabelHidden : null]}>
+              {item.label ?? " "}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+};
+
+const getLinePoints = (
+  points: DevelopmentPoint[],
+  chartWidth: number,
+  chartScaleMax: number,
+) => {
+  const width = Math.max(chartWidth, 1);
+  const usableHeight = CHART_HEIGHT - 24;
+
+  return points.map((point, index) => ({
+    key: point.key,
+    x:
+      points.length === 1 ? width / 2 : (index / Math.max(points.length - 1, 1)) * width,
+    y: usableHeight - (point.totalAmount / chartScaleMax) * usableHeight,
+  }));
+};
+
+const getLineSegments = (
+  points: Array<{ key: string; x: number; y: number }>,
+) =>
+  points.slice(0, -1).map((point, index) => {
+    const nextPoint = points[index + 1];
+    const dx = nextPoint.x - point.x;
+    const dy = nextPoint.y - point.y;
+
+    return {
+      from: point,
+      to: nextPoint,
+      length: Math.sqrt(dx * dx + dy * dy),
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+      left: point.x + dx / 2 - Math.sqrt(dx * dx + dy * dy) / 2,
+      top: point.y + dy / 2 - 1,
+    };
+  });
+
+const formatDevelopmentSelectionLabel = (date: Date, language: "de" | "en") =>
+  new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+
+const formatDeltaLabel = (
+  delta: number,
+  currency: "EUR" | "Dollar",
+  language: "de" | "en",
+) => {
+  const amount = formatCurrency(Math.abs(delta), currency);
+
+  if (delta === 0) {
+    return language === "de" ? "Keine VerÃ¤nderung zum Vormonat" : "No change vs previous month";
+  }
+
+  if (delta > 0) {
+    return language === "de"
+      ? `+${amount} vs. Vormonat`
+      : `+${amount} vs previous period`;
+  }
+
+  return language === "de"
+    ? `-${amount} vs. Vormonat`
+    : `-${amount} vs previous period`;
 };
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
@@ -568,7 +789,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     yAxis: {
       height: CHART_HEIGHT,
       justifyContent: "space-between",
-      paddingBottom: 24,
+      paddingBottom: 28,
     },
     axisLabel: {
       color: colors.textSecondary,
@@ -577,9 +798,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     chartArea: {
       flex: 1,
       gap: spacing.sm,
-    },
-    chartScroll: {
-      flex: 1,
+      minHeight: CHART_HEIGHT + 54,
     },
     yGrid: {
       position: "absolute",
@@ -597,7 +816,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       height: CHART_HEIGHT,
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
     barColumn: {
       flex: 1,
@@ -619,9 +838,75 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderTopLeftRadius: radius.sm,
       borderTopRightRadius: radius.sm,
     },
+    barSelected: {
+      backgroundColor: colors.accent,
+    },
     barLabel: {
       color: colors.textSecondary,
       textTransform: "capitalize",
+      minHeight: 18,
+      textAlign: "center",
+    },
+    barLabelHidden: {
+      color: "transparent",
+    },
+    lineCanvas: {
+      height: CHART_HEIGHT - 24,
+      position: "relative",
+      justifyContent: "flex-end",
+    },
+    lineSegment: {
+      position: "absolute",
+      height: 2,
+      backgroundColor: colors.accent,
+    },
+    linePointPressable: {
+      position: "absolute",
+      width: 24,
+      height: 24,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    linePoint: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accent,
+      borderWidth: 2,
+      borderColor: colors.surface,
+    },
+    linePointSelected: {
+      width: 12,
+      height: 12,
+      backgroundColor: colors.textPrimary,
+      borderColor: colors.accent,
+    },
+    linePointHistory: {
+      backgroundColor: colors.accent,
+    },
+    lineLabelRow: {
+      flexDirection: "row",
+      marginTop: spacing.xs,
+    },
+    lineLabelCell: {
+      flex: 1,
+      alignItems: "center",
+    },
+    chartSelection: {
+      marginTop: spacing.sm,
+      gap: spacing.xxs,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    chartSelectionLabel: {
+      color: colors.textSecondary,
+    },
+    chartSelectionValue: {
+      color: colors.textPrimary,
+    },
+    chartSelectionMeta: {
+      color: colors.textMuted,
     },
     structureList: {
       gap: spacing.xs,

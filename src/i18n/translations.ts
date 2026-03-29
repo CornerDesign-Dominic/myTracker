@@ -21,9 +21,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       none: "-",
       login: "Login",
       register: "Registrierung",
-      account: "Konto",
+      account: "Datensicherung",
       terms: "AGB",
-      privacy: "Datenschutz",
+      privacy: "Konto",
       imprint: "Impressum",
       status: "Status",
       delete: "Löschen",
@@ -112,7 +112,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accentCyan: "Cyan",
       accentGold: "Gold",
       accentGraphite: "Graphit",
-      accountTitle: "Konto",
+      accountTitle: "Datensicherung",
       accountAnonymous:
         "Wenn du dich nicht registrierst oder einloggst, können deine Daten verloren gehen. Mit einer E-Mail können deine Daten deinem Konto zugeordnet und auf anderen Geräten wiederhergestellt werden.",
       accountSignedIn:

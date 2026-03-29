@@ -5,7 +5,6 @@ import {
   buildEditablePaymentEventFields,
   buildUpdatedPaymentEvent,
   hasActivePaymentEventForDueDate,
-  isDueDateSuppressedForAutoSync,
   isEditablePaymentEventType,
 } from "../../src/domain/subscriptionHistory/paymentEvents.ts";
 import type { SubscriptionHistoryEvent } from "../../src/types/subscriptionHistory.ts";
@@ -135,18 +134,4 @@ test("duplicate helper ignores deleted payment events and current record exclusi
   assert.equal(hasActivePaymentEventForDueDate(history, "2026-04-01"), true);
   assert.equal(hasActivePaymentEventForDueDate(history, "2026-05-01"), false);
   assert.equal(hasActivePaymentEventForDueDate(history, "2026-04-01", "payment-1"), false);
-});
-
-test("legacy sync suppression stays readable for old history data", () => {
-  const history: SubscriptionHistoryEvent[] = [
-    {
-      id: "event-1",
-      subscriptionId: "subscription-1",
-      type: "subscription_created",
-      createdAt: "2026-01-01T08:00:00.000Z",
-      syncSuppressedDueDates: ["2026-05-01"],
-    },
-  ];
-
-  assert.equal(isDueDateSuppressedForAutoSync(history, "2026-05-01"), true);
 });

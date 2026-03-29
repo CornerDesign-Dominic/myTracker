@@ -1,6 +1,5 @@
 import {
   collection,
-  deleteDoc,
   deleteField,
   doc,
   documentId,
@@ -87,9 +86,6 @@ const mapHistoryEvent = (
   effectiveDate: data.effectiveDate ? String(data.effectiveDate) : undefined,
   notes: data.notes ? String(data.notes) : undefined,
   metadata: (data.metadata as SubscriptionHistoryEvent["metadata"]) ?? undefined,
-  syncSuppressedDueDates: Array.isArray(data.syncSuppressedDueDates)
-    ? data.syncSuppressedDueDates.map(String)
-    : undefined,
   snapshot: (data.snapshot as SubscriptionHistoryEvent["snapshot"]) ?? undefined,
   amount: typeof data.amount === "number" ? data.amount : undefined,
   dueDate: data.dueDate ? String(data.dueDate) : undefined,
@@ -353,7 +349,10 @@ export const deleteFirestoreHistoryEvent = async (
     const history = await readSubscriptionHistory(userId, subscriptionId);
     getEditablePaymentEvent(history, eventId);
 
-    await deleteDoc(historyDoc(userId, subscriptionId, eventId));
+    await updateDoc(historyDoc(userId, subscriptionId, eventId), {
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   } catch (error) {
     logFirestoreError("subscriptionFirestore.deleteFirestoreHistoryEvent", error, {
       path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,

@@ -40,16 +40,6 @@ export const hasActivePaymentEventForDueDate = (
       event.dueDate === dueDate,
   );
 
-export const isDueDateSuppressedForAutoSync = (
-  history: SubscriptionHistoryEvent[],
-  dueDate: string,
-) =>
-  history.some(
-    (event) =>
-      (isPaymentHistoryEvent(event) && !!event.deletedAt && event.dueDate === dueDate) ||
-      (event.syncSuppressedDueDates?.includes(dueDate) ?? false),
-  );
-
 export const buildEditablePaymentEventFields = ({
   type,
   amount,

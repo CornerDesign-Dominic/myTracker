@@ -29,7 +29,6 @@ export interface SubscriptionHistoryEvent {
   effectiveDate?: string;
   notes?: string;
   metadata?: Record<string, string | number | boolean | null>;
-  syncSuppressedDueDates?: string[];
   snapshot?: SubscriptionHistorySnapshot;
   amount?: number;
   dueDate?: string;

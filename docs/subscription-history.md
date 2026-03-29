@@ -67,7 +67,9 @@ Das bedeutet:
 
 - manuelle Korrekturen laufen direkt auf dem bestehenden Payment-Datensatz
 - Loeschen ist fuer echte Fehlfaelle gedacht, zum Beispiel doppelte oder versehentlich angelegte Zahlungen
-- alte `syncSuppressedDueDates` und historische `deletedAt`-Eintraege werden nur noch aus Kompatibilitaetsgruenden gelesen
+- geloeschte Zahlungen werden fuer die Anzeige ausgeblendet
+- Auto-Sync richtet sich fachlich nach der letzten noch vorhandenen Payment-Historie
+- dadurch darf eine geloeschte **letzte** Zahlung spaeter wieder entstehen, waehrend geloeschte **aeltere** Zahlungen vor der letzten vorhandenen Zahlung normalerweise geloescht bleiben
 
 ## Gruende fuer dieses Verhalten
 
@@ -141,6 +143,12 @@ Dort wird die automatische Event-Erzeugung abgebrochen, sobald gilt:
 - `dueDate > today`
 - oder `dueDate < createdAt`
 
+Der Sync orientiert sich dabei primaer an der zuletzt bekannten fachlichen Kette:
+
+- letzter noch vorhandener gebuchter / ausgesetzter Zahlungstermin
+- oder explizit neu gesetzte Faelligkeitsbasis
+- erst danach faellt er auf `nextPaymentDate` zurueck
+
 Die wiederkehrende Monatsend-Logik fuer sichtbare und zukuenftige Faelligkeiten liegt zentral in:
 
 - `getRecurringDueDateForMonth(...)`
@@ -162,5 +170,6 @@ Die Tests pruefen unter anderem:
 - keine automatische Erzeugung mehr fuer `cancelled`
 - kein rueckwirkender Backfill vor `createdAt`
 - Mehrmonats-Sync nach Offline-Zeit innerhalb des App-Zeitraums
+- Sync orientiert sich an der realen Faelligkeitskette und nicht nur stumpf an `nextPaymentDate`
 - direkte Bearbeitung desselben Payment-Datensatzes bei Typwechsel `booked <-> skipped`
-- Kompatibilitaet fuer alte historische Suppression-Daten
+- geloeschte letzte Zahlungen duerfen durch spaeteren Sync wieder entstehen

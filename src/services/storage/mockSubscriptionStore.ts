@@ -216,7 +216,15 @@ class MockSubscriptionStore {
       throw new Error("Only editable payment events can be deleted.");
     }
 
-    const nextHistory = currentHistory.filter((event) => event.id !== eventId);
+    const nextHistory = currentHistory.map((event) =>
+      event.id === eventId
+        ? {
+            ...event,
+            deletedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        : event,
+    );
 
     this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
     this.emitHistory(subscriptionId);

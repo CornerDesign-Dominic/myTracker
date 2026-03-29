@@ -206,6 +206,33 @@ test("sync respects historical deactivation state for missing months", () => {
   );
 });
 
+test("sync uses the latest real payment anchor instead of only the current nextPaymentDate", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-04-15",
+  });
+  const history = [
+    createEvent({
+      id: "payment-january",
+      type: "payment_booked",
+      createdAt: "2026-01-15T08:00:00.000Z",
+      effectiveDate: "2026-01-15",
+      occurredAt: "2026-01-15",
+      dueDate: "2026-01-15",
+      amount: 13.99,
+      bookedAt: "2026-01-15T08:00:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 3, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2026-02-15", "2026-03-15", "2026-04-15"],
+  );
+});
+
 test("sync creates no new events for cancelled subscriptions", () => {
   const subscription = createSubscription({
     createdAt: "2026-01-10T09:00:00.000Z",
@@ -240,18 +267,28 @@ test("sync creates no new events for cancelled subscriptions", () => {
   );
 });
 
-test("legacy deleted payment events still suppress automatic recreation for the same due date", () => {
+test("deleting the latest payment allows sync to recreate it from the last remaining payment", () => {
   const subscription = createSubscription({
     createdAt: "2026-01-10T09:00:00.000Z",
     nextPaymentDate: "2026-01-15",
   });
   const history = [
     createEvent({
-      id: "deleted-payment",
+      id: "payment-january",
       type: "payment_booked",
       dueDate: "2026-01-15",
-      deletedAt: "2026-01-16T09:00:00.000Z",
+      effectiveDate: "2026-01-15",
+      occurredAt: "2026-01-15",
       amount: 13.99,
+    }),
+    createEvent({
+      id: "deleted-payment-february",
+      type: "payment_booked",
+      dueDate: "2026-02-15",
+      effectiveDate: "2026-02-15",
+      occurredAt: "2026-02-15",
+      amount: 13.99,
+      deletedAt: "2026-02-16T09:00:00.000Z",
     }),
   ];
 
@@ -260,5 +297,38 @@ test("legacy deleted payment events still suppress automatic recreation for the 
   assert.deepEqual(
     result.map((event) => event.dueDate),
     ["2026-02-15"],
+  );
+});
+
+test("deleting an older payment does not recreate it when a newer payment still exists", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+  });
+  const history = [
+    createEvent({
+      id: "deleted-payment-january",
+      type: "payment_booked",
+      dueDate: "2026-01-15",
+      effectiveDate: "2026-01-15",
+      occurredAt: "2026-01-15",
+      amount: 13.99,
+      deletedAt: "2026-01-16T09:00:00.000Z",
+    }),
+    createEvent({
+      id: "payment-february",
+      type: "payment_booked",
+      dueDate: "2026-02-15",
+      effectiveDate: "2026-02-15",
+      occurredAt: "2026-02-15",
+      amount: 13.99,
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 1, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    [],
   );
 });

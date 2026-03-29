@@ -1,25 +1,28 @@
-import { Subscription, SubscriptionInput } from "@/types/subscription";
+import type { Subscription, SubscriptionInput } from "../../types/subscription.ts";
 import {
   buildChangeEvents,
   buildCreatedEvent,
   getMissingPaymentHistoryEvents,
   sortHistoryNewestFirst,
-} from "@/domain/subscriptionHistory/events";
+} from "../../domain/subscriptionHistory/events.ts";
 import {
   buildUpdatedPaymentEvent,
   buildEditablePaymentEventFields,
   createPaymentEventId,
   hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
-} from "@/domain/subscriptionHistory/paymentEvents";
-import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
+} from "../../domain/subscriptionHistory/paymentEvents.ts";
+import type {
+  HistoryEventInput,
+  SubscriptionHistoryEvent,
+} from "../../types/subscriptionHistory.ts";
 
-import { seedSubscriptions } from "./seedSubscriptions";
+import { seedSubscriptions } from "./seedSubscriptions.ts";
 
 type Listener = (items: Subscription[]) => void;
 type HistoryListener = (items: SubscriptionHistoryEvent[]) => void;
 
-class MockSubscriptionStore {
+export class MockSubscriptionStore {
   private subscriptions = [...seedSubscriptions];
   private listeners = new Set<Listener>();
   private history = new Map<string, SubscriptionHistoryEvent[]>();

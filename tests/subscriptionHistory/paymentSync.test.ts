@@ -233,6 +233,59 @@ test("sync uses the latest real payment anchor instead of only the current nextP
   );
 });
 
+test("latest skipped payment also works as the sync anchor", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-04-15",
+    status: "paused",
+  });
+  const history = [
+    createEvent({
+      id: "payment-january",
+      type: "payment_skipped_inactive",
+      createdAt: "2026-01-15T08:00:00.000Z",
+      effectiveDate: "2026-01-15",
+      occurredAt: "2026-01-15",
+      dueDate: "2026-01-15",
+      amount: 13.99,
+      billingCycleSnapshot: "monthly",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 3, 20));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type]),
+    [
+      ["2026-02-15", "payment_skipped_inactive"],
+      ["2026-03-15", "payment_skipped_inactive"],
+      ["2026-04-15", "payment_skipped_inactive"],
+    ],
+  );
+});
+
+test("sync creates nothing when the latest active payment already reaches today", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-03-15",
+  });
+  const history = [
+    createEvent({
+      id: "payment-march",
+      type: "payment_booked",
+      dueDate: "2026-03-15",
+      effectiveDate: "2026-03-15",
+      occurredAt: "2026-03-15",
+      amount: 13.99,
+      billingCycleSnapshot: "monthly",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 2, 20));
+
+  assert.equal(result.length, 0);
+});
+
 test("sync creates no new events for cancelled subscriptions", () => {
   const subscription = createSubscription({
     createdAt: "2026-01-10T09:00:00.000Z",
@@ -264,6 +317,51 @@ test("sync creates no new events for cancelled subscriptions", () => {
   assert.deepEqual(
     result.map((event) => [event.dueDate, event.type]),
     [["2026-01-15", "payment_booked"]],
+  );
+});
+
+test("status changes between due dates are distributed correctly", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+    status: "active",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-01-10T09:00:00.000Z",
+      effectiveDate: "2026-01-10",
+      occurredAt: "2026-01-10",
+      initialNextPaymentDate: "2026-01-15",
+    }),
+    createEvent({
+      id: "deactivated",
+      type: "subscription_deactivated",
+      createdAt: "2026-02-10T09:00:00.000Z",
+      effectiveDate: "2026-02-10",
+      occurredAt: "2026-02-10",
+      snapshot: { status: "paused" },
+    }),
+    createEvent({
+      id: "reactivated",
+      type: "subscription_reactivated",
+      createdAt: "2026-04-10T09:00:00.000Z",
+      effectiveDate: "2026-04-10",
+      occurredAt: "2026-04-10",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 4, 20));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type]),
+    [
+      ["2026-01-15", "payment_booked"],
+      ["2026-02-15", "payment_skipped_inactive"],
+      ["2026-03-15", "payment_skipped_inactive"],
+      ["2026-04-15", "payment_booked"],
+      ["2026-05-15", "payment_booked"],
+    ],
   );
 });
 
@@ -331,4 +429,113 @@ test("deleting an older payment does not recreate it when a newer payment still 
     result.map((event) => event.dueDate),
     [],
   );
+});
+
+for (const monthCount of [3, 4, 6, 12]) {
+  test(`active subscriptions backfill ${monthCount} missing monthly payments`, () => {
+    const subscription = createSubscription({
+      createdAt: "2025-01-10T09:00:00.000Z",
+      nextPaymentDate: `2025-${String(13 - monthCount).padStart(2, "0")}-15`,
+      status: "active",
+    });
+
+    const result = getMissingPaymentHistoryEvents(subscription, [], new Date(2025, 11, 20));
+
+    assert.equal(result.length, monthCount);
+    assert.ok(result.every((event) => event.type === "payment_booked"));
+  });
+}
+
+for (const monthCount of [3, 4, 6, 12]) {
+  test(`paused subscriptions backfill ${monthCount} missing monthly skipped payments`, () => {
+    const subscription = createSubscription({
+      createdAt: "2025-01-10T09:00:00.000Z",
+      nextPaymentDate: `2025-${String(13 - monthCount).padStart(2, "0")}-15`,
+      status: "paused",
+    });
+
+    const result = getMissingPaymentHistoryEvents(subscription, [], new Date(2025, 11, 20));
+
+    assert.equal(result.length, monthCount);
+    assert.ok(result.every((event) => event.type === "payment_skipped_inactive"));
+  });
+}
+
+test("quarterly sync follows the new due date basis after interval change", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    billingCycle: "quarterly",
+    nextPaymentDate: "2026-05-31",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-01-10T09:00:00.000Z",
+      effectiveDate: "2026-01-10",
+      occurredAt: "2026-01-10",
+      initialBillingCycle: "monthly",
+      initialNextPaymentDate: "2026-01-31",
+    }),
+    createEvent({
+      id: "billing-cycle-changed",
+      type: "billing_cycle_changed",
+      effectiveDate: "2026-05-01",
+      previousBillingCycle: "monthly",
+      nextBillingCycle: "quarterly",
+    }),
+    createEvent({
+      id: "due-date-changed",
+      type: "due_date_changed",
+      effectiveDate: "2026-05-01",
+      previousNextPaymentDate: "2026-01-31",
+      nextNextPaymentDate: "2026-05-31",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 10, 30));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2026-05-31", "2026-08-31", "2026-11-30"],
+  );
+});
+
+test("yearly sync respects yearly cycles and does not create future events", () => {
+  const subscription = createSubscription({
+    createdAt: "2024-01-10T09:00:00.000Z",
+    billingCycle: "yearly",
+    nextPaymentDate: "2024-03-31",
+  });
+
+  const result = getMissingPaymentHistoryEvents(subscription, [], new Date(2026, 2, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2024-03-31", "2025-03-31"],
+  );
+});
+
+test("monthly sync keeps month-end clamping across year changes", () => {
+  const subscription = createSubscription({
+    createdAt: "2025-11-10T09:00:00.000Z",
+    nextPaymentDate: "2025-12-31",
+  });
+
+  const result = getMissingPaymentHistoryEvents(subscription, [], new Date(2026, 1, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2025-12-31", "2026-01-31"],
+  );
+});
+
+test("invalid bases produce no events", () => {
+  const subscription = createSubscription({
+    createdAt: "invalid-date",
+    nextPaymentDate: "2026-03-28",
+  });
+
+  const result = getMissingPaymentHistoryEvents(subscription, [], TODAY);
+
+  assert.equal(result.length, 0);
 });

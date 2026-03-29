@@ -1,4 +1,4 @@
-import { Subscription } from "@/types/subscription";
+import type { Subscription } from "../../types/subscription.ts";
 
 const today = new Date();
 

@@ -6,6 +6,7 @@ import { subscriptionRepository, usingFirebase } from "@/services/subscriptionRe
 import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 import { useSubscriptionActions } from "@/presentation/subscriptions/useSubscriptionActions";
 import { useSubscriptionCollection } from "@/presentation/subscriptions/useSubscriptionCollection";
+import { useSubscriptionHistorySync } from "@/presentation/subscriptions/useSubscriptionHistorySync";
 
 const subscriptionService = createSubscriptionService(subscriptionRepository);
 
@@ -14,6 +15,12 @@ export const useSubscriptions = () => {
   const { subscriptions, isLoading, errorMessage, setErrorMessage } = useSubscriptionCollection({
     authIsReady,
     userId: currentUser?.uid,
+    service: subscriptionService,
+  });
+  useSubscriptionHistorySync({
+    authIsReady,
+    userId: currentUser?.uid,
+    subscriptions,
     service: subscriptionService,
   });
 

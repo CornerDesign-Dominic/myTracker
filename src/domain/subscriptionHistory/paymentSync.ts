@@ -61,7 +61,8 @@ const getSubscriptionStatusOnDate = (
     });
 
   let currentStatus =
-    statusEvents.find((event) => event.type === "subscription_created")?.initialStatus ?? "active";
+    statusEvents.find((event) => event.type === "subscription_created")?.initialStatus ??
+    subscription.status;
 
   statusEvents.forEach((event) => {
     const eventDate = getEventCalendarDate(event);
@@ -77,6 +78,11 @@ const getSubscriptionStatusOnDate = (
       currentStatus = "active";
     }
   });
+
+  const updatedAtDay = toCalendarDay(subscription.updatedAt);
+  if (updatedAtDay && targetDate >= updatedAtDay) {
+    return subscription.status;
+  }
 
   return currentStatus;
 };

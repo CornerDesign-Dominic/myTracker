@@ -33,6 +33,7 @@ import {
   radius,
   spacing,
 } from "@/theme";
+import { shouldRequireNextPaymentConfirmation } from "@/domain/subscriptions/formValidation";
 import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
 import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
@@ -508,7 +509,9 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const openStatusSheet = () => setActiveField("status");
 
   const selectBillingCycle = (value: BillingCycle) => {
-    setRequiresNextPaymentConfirmation(value !== confirmedBillingCycle);
+    setRequiresNextPaymentConfirmation(
+      shouldRequireNextPaymentConfirmation(value, confirmedBillingCycle),
+    );
     updateField("billingCycle", value);
     closeSheet();
   };

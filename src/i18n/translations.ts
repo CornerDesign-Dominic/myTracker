@@ -23,7 +23,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       register: "Registrierung",
       account: "Datensicherung",
       terms: "AGB",
-      privacy: "Konto",
+      privacy: "Datenschutz",
       imprint: "Impressum",
       status: "Status",
       delete: "Löschen",
@@ -54,9 +54,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthlyPreview: "Monatsvorschau",
     },
     legal: {
-      termsPlaceholder: "Hier kommen die AGB hin.",
-      privacyPlaceholder: "Hier kommt der Datenschutz hin.",
-      imprintPlaceholder: "Hier kommt das Impressum hin.",
+      termsPlaceholder: "AGB",
+      privacyPlaceholder: "Datenschutz",
+      imprintPlaceholder: "Impressum",
     },
     calendar: {
       title: "Kalender",
@@ -340,9 +340,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthlyPreview: "Monthly preview",
     },
     legal: {
-      termsPlaceholder: "Terms will go here.",
-      privacyPlaceholder: "Privacy information will go here.",
-      imprintPlaceholder: "Imprint information will go here.",
+      termsPlaceholder: "Terms",
+      privacyPlaceholder: "Privacy",
+      imprintPlaceholder: "Imprint",
     },
     calendar: {
       title: "Calendar",

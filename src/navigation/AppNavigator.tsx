@@ -236,7 +236,7 @@ export const AppNavigator = ({
         >
           {() => (
             <LegalPlaceholderScreen
-              message={t("legal.termsPlaceholder")}
+              documentKey="terms"
             />
           )}
         </Stack.Screen>
@@ -248,7 +248,7 @@ export const AppNavigator = ({
         >
           {() => (
             <LegalPlaceholderScreen
-              message={t("legal.privacyPlaceholder")}
+              documentKey="privacy"
             />
           )}
         </Stack.Screen>
@@ -260,7 +260,7 @@ export const AppNavigator = ({
         >
           {() => (
             <LegalPlaceholderScreen
-              message={t("legal.imprintPlaceholder")}
+              documentKey="imprint"
             />
           )}
         </Stack.Screen>

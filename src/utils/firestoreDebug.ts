@@ -1,3 +1,5 @@
+import { crashlyticsService } from "@/services/crashlytics/crashlytics";
+
 const extractUrl = (message: string) => {
   const match = message.match(/https:\/\/[^\s]+/);
   return match?.[0];
@@ -77,4 +79,11 @@ export const logFirestoreError = (
   if (details.missingIndexUrl) {
     console.error(`[Firestore] Missing index URL: ${details.missingIndexUrl}`);
   }
+
+  crashlyticsService.log(`[Firestore] ${scope}`);
+  crashlyticsService.recordError(error, {
+    scope,
+    code: details.code,
+    hasMissingIndexUrl: Boolean(details.missingIndexUrl),
+  });
 };

@@ -18,6 +18,7 @@ import {
 } from "react";
 
 import { firebaseAuth, hasRequiredFirebaseConfig } from "@/firebase/config";
+import { crashlyticsService } from "@/services/crashlytics/crashlytics";
 import { ensureUserDocument } from "@/services/firestore/userFirestore";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
@@ -70,6 +71,10 @@ const syncUserDocument = async (user: User, upgradedAt = false) => {
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    crashlyticsService.setUserId(currentUser?.uid ?? null);
+  }, [currentUser?.uid]);
 
   const signInAnonymous = async () => {
     const auth = ensureAuth();

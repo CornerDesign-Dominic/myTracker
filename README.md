@@ -106,4 +106,5 @@ Die verbindlichen Regeln stehen in den Dateien unter `docs/`.
 - [`docs/payment-rules.md`](docs/payment-rules.md) - verbindliche Payment-/Sync-Regeln
 - [`docs/payment-flows.md`](docs/payment-flows.md) - fachliche Flows aus Produkt-/User-Sicht
 - [`docs/subscription-history.md`](docs/subscription-history.md) - Event-Modell und History-spezifische Hinweise
+- [`docs/crashlytics.md`](docs/crashlytics.md) - vorbereitete Crashlytics-Integration und echte Testschritte
 - [`docs/design-system.md`](docs/design-system.md) - visuelle Regeln und UI-System

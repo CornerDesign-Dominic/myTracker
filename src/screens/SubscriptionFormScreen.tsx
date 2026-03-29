@@ -509,10 +509,20 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const openStatusSheet = () => setActiveField("status");
 
   const selectBillingCycle = (value: BillingCycle) => {
-    setRequiresNextPaymentConfirmation(
-      shouldRequireNextPaymentConfirmation(value, confirmedBillingCycle),
+    const requiresConfirmation = shouldRequireNextPaymentConfirmation(
+      value,
+      confirmedBillingCycle,
     );
+
+    setRequiresNextPaymentConfirmation(requiresConfirmation);
     updateField("billingCycle", value);
+
+    if (requiresConfirmation) {
+      setDraftDate(toDateValue(formState.nextPaymentDate));
+      setActiveField("nextPaymentDate");
+      return;
+    }
+
     closeSheet();
   };
 

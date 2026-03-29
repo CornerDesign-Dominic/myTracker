@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { OnboardingScreen } from "@/screens/OnboardingScreen";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
@@ -103,13 +104,22 @@ const TabsNavigator = () => {
   );
 };
 
-export const AppNavigator = () => {
+type AppNavigatorProps = {
+  showOnboarding: boolean;
+  onCompleteOnboarding: () => Promise<void>;
+};
+
+export const AppNavigator = ({
+  showOnboarding,
+  onCompleteOnboarding,
+}: AppNavigatorProps) => {
   const { colors, navigationTheme, typography } = useAppTheme();
   const { t } = useI18n();
 
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
+        initialRouteName={showOnboarding ? "Onboarding" : "Tabs"}
         screenOptions={{
           headerShadowVisible: false,
           headerStyle: {
@@ -129,6 +139,34 @@ export const AppNavigator = () => {
           },
         }}
       >
+        <Stack.Screen
+          name="Onboarding"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        >
+          {({ navigation }) => (
+            <OnboardingScreen
+              onComplete={async (target) => {
+                await onCompleteOnboarding();
+
+                if (target === "subscription-form") {
+                  navigation.reset({
+                    index: 1,
+                    routes: [
+                      { name: "Tabs" },
+                      { name: "SubscriptionForm" },
+                    ],
+                  });
+                  return;
+                }
+
+                navigation.replace("Tabs");
+              }}
+            />
+          )}
+        </Stack.Screen>
         <Stack.Screen name="Tabs" component={TabsNavigator} options={{ headerShown: false }} />
         <Stack.Screen
           name="Login"

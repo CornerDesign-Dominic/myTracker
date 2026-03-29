@@ -36,6 +36,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       lastMonth: "Letzter Monat",
       nextMonth: "Nächster Monat",
       okay: "Okay",
+      back: "Zurück",
+      next: "Weiter",
+      skip: "Überspringen",
       actionFailed: "Aktion konnte nicht ausgeführt werden.",
     },
     tabs: {
@@ -58,6 +61,26 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       title: "Kalender",
       today: "Heute",
       dueOn: "Fälligkeiten am {{date}}",
+    },
+    onboarding: {
+      welcomeTitle: "Behalte deine Abos im Griff",
+      welcomeDescription: "Sieh, was du wirklich zahlst – und was du dir sparst.",
+      howItWorksTitle: "So funktioniert’s",
+      statusActiveTitle: "Aktiv",
+      statusActiveDescription: "Zahlung wird gebucht",
+      statusPausedTitle: "Pausiert",
+      statusPausedDescription: "Zahlung wird ausgesetzt und du sparst den Betrag",
+      statusCancelledTitle: "Gekündigt",
+      statusCancelledDescription: "Keine weiteren Zahlungen",
+      dataTitle: "Deine Daten gehören dir",
+      dataDescription:
+        "Du brauchst keinen Account. Alles funktioniert direkt auf deinem Gerät.\n\nOptional kannst du dich anmelden, um deine Daten zu sichern.",
+      supportTitle: "Unterstütze die App",
+      supportDescription:
+        "Die App ist unabhängig entwickelt, werbefrei und komplett kostenlos.\n\nWenn sie dir gefällt, kannst du sie mit kleinen Extras unterstützen – zum Beispiel durch neue Akzentfarben.",
+      startTitle: "Starte jetzt",
+      startDescription: "Lege dein erstes Abo an und behalte den Überblick.",
+      startCta: "Erstes Abo anlegen",
     },
     settings: {
       title: "Einstellungen",
@@ -296,6 +319,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       lastMonth: "Last month",
       nextMonth: "Next month",
       okay: "Okay",
+      back: "Back",
+      next: "Next",
+      skip: "Skip",
       actionFailed: "The action could not be completed.",
     },
     tabs: {
@@ -318,6 +344,26 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       title: "Calendar",
       today: "Today",
       dueOn: "Due on {{date}}",
+    },
+    onboarding: {
+      welcomeTitle: "Keep your subscriptions under control",
+      welcomeDescription: "See what you really pay – and what you save.",
+      howItWorksTitle: "How it works",
+      statusActiveTitle: "Active",
+      statusActiveDescription: "Payment is booked",
+      statusPausedTitle: "Paused",
+      statusPausedDescription: "Payment is skipped and you save the amount",
+      statusCancelledTitle: "Cancelled",
+      statusCancelledDescription: "No further payments",
+      dataTitle: "Your data belongs to you",
+      dataDescription:
+        "You do not need an account. Everything works directly on your device.\n\nYou can optionally sign in to back up your data.",
+      supportTitle: "Support the app",
+      supportDescription:
+        "The app is independently developed, ad-free and completely free.\n\nIf you like it, you can support it with small extras – for example with new accent colors.",
+      startTitle: "Start now",
+      startDescription: "Create your first subscription and keep the overview.",
+      startCta: "Create first subscription",
     },
     settings: {
       title: "Settings",

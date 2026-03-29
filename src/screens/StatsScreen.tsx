@@ -285,7 +285,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
-        <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
+        </View>
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <SummaryMetric
@@ -715,7 +717,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     contentWithTabBar: {
       minHeight: "100%",
     },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+      minHeight: 40,
+    },
     pageTitle: {
+      flex: 1,
       color: colors.textPrimary,
       fontSize: 24,
       lineHeight: 30,

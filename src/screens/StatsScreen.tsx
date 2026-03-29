@@ -6,15 +6,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import {
-  filterSkippedHistoryEventsByRange,
-  getTotalSavedAmount,
-  getTotalSkippedPayments,
+  getSavedAmountForPreviousMonth,
+  getSavedAmountForYear,
 } from "@/domain/subscriptionHistory/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { StatsTabScreenProps } from "@/navigation/types";
 import {
   DevelopmentRange,
   buildCostDevelopmentSeries,
@@ -32,13 +32,22 @@ import { formatCurrency } from "@/utils/currency";
 
 const CHART_HEIGHT = 180;
 const Y_AXIS_STEPS = 4;
+const X_AXIS_LABEL_AREA = 24;
+const PLOT_HEIGHT = CHART_HEIGHT - X_AXIS_LABEL_AREA;
+const X_AXIS_LABEL_MIN_WIDTH: Record<DevelopmentRange, number> = {
+  6: 44,
+  12: 56,
+  24: 64,
+  36: 38,
+  60: 38,
+  all: 38,
+};
 const DEVELOPMENT_RANGE_OPTIONS: Array<{
   key: DevelopmentRange;
   label: "6M" | "1Y" | "2Y" | "3Y" | "5Y" | "ALL";
 }> = [
   { key: 6, label: "6M" },
   { key: 12, label: "1Y" },
-  { key: 24, label: "2Y" },
   { key: 36, label: "3Y" },
   { key: 60, label: "5Y" },
   { key: "all", label: "ALL" },
@@ -106,7 +115,84 @@ const formatAxisCurrency = (value: number, currency: "EUR" | "Dollar", language:
     maximumFractionDigits: 0,
   }).format(value);
 
-export const StatsScreen = () => {
+const getShortMonthLabel = (date: Date, language: "de" | "en") =>
+  new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+    month: "short",
+  }).format(date);
+
+const getShortYearLabel = (date: Date) => String(date.getFullYear()).slice(-2);
+
+const getDevelopmentAxisLabel = (
+  date: Date,
+  range: DevelopmentRange,
+  language: "de" | "en",
+) => {
+  if (range === 24) {
+    return `${getShortMonthLabel(date, language)} ${getShortYearLabel(date)}`;
+  }
+
+  if (range === 36 || range === 60 || range === "all") {
+    return getShortYearLabel(date);
+  }
+
+  return getShortMonthLabel(date, language);
+};
+
+const shouldShowBaseDevelopmentAxisLabel = (
+  point: DevelopmentPoint,
+  index: number,
+  range: DevelopmentRange,
+) => {
+  if (range === 6) {
+    return true;
+  }
+
+  if (range === 12) {
+    return index % 3 === 0;
+  }
+
+  if (range === 24) {
+    return index % 6 === 0;
+  }
+
+  return point.date.getMonth() === 0;
+};
+
+const buildDevelopmentAxisLabels = (
+  points: DevelopmentPoint[],
+  range: DevelopmentRange,
+  language: "de" | "en",
+  chartWidth: number,
+) => {
+  if (points.length === 0) {
+    return [];
+  }
+
+  const candidateIndices = points
+    .map((point, index) => (shouldShowBaseDevelopmentAxisLabel(point, index, range) ? index : -1))
+    .filter((index) => index >= 0);
+  const fallbackIndices = candidateIndices.length > 0 ? candidateIndices : [0];
+  const maxVisibleLabels = Math.max(
+    1,
+    Math.floor(Math.max(chartWidth, 1) / X_AXIS_LABEL_MIN_WIDTH[range]),
+  );
+  const densityStep = Math.max(1, Math.ceil(fallbackIndices.length / maxVisibleLabels));
+  const visibleIndices = new Set(
+    fallbackIndices.filter((_, index) => index % densityStep === 0),
+  );
+
+  return points.map((point, index) =>
+    visibleIndices.has(index) ? getDevelopmentAxisLabel(point.date, range, language) : null,
+  );
+};
+
+const isYearOnlyDevelopmentRange = (range: DevelopmentRange) =>
+  range === 36 || range === 60 || range === "all";
+
+const isWideDevelopmentLabelRange = (range: DevelopmentRange) =>
+  range === 6 || range === 12 || isYearOnlyDevelopmentRange(range);
+
+export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
   const { language, t } = useI18n();
@@ -129,8 +215,8 @@ export const StatsScreen = () => {
   const maxCategoryValue = categoryItems[0]?.monthlyTotal ?? 1;
 
   const developmentSeries = useMemo(
-    () => buildCostDevelopmentSeries(subscriptions, allHistory, developmentRange, language),
-    [allHistory, developmentRange, language, subscriptions],
+    () => buildCostDevelopmentSeries(allHistory, developmentRange, language),
+    [allHistory, developmentRange, language],
   );
   const rawMaxDevelopmentValue = Math.max(
     ...developmentSeries.points.map((item) => item.totalAmount),
@@ -142,31 +228,16 @@ export const StatsScreen = () => {
     const ratio = (Y_AXIS_STEPS - index - 1) / (Y_AXIS_STEPS - 1);
     return roundToUnit(chartScaleMax * ratio, axisRoundingUnit);
   });
-  const selectedDevelopmentPoint = useMemo(
+  const developmentAxisLabels = useMemo(
     () =>
-      developmentSeries.points.find((item) => item.key === selectedDevelopmentKey) ??
-      developmentSeries.points[developmentSeries.points.length - 1] ??
-      null,
-    [developmentSeries.points, selectedDevelopmentKey],
+      buildDevelopmentAxisLabels(
+        developmentSeries.points,
+        developmentRange,
+        language,
+        developmentChartWidth,
+      ),
+    [developmentChartWidth, developmentRange, developmentSeries.points, language],
   );
-  const selectedDevelopmentDelta = useMemo(() => {
-    if (!selectedDevelopmentPoint) {
-      return null;
-    }
-
-    const selectedIndex = developmentSeries.points.findIndex(
-      (item) => item.key === selectedDevelopmentPoint.key,
-    );
-    const previousPoint =
-      selectedIndex > 0 ? developmentSeries.points[selectedIndex - 1] : null;
-
-    if (!previousPoint) {
-      return null;
-    }
-
-    return selectedDevelopmentPoint.totalAmount - previousPoint.totalAmount;
-  }, [developmentSeries.points, selectedDevelopmentPoint]);
-
   const billingStructure = useMemo(
     () => getBillingStructure(subscriptions),
     [subscriptions],
@@ -175,14 +246,20 @@ export const StatsScreen = () => {
     () => getTopExpensiveSubscriptions(subscriptions, 3),
     [subscriptions],
   );
-  const savedHistory = useMemo(
-    () => filterSkippedHistoryEventsByRange(allHistory, developmentRange),
-    [allHistory, developmentRange],
+  const skippedHistory = useMemo(
+    () =>
+      allHistory.filter(
+        (event) => event.type === "payment_skipped_inactive" && !event.deletedAt,
+      ),
+    [allHistory],
   );
-  const savedAmount = useMemo(() => getTotalSavedAmount(savedHistory), [savedHistory]);
-  const skippedPayments = useMemo(
-    () => getTotalSkippedPayments(savedHistory),
-    [savedHistory],
+  const currentYearSavedAmount = useMemo(
+    () => getSavedAmountForYear(skippedHistory, new Date().getFullYear()),
+    [skippedHistory],
+  );
+  const previousMonthSavedAmount = useMemo(
+    () => getSavedAmountForPreviousMonth(skippedHistory),
+    [skippedHistory],
   );
   const summary = useMemo(
     () => ({
@@ -202,15 +279,9 @@ export const StatsScreen = () => {
           development: "Entwicklung",
           billingStructure: "Abrechnungsstruktur",
           topSubscriptions: "Top 3 teuerste Abos",
-          tapToExpand: showAllCategories ? "Tippen zum Einklappen" : "Tippen für alle Kategorien",
-          noDevelopment: "Noch keine Entwicklung vorhanden",
+          noDevelopment: "Noch keine Zahlungsdaten vorhanden",
           noTopSubscriptions: "Noch keine aktiven Abos vorhanden.",
           saved: "Gespart",
-          noSavings: "Keine Einsparungen im gewählten Zeitraum",
-          savedThrough:
-            skippedPayments === 1
-              ? "durch 1 ausgelassene Zahlung"
-              : `durch ${skippedPayments} ausgelassene Zahlungen`,
           monthly: "Monatlich",
           quarterly: "Quartal",
           yearly: "Jährlich",
@@ -222,15 +293,9 @@ export const StatsScreen = () => {
           development: "Development",
           billingStructure: "Billing structure",
           topSubscriptions: "Top 3 most expensive subscriptions",
-          tapToExpand: showAllCategories ? "Tap to collapse" : "Tap to show all categories",
-          noDevelopment: "No development data yet",
+          noDevelopment: "No payment history yet",
           noTopSubscriptions: "No active subscriptions yet.",
           saved: "Saved",
-          noSavings: "No savings in the selected range",
-          savedThrough:
-            skippedPayments === 1
-              ? "through 1 skipped payment"
-              : `through ${skippedPayments} skipped payments`,
           monthly: "Monthly",
           quarterly: "Quarterly",
           yearly: "Yearly",
@@ -285,21 +350,46 @@ export const StatsScreen = () => {
           />
         </View>
 
-        <View style={[surfaces.panel, styles.card]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.saved}</Text>
-          {savedHistory.length === 0 ? (
-            <Text style={[typography.secondary, styles.helperText]}>{copy.noSavings}</Text>
+        <Pressable
+          style={[surfaces.panel, styles.card]}
+          onPress={() => navigation.navigate("Savings")}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>
+              {language === "de" ? "Sparen" : "Savings"}
+            </Text>
+            <Ionicons
+              name="chevron-forward-outline"
+              size={18}
+              color={colors.textSecondary}
+            />
+          </View>
+          {skippedHistory.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {language === "de" ? "Keine Einsparungen vorhanden" : "No savings available"}
+            </Text>
           ) : (
             <View style={styles.savedCardContent}>
-              <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                {language === "de"
-                  ? `Du hast ${formatCurrency(savedAmount, currency)} gespart`
-                  : `You saved ${formatCurrency(savedAmount, currency)}`}
-              </Text>
-              <Text style={[typography.secondary, styles.savedMeta]}>{copy.savedThrough}</Text>
+              <View style={styles.savedMetric}>
+                <Text style={[typography.meta, styles.savedLabel]}>
+                  {language === "de" ? "Dieses Jahr" : "This year"}
+                </Text>
+                <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                  {formatCurrency(currentYearSavedAmount, currency)}
+                </Text>
+              </View>
+              <View style={styles.savedDivider} />
+              <View style={styles.savedMetric}>
+                <Text style={[typography.meta, styles.savedLabel]}>
+                  {language === "de" ? "Letzter Monat" : "Last month"}
+                </Text>
+                <Text style={[typography.body, styles.savedSecondaryAmount]}>
+                  {formatCurrency(previousMonthSavedAmount, currency)}
+                </Text>
+              </View>
             </View>
           )}
-        </View>
+        </Pressable>
 
         <Pressable
           style={[surfaces.panel, styles.card]}
@@ -345,7 +435,7 @@ export const StatsScreen = () => {
           )}
         </Pressable>
 
-        <View style={[surfaces.panel, styles.card]}>
+        <View style={[surfaces.panel, styles.card, styles.developmentCard]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.development}</Text>
           <ScrollView
             horizontal
@@ -378,8 +468,15 @@ export const StatsScreen = () => {
             })}
           </ScrollView>
 
-          {developmentSeries.points.every((item) => item.totalAmount === 0) ? (
-            <Text style={[typography.secondary, styles.helperText]}>{copy.noDevelopment}</Text>
+          {!developmentSeries.hasHistory ? (
+            <EmptyState
+              title={copy.noDevelopment}
+              description={
+                language === "de"
+                  ? "Sobald echte Zahlungen in der Historie vorhanden sind, erscheint hier die Entwicklung."
+                  : "As soon as real payments exist in history, the development chart will appear here."
+              }
+            />
           ) : (
             <View style={styles.developmentWrap}>
               <View style={styles.yAxis}>
@@ -405,26 +502,13 @@ export const StatsScreen = () => {
                   chartWidth={developmentChartWidth}
                   chartScaleMax={chartScaleMax}
                   points={developmentSeries.points}
+                  labels={developmentAxisLabels}
+                  range={developmentRange}
                   mode={developmentSeries.mode}
-                  selectedKey={selectedDevelopmentPoint?.key ?? null}
+                  selectedKey={selectedDevelopmentKey}
                   onSelect={setSelectedDevelopmentKey}
                 />
 
-                {selectedDevelopmentPoint ? (
-                  <View style={styles.chartSelection}>
-                    <Text style={[typography.secondary, styles.chartSelectionLabel]}>
-                      {formatDevelopmentSelectionLabel(selectedDevelopmentPoint.date, language)}
-                    </Text>
-                    <Text style={[typography.body, styles.chartSelectionValue]}>
-                      {formatCurrency(selectedDevelopmentPoint.totalAmount, currency)}
-                    </Text>
-                    {selectedDevelopmentDelta !== null ? (
-                      <Text style={[typography.meta, styles.chartSelectionMeta]}>
-                        {formatDeltaLabel(selectedDevelopmentDelta, currency, language)}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
               </View>
             </View>
           )}
@@ -432,6 +516,7 @@ export const StatsScreen = () => {
 
         <View style={[surfaces.panel, styles.card]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{copy.billingStructure}</Text>
+          <View style={styles.sectionDivider} />
           <View style={styles.structureList}>
             {billingStructure.map((item, index) => (
               <View
@@ -461,6 +546,7 @@ export const StatsScreen = () => {
             <Text style={[typography.secondary, styles.helperText]}>{copy.noTopSubscriptions}</Text>
           ) : (
             <View style={styles.topList}>
+              <View style={styles.sectionDivider} />
               {topSubscriptions.map((subscription, index) => (
                 <View
                   key={subscription.id}
@@ -516,6 +602,8 @@ const DevelopmentChart = ({
   chartWidth,
   chartScaleMax,
   points,
+  labels,
+  range,
   mode,
   selectedKey,
   onSelect,
@@ -523,12 +611,16 @@ const DevelopmentChart = ({
   chartWidth: number;
   chartScaleMax: number;
   points: DevelopmentPoint[];
+  labels: Array<string | null>;
+  range: DevelopmentRange;
   mode: DevelopmentSeries["mode"];
   selectedKey: string | null;
   onSelect: (key: string) => void;
 }) => {
   const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
+  const isYearOnlyRange = isYearOnlyDevelopmentRange(range);
+  const isWideLabelRange = isWideDevelopmentLabelRange(range);
   const linePoints = useMemo(
     () => getLinePoints(points, chartWidth, chartScaleMax),
     [chartScaleMax, chartWidth, points],
@@ -539,7 +631,7 @@ const DevelopmentChart = ({
     return (
       <>
         <View style={styles.barRow}>
-          {points.map((item) => {
+          {points.map((item, index) => {
             const isSelected = item.key === selectedKey;
 
             return (
@@ -555,8 +647,20 @@ const DevelopmentChart = ({
                     ]}
                   />
                 </View>
-                <Text style={[typography.meta, styles.barLabel, !item.label ? styles.barLabelHidden : null]}>
-                  {item.label ?? " "}
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={!isWideLabelRange}
+                  minimumFontScale={isWideLabelRange ? 1 : 0.8}
+                  ellipsizeMode="clip"
+                  style={[
+                    typography.meta,
+                    styles.barLabel,
+                    isWideLabelRange ? styles.wideBarLabel : null,
+                    isYearOnlyRange ? styles.yearOnlyBarLabel : null,
+                    !labels[index] ? styles.barLabelHidden : null,
+                  ]}
+                >
+                  {labels[index] ?? " "}
                 </Text>
               </Pressable>
             );
@@ -584,7 +688,6 @@ const DevelopmentChart = ({
           />
         ))}
         {linePoints.map((point) => {
-          const matchingDataPoint = points.find((item) => item.key === point.key);
           const isSelected = point.key === selectedKey;
 
           return (
@@ -603,7 +706,6 @@ const DevelopmentChart = ({
                 style={[
                   styles.linePoint,
                   isSelected ? styles.linePointSelected : null,
-                  matchingDataPoint?.source === "history" ? styles.linePointHistory : null,
                 ]}
               />
             </Pressable>
@@ -611,10 +713,22 @@ const DevelopmentChart = ({
         })}
       </View>
       <View style={styles.lineLabelRow}>
-        {points.map((item) => (
+        {points.map((item, index) => (
           <View key={item.key} style={styles.lineLabelCell}>
-            <Text style={[typography.meta, styles.barLabel, !item.label ? styles.barLabelHidden : null]}>
-              {item.label ?? " "}
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit={!isWideLabelRange}
+              minimumFontScale={isWideLabelRange ? 1 : 0.8}
+              ellipsizeMode="clip"
+              style={[
+                typography.meta,
+                styles.barLabel,
+                isWideLabelRange ? styles.wideBarLabel : null,
+                isYearOnlyRange ? styles.yearOnlyBarLabel : null,
+                !labels[index] ? styles.barLabelHidden : null,
+              ]}
+            >
+              {labels[index] ?? " "}
             </Text>
           </View>
         ))}
@@ -628,13 +742,13 @@ const getLinePoints = (
   chartWidth: number,
   chartScaleMax: number,
 ) => {
-  const width = Math.max(chartWidth, 1);
-  const usableHeight = CHART_HEIGHT - 24;
+  const width = Math.max(chartWidth - 8, 1);
+  const usableHeight = PLOT_HEIGHT;
 
   return points.map((point, index) => ({
     key: point.key,
     x:
-      points.length === 1 ? width / 2 : (index / Math.max(points.length - 1, 1)) * width,
+      points.length === 1 ? width / 2 + 4 : (index / Math.max(points.length - 1, 1)) * width + 4,
     y: usableHeight - (point.totalAmount / chartScaleMax) * usableHeight,
   }));
 };
@@ -657,33 +771,6 @@ const getLineSegments = (
     };
   });
 
-const formatDevelopmentSelectionLabel = (date: Date, language: "de" | "en") =>
-  new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
-
-const formatDeltaLabel = (
-  delta: number,
-  currency: "EUR" | "Dollar",
-  language: "de" | "en",
-) => {
-  const amount = formatCurrency(Math.abs(delta), currency);
-
-  if (delta === 0) {
-    return language === "de" ? "Keine VerÃ¤nderung zum Vormonat" : "No change vs previous month";
-  }
-
-  if (delta > 0) {
-    return language === "de"
-      ? `+${amount} vs. Vormonat`
-      : `+${amount} vs previous period`;
-  }
-
-  return language === "de"
-    ? `-${amount} vs. Vormonat`
-    : `-${amount} vs previous period`;
-};
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
@@ -704,6 +791,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     card: {
       gap: spacing.md,
+    },
+    developmentCard: {
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    sectionDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginTop: -spacing.xs,
     },
     rangeSelector: {
       gap: spacing.xs,
@@ -738,20 +834,28 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     cardTitle: {
       color: colors.textPrimary,
     },
-    cardHint: {
-      color: colors.textSecondary,
-    },
     helperText: {
       color: colors.textSecondary,
     },
     savedCardContent: {
       gap: spacing.xs,
     },
+    savedMetric: {
+      gap: spacing.xxs,
+    },
+    savedLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    savedDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
     savedAmount: {
       color: colors.textPrimary,
     },
-    savedMeta: {
-      color: colors.textSecondary,
+    savedSecondaryAmount: {
+      color: colors.textPrimary,
     },
     chartList: {
       gap: spacing.md,
@@ -784,28 +888,33 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     developmentWrap: {
       flexDirection: "row",
-      gap: spacing.sm,
+      gap: 2,
     },
     yAxis: {
       height: CHART_HEIGHT,
       justifyContent: "space-between",
-      paddingBottom: 28,
+      paddingBottom: X_AXIS_LABEL_AREA,
     },
     axisLabel: {
       color: colors.textSecondary,
-      width: 68,
+      width: 36,
+      textAlign: "right",
+      fontSize: 10,
+      lineHeight: 14,
+      paddingRight: 4,
     },
     chartArea: {
       flex: 1,
-      gap: spacing.sm,
-      minHeight: CHART_HEIGHT + 54,
+      gap: spacing.xs,
+      minHeight: CHART_HEIGHT + 24,
+      marginLeft: -6,
     },
     yGrid: {
       position: "absolute",
       left: 0,
       right: 0,
       top: 0,
-      bottom: 24,
+      height: PLOT_HEIGHT,
       justifyContent: "space-between",
     },
     gridLine: {
@@ -816,16 +925,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       height: CHART_HEIGHT,
       flexDirection: "row",
       alignItems: "flex-end",
-      gap: spacing.xs,
+      gap: 4,
     },
     barColumn: {
       flex: 1,
       alignItems: "center",
       gap: spacing.xs,
+      overflow: "visible",
     },
     barSlot: {
       width: "100%",
-      height: CHART_HEIGHT - 24,
+      height: PLOT_HEIGHT,
       justifyContent: "flex-end",
       alignItems: "center",
     },
@@ -845,13 +955,27 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       textTransform: "capitalize",
       minHeight: 18,
+      width: "100%",
       textAlign: "center",
+      fontSize: 11,
+      lineHeight: 14,
+    },
+    wideBarLabel: {
+      width: 64,
+      overflow: "visible",
+    },
+    yearOnlyBarLabel: {
+      width: 72,
+      fontSize: 13,
+      lineHeight: 16,
+      fontWeight: "700",
+      overflow: "visible",
     },
     barLabelHidden: {
       color: "transparent",
     },
     lineCanvas: {
-      height: CHART_HEIGHT - 24,
+      height: PLOT_HEIGHT,
       position: "relative",
       justifyContent: "flex-end",
     },
@@ -881,9 +1005,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.textPrimary,
       borderColor: colors.accent,
     },
-    linePointHistory: {
-      backgroundColor: colors.accent,
-    },
     lineLabelRow: {
       flexDirection: "row",
       marginTop: spacing.xs,
@@ -891,22 +1012,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     lineLabelCell: {
       flex: 1,
       alignItems: "center",
-    },
-    chartSelection: {
-      marginTop: spacing.sm,
-      gap: spacing.xxs,
-      paddingTop: spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    chartSelectionLabel: {
-      color: colors.textSecondary,
-    },
-    chartSelectionValue: {
-      color: colors.textPrimary,
-    },
-    chartSelectionMeta: {
-      color: colors.textMuted,
+      overflow: "visible",
     },
     structureList: {
       gap: spacing.xs,
@@ -971,3 +1077,4 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "right",
     },
   });
+

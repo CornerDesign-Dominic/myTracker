@@ -1,0 +1,287 @@
+import { useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { EmptyState } from "@/components/EmptyState";
+import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
+import {
+  getSavedAmountForPreviousMonth,
+  getSavedAmountForYear,
+} from "@/domain/subscriptionHistory/statistics";
+import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
+import { useAppSettings } from "@/context/AppSettingsContext";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
+import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
+import { formatCurrency } from "@/utils/currency";
+import { formatLocalDateInput } from "@/utils/date";
+import { getRecurringDueDateForMonth } from "@/utils/recurringDates";
+
+type SavingsSubscriptionItem = {
+  id: string;
+  name: string;
+  category: string;
+  status: "active" | "paused" | "cancelled";
+  monthlyCost: number;
+  totalSaved: number;
+};
+
+export const SavingsScreen = () => {
+  const { colors, typography } = useAppTheme();
+  const { currency } = useAppSettings();
+  const { language } = useI18n();
+  const layout = createScreenLayout(colors);
+  const surfaces = createSurfaceStyles(colors);
+  const styles = getStyles(colors);
+  const { subscriptions } = useSubscriptions();
+  const { history } = useSubscriptionsHistory(
+    subscriptions.map((subscription) => subscription.id),
+  );
+
+  const skippedEvents = useMemo(
+    () =>
+      history
+        .filter((event) => event.type === "payment_skipped_inactive" && !event.deletedAt)
+        .sort((left, right) =>
+          (right.updatedAt ?? right.createdAt).localeCompare(
+            left.updatedAt ?? left.createdAt,
+          ),
+        ),
+    [history],
+  );
+
+  const currentYearSavings = useMemo(
+    () => getSavedAmountForYear(skippedEvents, new Date().getFullYear()),
+    [skippedEvents],
+  );
+  const lastMonthSavings = useMemo(
+    () => getSavedAmountForPreviousMonth(skippedEvents),
+    [skippedEvents],
+  );
+  const nextMonthSavings = useMemo(() => {
+    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+
+    return subscriptions
+      .filter((subscription) => subscription.status === "paused")
+      .reduce((sum, subscription) => {
+        const dueDate = getRecurringDueDateForMonth({
+          anchorDate: subscription.nextPaymentDate,
+          billingCycle: subscription.billingCycle,
+          targetMonth: nextMonth,
+          startsOn: subscription.createdAt,
+          endsOn: subscription.endDate ?? null,
+        });
+
+        return dueDate ? sum + subscription.amount : sum;
+      }, 0);
+  }, [subscriptions]);
+
+  const savingsSubscriptions = useMemo<SavingsSubscriptionItem[]>(() => {
+    const totalsBySubscription = new Map<string, number>();
+
+    skippedEvents.forEach((event) => {
+      totalsBySubscription.set(
+        event.subscriptionId,
+        (totalsBySubscription.get(event.subscriptionId) ?? 0) + (event.amount ?? 0),
+      );
+    });
+
+    return subscriptions
+      .filter((subscription) => totalsBySubscription.has(subscription.id))
+      .map((subscription) => ({
+        id: subscription.id,
+        name: subscription.name,
+        category: subscription.category,
+        status: subscription.status,
+        monthlyCost: getMonthlyEquivalent(subscription),
+        totalSaved: totalsBySubscription.get(subscription.id) ?? 0,
+      }))
+      .sort((left, right) => right.totalSaved - left.totalSaved);
+  }, [skippedEvents, subscriptions]);
+
+  return (
+    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={layout.content}>
+        <View style={[surfaces.panel, styles.summaryCard]}>
+          <View style={styles.metricBlock}>
+            <Text style={[typography.meta, styles.metricLabel]}>
+              {language === "de" ? "Dieses Jahr" : "This year"}
+            </Text>
+            <Text style={[typography.sectionTitle, styles.metricValue]}>
+              {formatCurrency(currentYearSavings, currency)}
+            </Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.metricBlock}>
+            <Text style={[typography.meta, styles.metricLabel]}>
+              {language === "de" ? "Letzter Monat" : "Last month"}
+            </Text>
+            <Text style={[typography.sectionTitle, styles.metricValue]}>
+              {formatCurrency(lastMonthSavings, currency)}
+            </Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.metricBlock}>
+            <Text style={[typography.meta, styles.metricLabel]}>
+              {language === "de" ? "Nächster Monat" : "Next month"}
+            </Text>
+            <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
+              {formatCurrency(nextMonthSavings, currency)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[surfaces.panel, styles.listCard]}>
+          <Text style={[typography.cardTitle, styles.cardTitle]}>
+            {language === "de"
+              ? "Abos mit Einsparungen"
+              : "Subscriptions with savings"}
+          </Text>
+
+          {savingsSubscriptions.length === 0 ? (
+            <EmptyState
+              title={language === "de" ? "Noch keine Einsparungen" : "No savings yet"}
+              description={
+                language === "de"
+                  ? "Sobald pausierte Fälligkeiten entstehen, erscheinen die betroffenen Abos hier."
+                  : "Subscriptions will appear here once paused due dates are skipped."
+              }
+            />
+          ) : (
+            <View style={styles.list}>
+              {savingsSubscriptions.map((item, index) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.row,
+                    index < savingsSubscriptions.length - 1 ? styles.rowDivider : null,
+                  ]}
+                >
+                  <View style={styles.rowMain}>
+                    <SubscriptionAvatar name={item.name} category={item.category} />
+                    <View style={styles.rowCopy}>
+                      <Text style={[typography.body, styles.rowTitle]}>{item.name}</Text>
+                      <Text style={[typography.secondary, styles.rowMeta]}>
+                        {item.category}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.rowDetails}>
+                    <Text style={[typography.secondary, styles.detailLine]}>
+                      {language === "de"
+                        ? `${formatCurrency(item.monthlyCost, currency)} / Monat`
+                        : `${formatCurrency(item.monthlyCost, currency)} / month`}
+                    </Text>
+                    <Text style={[typography.body, styles.detailValue]}>
+                      {language === "de"
+                        ? `Gespart: ${formatCurrency(item.totalSaved, currency)}`
+                        : `Saved: ${formatCurrency(item.totalSaved, currency)}`}
+                    </Text>
+                    <Text style={[typography.secondary, styles.detailStatus]}>
+                      {language === "de"
+                        ? `Status: ${
+                            item.status === "paused"
+                              ? "Pausiert"
+                              : item.status === "active"
+                                ? "Aktiv"
+                                : "Gekündigt"
+                          }`
+                        : `Status: ${
+                            item.status === "paused"
+                              ? "Paused"
+                              : item.status === "active"
+                                ? "Active"
+                                : "Cancelled"
+                          }`}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+  StyleSheet.create({
+    summaryCard: {
+      gap: spacing.md,
+    },
+    metricBlock: {
+      gap: spacing.xxs,
+    },
+    metricLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    metricValue: {
+      color: colors.textPrimary,
+    },
+    metricValueAccent: {
+      color: colors.accent,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    listCard: {
+      gap: spacing.md,
+    },
+    cardTitle: {
+      color: colors.textPrimary,
+    },
+    list: {
+      gap: spacing.xs,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    rowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      minWidth: 0,
+    },
+    rowCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+      minWidth: 0,
+    },
+    rowTitle: {
+      color: colors.textPrimary,
+    },
+    rowMeta: {
+      color: colors.textSecondary,
+    },
+    rowDetails: {
+      alignItems: "flex-end",
+      gap: spacing.xxs,
+    },
+    detailLine: {
+      color: colors.textSecondary,
+      textAlign: "right",
+    },
+    detailValue: {
+      color: colors.textPrimary,
+      textAlign: "right",
+    },
+    detailStatus: {
+      color: colors.accent,
+      textAlign: "right",
+    },
+  });

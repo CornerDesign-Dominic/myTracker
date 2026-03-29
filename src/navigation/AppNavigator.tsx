@@ -14,6 +14,7 @@ import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { RegisterScreen } from "@/screens/RegisterScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
+import { SavingsScreen } from "@/screens/SavingsScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
 import { SubscriptionDetailsScreen } from "@/screens/SubscriptionDetailsScreen";
 import { SubscriptionFormScreen } from "@/screens/SubscriptionFormScreen";
@@ -165,6 +166,13 @@ export const AppNavigator = () => {
           component={AddPaymentScreen}
           options={{
             title: language === "de" ? "Zahlung hinzufügen" : "Add payment",
+          }}
+        />
+        <Stack.Screen
+          name="Savings"
+          component={SavingsScreen}
+          options={{
+            title: language === "de" ? "Sparen" : "Savings",
           }}
         />
         <Stack.Screen

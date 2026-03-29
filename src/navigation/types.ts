@@ -10,6 +10,7 @@ export type RootStackParamList = {
   SubscriptionDetails: { subscriptionId: string };
   SubscriptionHistory: { subscriptionId: string };
   AddPayment: { subscriptionId: string; eventId?: string };
+  Savings: undefined;
   Settings: undefined;
   Terms: undefined;
   Privacy: undefined;
@@ -35,5 +36,10 @@ export type AllSubscriptionsTabScreenProps = CompositeScreenProps<
 
 export type CalendarTabScreenProps = CompositeScreenProps<
   BottomTabScreenProps<RootTabParamList, "Calendar">,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+export type StatsTabScreenProps = CompositeScreenProps<
+  BottomTabScreenProps<RootTabParamList, "Stats">,
   NativeStackScreenProps<RootStackParamList>
 >;

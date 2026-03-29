@@ -66,3 +66,51 @@ export const getTotalSavedAmount = (history: SubscriptionHistoryEvent[]) =>
   history.reduce((sum, event) => sum + (event.amount ?? 0), 0);
 
 export const getTotalSkippedPayments = (history: SubscriptionHistoryEvent[]) => history.length;
+
+export const filterSkippedHistoryEventsForYear = (
+  history: SubscriptionHistoryEvent[],
+  year: number,
+) =>
+  history.filter((event) => {
+    if (event.type !== "payment_skipped_inactive") {
+      return false;
+    }
+
+    const dueDate = parseDueDate(event.dueDate);
+    return dueDate ? dueDate.getFullYear() === year : false;
+  });
+
+export const filterSkippedHistoryEventsForMonth = (
+  history: SubscriptionHistoryEvent[],
+  year: number,
+  monthIndex: number,
+) =>
+  history.filter((event) => {
+    if (event.type !== "payment_skipped_inactive") {
+      return false;
+    }
+
+    const dueDate = parseDueDate(event.dueDate);
+    return dueDate
+      ? dueDate.getFullYear() === year && dueDate.getMonth() === monthIndex
+      : false;
+  });
+
+export const getSavedAmountForYear = (
+  history: SubscriptionHistoryEvent[],
+  year: number,
+) => getTotalSavedAmount(filterSkippedHistoryEventsForYear(history, year));
+
+export const getSavedAmountForPreviousMonth = (
+  history: SubscriptionHistoryEvent[],
+  now = new Date(),
+) => {
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return getTotalSavedAmount(
+    filterSkippedHistoryEventsForMonth(
+      history,
+      previousMonth.getFullYear(),
+      previousMonth.getMonth(),
+    ),
+  );
+};

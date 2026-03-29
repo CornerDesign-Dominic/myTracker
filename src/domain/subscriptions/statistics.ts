@@ -11,13 +11,12 @@ export type DevelopmentPoint = {
   key: string;
   date: Date;
   totalAmount: number;
-  label: string | null;
-  source: "history" | "projection" | "mixed";
 };
 
 export type DevelopmentSeries = {
   points: DevelopmentPoint[];
   mode: "bar" | "line";
+  hasHistory: boolean;
 };
 
 const toMonthKey = (date: Date) =>
@@ -52,14 +51,11 @@ const buildMonthBuckets = (startMonth: Date, endMonth: Date) => {
       key: toMonthKey(monthDate),
       date: monthDate,
       totalAmount: 0,
-      historyAmount: 0,
-      projectionAmount: 0,
     };
   });
 };
 
 const getAllRangeStartMonth = (
-  subscriptions: Subscription[],
   history: SubscriptionHistoryEvent[],
   fallbackMonth: Date,
 ) => {
@@ -68,11 +64,7 @@ const getAllRangeStartMonth = (
     .map((event) => parseDate(event.dueDate))
     .filter((value): value is Date => value instanceof Date)
     .map(startOfMonth);
-  const projectedMonths = subscriptions
-    .map((subscription) => parseDate(subscription.nextPaymentDate))
-    .filter((value): value is Date => value instanceof Date)
-    .map(startOfMonth);
-  const candidates = [...bookedMonths, ...projectedMonths];
+  const candidates = [...bookedMonths];
 
   if (candidates.length === 0) {
     return fallbackMonth;
@@ -82,7 +74,6 @@ const getAllRangeStartMonth = (
 };
 
 const getVisibleRange = (
-  subscriptions: Subscription[],
   history: SubscriptionHistoryEvent[],
   range: DevelopmentRange,
   now: Date,
@@ -90,7 +81,7 @@ const getVisibleRange = (
   const endMonth = startOfMonth(now);
   const startMonth =
     range === "all"
-      ? getAllRangeStartMonth(subscriptions, history, endMonth)
+      ? getAllRangeStartMonth(history, endMonth)
       : new Date(endMonth.getFullYear(), endMonth.getMonth() - (range - 1), 1);
 
   return {
@@ -126,109 +117,6 @@ const buildHistoryAmountMap = (
   });
 
   return amountMap;
-};
-
-const buildProjectedAmountMap = (
-  subscription: Subscription,
-  startMonth: Date,
-  endMonth: Date,
-  now: Date,
-) => {
-  const amountMap = new Map<string, number>();
-  const nextPaymentDate = parseDate(subscription.nextPaymentDate);
-
-  if (!nextPaymentDate) {
-    return amountMap;
-  }
-
-  const anchorDay = getRecurringAnchorDay(nextPaymentDate);
-  let backwardCursor = new Date(nextPaymentDate);
-
-  while (backwardCursor >= startMonth) {
-    amountMap.set(toMonthKey(backwardCursor), subscription.amount);
-    backwardCursor = shiftRecurringDate(backwardCursor, subscription.billingCycle, -1, anchorDay);
-  }
-
-  if (subscription.status === "active") {
-    let forwardCursor = shiftRecurringDate(nextPaymentDate, subscription.billingCycle, 1, anchorDay);
-
-    while (forwardCursor <= endMonth) {
-      if (forwardCursor >= startOfMonth(now)) {
-        amountMap.set(toMonthKey(forwardCursor), subscription.amount);
-      }
-
-      forwardCursor = shiftRecurringDate(forwardCursor, subscription.billingCycle, 1, anchorDay);
-    }
-  }
-
-  return amountMap;
-};
-
-const getMonthLabel = (
-  date: Date,
-  language: "de" | "en",
-  includeYear = false,
-) => {
-  const locale = language === "de" ? "de-DE" : "en-US";
-  const month = new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
-
-  if (!includeYear) {
-    return month;
-  }
-
-  return `${month} ${String(date.getFullYear()).slice(-2)}`;
-};
-
-const getYearLabel = (date: Date) => String(date.getFullYear()).slice(-2);
-
-const buildAxisLabels = (
-  points: Array<{ date: Date }>,
-  range: DevelopmentRange,
-  language: "de" | "en",
-) => {
-  return points.map((point, index) => {
-    const previousPoint = points[index - 1];
-    const isYearBoundary = !previousPoint || previousPoint.date.getFullYear() !== point.date.getFullYear();
-    const isLast = index === points.length - 1;
-
-    if (range === 6) {
-      return getMonthLabel(point.date, language, isYearBoundary);
-    }
-
-    if (range === 12) {
-      if (isYearBoundary || isLast || index % 2 === 0) {
-        return getMonthLabel(point.date, language, isYearBoundary);
-      }
-
-      return null;
-    }
-
-    if (range === 24) {
-      if (isYearBoundary || isLast || index % 3 === 0) {
-        return getMonthLabel(point.date, language, isYearBoundary);
-      }
-
-      return null;
-    }
-
-    if (range === 36) {
-      if (point.date.getMonth() === 0 || index === 0 || isLast) {
-        return getYearLabel(point.date);
-      }
-
-      return null;
-    }
-
-    if (range === 60 || range === "all") {
-      if (point.date.getMonth() === 0 || index === 0 || isLast) {
-        return getYearLabel(point.date);
-      }
-
-      return null;
-    }
-
-    return null;
-  });
 };
 
 export const getProjectedYearlyCost = (
@@ -347,46 +235,28 @@ export const getTopExpensiveSubscriptions = (
     .slice(0, limit);
 
 export const buildCostDevelopmentSeries = (
-  subscriptions: Subscription[],
   history: SubscriptionHistoryEvent[],
   range: DevelopmentRange = 6,
-  language: "de" | "en" = "de",
+  _language: "de" | "en" = "de",
   now = new Date(),
 ): DevelopmentSeries => {
-  const { startMonth, endMonth } = getVisibleRange(subscriptions, history, range, now);
+  const { startMonth, endMonth } = getVisibleRange(history, range, now);
   const buckets = buildMonthBuckets(startMonth, endMonth);
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
-
-  subscriptions.forEach((subscription) => {
-    const subscriptionHistory = history.filter((event) => event.subscriptionId === subscription.id);
-    const historyAmountMap = buildHistoryAmountMap(subscriptionHistory, startMonth, endMonth);
-    const projectedAmountMap = buildProjectedAmountMap(subscription, startMonth, endMonth, now);
-
-    bucketMap.forEach((bucket, key) => {
-      const historyAmount = historyAmountMap.get(key) ?? 0;
-      const projectionAmount = historyAmount > 0 ? 0 : projectedAmountMap.get(key) ?? 0;
-
-      bucket.historyAmount += historyAmount;
-      bucket.projectionAmount += projectionAmount;
-      bucket.totalAmount += historyAmount + projectionAmount;
-    });
+  const historyAmountMap = buildHistoryAmountMap(history, startMonth, endMonth);
+  bucketMap.forEach((bucket, key) => {
+    bucket.totalAmount = historyAmountMap.get(key) ?? 0;
   });
 
-  const labels = buildAxisLabels(buckets, range, language);
+  const hasHistory = buckets.some((bucket) => bucket.totalAmount > 0);
 
   return {
     mode: range === 6 || range === 12 ? "bar" : "line",
-    points: buckets.map((bucket, index) => ({
+    hasHistory,
+    points: buckets.map((bucket) => ({
       key: bucket.key,
       date: bucket.date,
       totalAmount: bucket.totalAmount,
-      label: labels[index] ?? null,
-      source:
-        bucket.historyAmount > 0 && bucket.projectionAmount > 0
-          ? "mixed"
-          : bucket.historyAmount > 0
-            ? "history"
-            : "projection",
     })),
   };
 };

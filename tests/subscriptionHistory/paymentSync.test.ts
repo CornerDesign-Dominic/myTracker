@@ -154,3 +154,77 @@ test("changing amount does not create historical payment events by itself", () =
 
   assert.equal(result.length, 0);
 });
+
+test("sync backfills only missing months within the app-internal period", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+  });
+
+  const result = getMissingPaymentHistoryEvents(subscription, [], new Date(2026, 3, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2026-01-15", "2026-02-15", "2026-03-15", "2026-04-15"],
+  );
+  assert.ok(result.every((event) => event.type === "payment_booked"));
+});
+
+test("sync respects historical deactivation state for missing months", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+    status: "paused",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-01-10T09:00:00.000Z",
+      effectiveDate: "2026-01-10",
+      occurredAt: "2026-01-10",
+      initialNextPaymentDate: "2026-01-15",
+    }),
+    createEvent({
+      id: "deactivated",
+      type: "subscription_deactivated",
+      createdAt: "2026-02-10T09:00:00.000Z",
+      effectiveDate: "2026-02-10",
+      occurredAt: "2026-02-10",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 3, 20));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type]),
+    [
+      ["2026-01-15", "payment_booked"],
+      ["2026-02-15", "payment_skipped_inactive"],
+      ["2026-03-15", "payment_skipped_inactive"],
+      ["2026-04-15", "payment_skipped_inactive"],
+    ],
+  );
+});
+
+test("deleted payment events suppress automatic recreation for the same due date", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+  });
+  const history = [
+    createEvent({
+      id: "deleted-payment",
+      type: "payment_booked",
+      dueDate: "2026-01-15",
+      deletedAt: "2026-01-16T09:00:00.000Z",
+      amount: 13.99,
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 1, 20));
+
+  assert.deepEqual(
+    result.map((event) => event.dueDate),
+    ["2026-02-15"],
+  );
+});

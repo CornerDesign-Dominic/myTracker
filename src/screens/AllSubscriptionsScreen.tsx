@@ -202,11 +202,16 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryAmount: {
       color: colors.accent,
+      fontSize: 23,
+      lineHeight: 28,
     },
     addButton: {
       width: 40,
       height: 40,
       borderRadius: 999,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
       alignItems: "center",
       justifyContent: "center",
       padding: 0,

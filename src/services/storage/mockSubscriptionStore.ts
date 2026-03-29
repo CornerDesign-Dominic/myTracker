@@ -6,7 +6,11 @@ import {
   sortHistoryNewestFirst,
 } from "@/domain/subscriptionHistory/events";
 import {
+  buildReplacementPaymentEvent,
+  buildUpdatedPaymentEvent,
   buildEditablePaymentEventFields,
+  getPaymentEventId,
+  hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
 } from "@/domain/subscriptionHistory/paymentEvents";
 import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
@@ -134,11 +138,9 @@ class MockSubscriptionStore {
     },
   ) {
     const currentHistory = this.history.get(subscriptionId) ?? [];
-    const hasExistingScheduledEvent = currentHistory.some(
-      (event) =>
-        !event.deletedAt &&
-        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
-        event.dueDate === input.dueDate,
+    const hasExistingScheduledEvent = hasActivePaymentEventForDueDate(
+      currentHistory,
+      input.dueDate,
     );
 
     if (hasExistingScheduledEvent) {
@@ -146,7 +148,7 @@ class MockSubscriptionStore {
     }
 
     await this.createHistoryEvent(subscriptionId, {
-      id: `${input.type}_${input.dueDate}`,
+      id: getPaymentEventId(input.type, input.dueDate),
       subscriptionId,
       ...buildEditablePaymentEventFields({
         type: input.type,
@@ -175,58 +177,64 @@ class MockSubscriptionStore {
       throw new Error("Only editable payment events can be updated.");
     }
 
-    const hasDuplicate = currentHistory.some(
-      (event) =>
-        event.id !== eventId &&
-        !event.deletedAt &&
-        (event.type === "payment_booked" || event.type === "payment_skipped_inactive") &&
-        event.dueDate === input.dueDate,
+    const editableCurrentEvent = currentEvent as SubscriptionHistoryEvent & {
+      type: "payment_booked" | "payment_skipped_inactive";
+    };
+
+    const hasDuplicate = hasActivePaymentEventForDueDate(
+      currentHistory,
+      input.dueDate,
+      eventId,
     );
 
     if (hasDuplicate) {
       throw new Error("A payment event already exists for this due date.");
     }
 
-    const nextHistory = currentHistory.map((event) =>
-      event.id === eventId
-        ? (() => {
-            const nextEventFields = buildEditablePaymentEventFields({
-              type: input.type,
-              amount: input.amount,
-              dueDate: input.dueDate,
-              notes: input.notes,
-              source: event.source,
-            });
+    const now = new Date().toISOString();
+    const nextEventId = getPaymentEventId(input.type, input.dueDate);
 
-            return {
+    if (nextEventId === editableCurrentEvent.id) {
+      const nextHistory = currentHistory.map((event) =>
+        event.id === eventId
+          ? {
               ...event,
-              ...nextEventFields,
-              notes: input.notes,
-              updatedAt: new Date().toISOString(),
-              syncSuppressedDueDates: Array.from(
-                new Set([
-                  ...(event.syncSuppressedDueDates ?? []),
-                  ...(event.dueDate && event.dueDate !== input.dueDate ? [event.dueDate] : []),
-                ]),
-              ),
-              bookedAt:
-                nextEventFields.type === "payment_booked"
-                  ? ("bookedAt" in nextEventFields ? nextEventFields.bookedAt : undefined)
-                  : undefined,
-              reason:
-                nextEventFields.type === "payment_skipped_inactive"
-                  ? ("reason" in nextEventFields ? nextEventFields.reason : undefined)
-                  : undefined,
-              source:
-                nextEventFields.type === "payment_booked"
-                  ? ("source" in nextEventFields ? nextEventFields.source : undefined)
-                  : undefined,
-            };
-          })()
-        : event,
-    );
+              ...buildUpdatedPaymentEvent({
+                currentEvent: editableCurrentEvent,
+                input,
+                now,
+              }),
+            }
+          : event,
+      );
 
-    this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
+      this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
+      this.emitHistory(subscriptionId);
+      return;
+    }
+
+    const mutation = buildReplacementPaymentEvent({
+      currentEvent: editableCurrentEvent,
+      input,
+      now,
+    });
+    const nextHistory = sortHistoryNewestFirst([
+      ...currentHistory.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              ...mutation.archivedCurrentEvent,
+            }
+          : event,
+      ),
+      {
+        id: mutation.nextEvent.id ?? nextEventId,
+        createdAt: now,
+        ...mutation.nextEvent,
+      },
+    ]);
+
+    this.history.set(subscriptionId, nextHistory);
     this.emitHistory(subscriptionId);
   }
 
@@ -244,12 +252,6 @@ class MockSubscriptionStore {
             ...event,
             deletedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            syncSuppressedDueDates: Array.from(
-              new Set([
-                ...(event.syncSuppressedDueDates ?? []),
-                ...(event.dueDate ? [event.dueDate] : []),
-              ]),
-            ),
           }
         : event,
     );

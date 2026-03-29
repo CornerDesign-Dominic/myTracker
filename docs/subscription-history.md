@@ -5,6 +5,8 @@
 - Die `Subscription` bleibt die aktuelle Wahrheit eines Abos.
 - Die `History` ist eine zusaetzliche Ebene fuer Ereignisse und vergangene Nachvollziehbarkeit.
 - Die History wird **nicht** vollstaendig automatisch fuer die gesamte Vergangenheit aufgebaut.
+- `payment_booked` bedeutet: die Zahlung wurde tatsaechlich gebucht.
+- `payment_skipped_inactive` bedeutet: die Zahlung war faellig, wurde aber wegen eines inaktiven Status ausgesetzt.
 
 ## Wichtige Regel
 
@@ -25,6 +27,7 @@ Das bedeutet:
 
 - Zukunft bleibt **Forecast** und wird nicht als echte History angelegt.
 - Vor `createdAt` wird **niemals** automatisch History erzeugt.
+- Wenn mehrere Monate waehrend Offline-Zeit fehlen, duerfen diese nur innerhalb dieses gueltigen Fensters nachgezogen werden.
 
 ## Kein Backfill
 
@@ -40,6 +43,36 @@ Das gilt auch dann, wenn:
 Die automatische Sync-Logik erstellt keine historischen Payment- oder Skipped-Payment-Events fuer Zeitraeume vor `createdAt`.
 Zukuenftige Termine werden ebenfalls nicht automatisch als echte History angelegt.
 
+## Payment-Events pro Due Date
+
+Fachlich gilt:
+
+- pro `dueDate` gibt es hoechstens **ein aktives gueltiges Payment-Event**
+- entweder `payment_booked`
+- oder `payment_skipped_inactive`
+
+Ein Typwechsel wird **nicht** als reines Feld-Update behandelt.
+
+Stattdessen:
+
+- das bisherige Event wird soft geloescht
+- ein neues Event mit korrekter neuer ID wird angelegt
+
+Dadurch bleiben Event-ID, Event-Typ und Dokumentinhalt immer konsistent.
+
+## Manuelle Korrekturen und Auto-Sync
+
+Manuelle Korrekturen duerfen spaeteren Auto-Sync nicht kaputt machen.
+
+Die App behandelt deshalb geloeschte Payment-Events als fachliche Tombstones fuer ihr `dueDate`.
+
+Das bedeutet:
+
+- wenn ein Payment-Event fuer ein `dueDate` manuell geloescht oder durch ein anderes ersetzt wurde
+- darf Auto-Sync fuer genau dieses `dueDate` nicht einfach wieder ein neues Event erzeugen
+
+Alte `syncSuppressedDueDates` werden aus Kompatibilitaetsgruenden weiter respektiert, aber neue fachliche Unterdrueckung laeuft ueber diese geloeschten Payment-Eintraege.
+
 ## Gruende fuer dieses Verhalten
 
 - Vermeidung falscher oder erfundener Historie
@@ -47,6 +80,7 @@ Zukuenftige Termine werden ebenfalls nicht automatisch als echte History angeleg
 - Das System bleibt deterministisch, kontrollierbar und nachvollziehbar
 - Automatische History-Sync soll nur sichere, bereits faellige Termine erfassen
 - Zukunft soll sauber Forecast bleiben und nicht mit echter Historie vermischt werden
+- Manuelle Korrekturen muessen spaetere Auto-Sync-Laeufe ueberleben
 
 ## Monatsend-Logik bei wiederkehrenden Faelligkeiten
 
@@ -108,6 +142,7 @@ Die wiederkehrende Monatsend-Logik fuer sichtbare und zukuenftige Faelligkeiten 
 Dieses Verhalten ist durch Unit Tests abgesichert in:
 
 - [paymentSync.test.ts](/C:/Users/domin/Desktop/Tracker/tests/subscriptionHistory/paymentSync.test.ts)
+- [editablePaymentEvents.test.ts](/C:/Users/domin/Desktop/Tracker/tests/subscriptionHistory/editablePaymentEvents.test.ts)
 
 Die Tests pruefen unter anderem:
 
@@ -116,3 +151,6 @@ Die Tests pruefen unter anderem:
 - keine automatische Erzeugung vor `createdAt`
 - `payment_skipped_inactive` nur fuer bereits faellige deaktivierte Termine
 - kein rueckwirkender Backfill vor `createdAt`
+- Mehrmonats-Sync nach Offline-Zeit innerhalb des App-Zeitraums
+- Typwechsel `booked <-> skipped` als saubere Replacement-Mutation
+- Suppression ueber geloeschte Payment-Tombstones pro `dueDate`

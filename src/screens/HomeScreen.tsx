@@ -1,9 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
+import { useAuth } from "@/context/AuthContext";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -13,14 +15,19 @@ import { HomeTabScreenProps } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 
+const getAnonymousNoticeStorageKey = (userId: string) =>
+  `home:anonymous-account-notice-dismissed:${userId}`;
+
 export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
   const { language, t } = useI18n();
+  const { authIsReady, currentUser, isAnonymous } = useAuth();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
+  const [showAnonymousNotice, setShowAnonymousNotice] = useState(false);
 
   const visibleSubscriptions = useMemo(() => {
     const now = new Date();
@@ -92,6 +99,49 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
     };
   }, [language, subscriptions]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    if (!authIsReady || !currentUser || !isAnonymous) {
+      setShowAnonymousNotice(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    AsyncStorage.getItem(getAnonymousNoticeStorageKey(currentUser.uid))
+      .then((value) => {
+        if (!isActive) {
+          return;
+        }
+
+        setShowAnonymousNotice(value !== "true");
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        setShowAnonymousNotice(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [authIsReady, currentUser, isAnonymous]);
+
+  const dismissAnonymousNotice = () => {
+    if (!currentUser) {
+      setShowAnonymousNotice(false);
+      return;
+    }
+
+    setShowAnonymousNotice(false);
+    AsyncStorage.setItem(getAnonymousNoticeStorageKey(currentUser.uid), "true").catch(() => {
+      // Keep the UI dismissed even if persistence fails.
+    });
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
@@ -138,6 +188,29 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             </View>
           </View>
         </View>
+
+        {showAnonymousNotice ? (
+          <View style={[surfaces.subtlePanel, styles.noticeCard]}>
+            <View style={styles.noticeHeader}>
+              <Text style={[typography.cardTitle, styles.noticeTitle]}>
+                {t("home.accountNoticeTitle")}
+              </Text>
+              <Pressable hitSlop={10} onPress={dismissAnonymousNotice}>
+                <Ionicons name="close-outline" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.secondary, styles.noticeDescription]}>
+              {t("home.accountNoticeDescription")}
+            </Text>
+            <View style={styles.noticeActions}>
+              <Pressable style={styles.noticeButton} onPress={dismissAnonymousNotice}>
+                <Text style={[typography.meta, styles.noticeButtonLabel]}>
+                  {t("common.okay")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
         {errorMessage ? (
           <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
@@ -198,6 +271,39 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryCard: {
       gap: spacing.sm,
       borderColor: colors.accent,
+    },
+    noticeCard: {
+      gap: spacing.sm,
+    },
+    noticeHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    noticeTitle: {
+      flex: 1,
+      color: colors.textPrimary,
+    },
+    noticeDescription: {
+      color: colors.textSecondary,
+    },
+    noticeActions: {
+      alignItems: "flex-start",
+    },
+    noticeButton: {
+      minHeight: 36,
+      paddingHorizontal: spacing.md,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    noticeButtonLabel: {
+      color: colors.textPrimary,
+      textTransform: "uppercase",
     },
     summaryMonth: {
       color: colors.textSecondary,

@@ -1,4 +1,4 @@
-export type AppLanguage = "de" | "en";
+ï»¿export type AppLanguage = "de" | "en";
 
 type TranslationLeaf = string;
 type TranslationTree = {
@@ -35,6 +35,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       thisYear: "Dieses Jahr",
       lastMonth: "Letzter Monat",
       nextMonth: "NÃ¤chster Monat",
+      okay: "Okay",
       actionFailed: "Aktion konnte nicht ausgefÃ¼hrt werden.",
     },
     tabs: {
@@ -114,7 +115,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthPaymentSingular: "Zahlung",
       monthPaymentPlural: "Zahlungen",
       emptyTitle: "Noch keine Abos sichtbar",
-      emptyDescription: "Lege dein erstes Abo an oder blende gekÃ¼ndigte EintrÃ¤ge wieder ein.",
+      emptyDescription: "Lege deine Abos an um dir einen Ãœberblick zu verschaffen.",
+      accountNoticeTitle: "Achtung",
+      accountNoticeDescription:
+        "Du hast kein verknÃ¼pftes Konto. Du solltest eins anlegen, um Daten zu sichern. Du kannst das jederzeit in den Einstellungen machen.",
       settingsA11y: "Einstellungen Ã¶ffnen",
       total: "Gesamt",
       due: "Noch fÃ¤llig",
@@ -171,26 +175,26 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       perMonthLabel: "{{amount}} / Monat",
     },
     history: {
-      addPaymentTitle: "Zahlung hinzufügen",
-      addPaymentDescription: "Vergangene oder aktuelle Zahlung manuell hinzufügen",
+      addPaymentTitle: "Zahlung hinzufï¿½gen",
+      addPaymentDescription: "Vergangene oder aktuelle Zahlung manuell hinzufï¿½gen",
       loading: "Historie wird geladen...",
       emptyTitle: "Noch keine Historie vorhanden",
       emptyDescription: "Sobald Ereignisse entstehen, erscheinen sie hier chronologisch.",
       paymentBookedTitle: "Zahlung gebucht",
       manualAdded: "Manuell erfasst",
-      dueOn: "Fällig am {{date}}",
+      dueOn: "Fï¿½llig am {{date}}",
       paymentSkippedTitle: "Zahlung ausgesetzt",
-      originallyDueOn: "Eigentlich fällig am {{date}}",
+      originallyDueOn: "Eigentlich fï¿½llig am {{date}}",
       subscriptionDeactivatedTitle: "Abo deaktiviert",
       subscriptionReactivatedTitle: "Abo reaktiviert",
-      amountChangedTitle: "Betrag geändert",
+      amountChangedTitle: "Betrag geï¿½ndert",
       amountChangedFromTo: "Von {{from}} auf {{to}}",
-      billingCycleChangedTitle: "Intervall geändert",
+      billingCycleChangedTitle: "Intervall geï¿½ndert",
       billingCycleChangedFromTo: "Von {{from}} auf {{to}}",
-      dueDateChangedTitle: "Fälligkeit geändert",
+      dueDateChangedTitle: "Fï¿½lligkeit geï¿½ndert",
       dueDateChangedFromTo: "Von {{from}} auf {{to}}",
       subscriptionCreatedTitle: "Abo angelegt",
-      firstDueDate: "Erste Fälligkeit {{date}}",
+      firstDueDate: "Erste Fï¿½lligkeit {{date}}",
     },
     addPayment: {
       checkTitle: "Zahlung prÃ¼fen",
@@ -291,6 +295,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       thisYear: "This year",
       lastMonth: "Last month",
       nextMonth: "Next month",
+      okay: "Okay",
       actionFailed: "The action could not be completed.",
     },
     tabs: {
@@ -371,6 +376,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       monthPaymentPlural: "payments",
       emptyTitle: "No subscriptions visible yet",
       emptyDescription: "Create your first subscription or bring cancelled entries back into view.",
+      accountNoticeTitle: "Attention",
+      accountNoticeDescription:
+        "You do not have a linked account yet. You should create one to secure your data. You can do that anytime in settings.",
       settingsA11y: "Open settings",
       total: "Total",
       due: "Due",
@@ -521,5 +529,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
 };
 
 export type TranslationKey = string;
+
+
 
 

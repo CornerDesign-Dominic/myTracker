@@ -206,7 +206,41 @@ test("sync respects historical deactivation state for missing months", () => {
   );
 });
 
-test("deleted payment events suppress automatic recreation for the same due date", () => {
+test("sync creates no new events for cancelled subscriptions", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-01-10T09:00:00.000Z",
+    nextPaymentDate: "2026-01-15",
+    status: "cancelled",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-01-10T09:00:00.000Z",
+      effectiveDate: "2026-01-10",
+      occurredAt: "2026-01-10",
+      initialNextPaymentDate: "2026-01-15",
+    }),
+    createEvent({
+      id: "cancelled",
+      type: "subscription_deactivated",
+      createdAt: "2026-02-10T09:00:00.000Z",
+      effectiveDate: "2026-02-10",
+      occurredAt: "2026-02-10",
+      snapshot: {
+        status: "cancelled",
+      },
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 3, 20));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type]),
+    [["2026-01-15", "payment_booked"]],
+  );
+});
+
+test("legacy deleted payment events still suppress automatic recreation for the same due date", () => {
   const subscription = createSubscription({
     createdAt: "2026-01-10T09:00:00.000Z",
     nextPaymentDate: "2026-01-15",

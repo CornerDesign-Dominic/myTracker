@@ -6,10 +6,9 @@ import {
   sortHistoryNewestFirst,
 } from "@/domain/subscriptionHistory/events";
 import {
-  buildReplacementPaymentEvent,
   buildUpdatedPaymentEvent,
   buildEditablePaymentEventFields,
-  getPaymentEventId,
+  createPaymentEventId,
   hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
 } from "@/domain/subscriptionHistory/paymentEvents";
@@ -148,7 +147,7 @@ class MockSubscriptionStore {
     }
 
     await this.createHistoryEvent(subscriptionId, {
-      id: getPaymentEventId(input.type, input.dueDate),
+      id: createPaymentEventId("manual_payment"),
       subscriptionId,
       ...buildEditablePaymentEventFields({
         type: input.type,
@@ -192,49 +191,20 @@ class MockSubscriptionStore {
     }
 
     const now = new Date().toISOString();
-    const nextEventId = getPaymentEventId(input.type, input.dueDate);
+    const nextHistory = currentHistory.map((event) =>
+      event.id === eventId
+        ? {
+            ...event,
+            ...buildUpdatedPaymentEvent({
+              currentEvent: editableCurrentEvent,
+              input,
+              now,
+            }),
+          }
+        : event,
+    );
 
-    if (nextEventId === editableCurrentEvent.id) {
-      const nextHistory = currentHistory.map((event) =>
-        event.id === eventId
-          ? {
-              ...event,
-              ...buildUpdatedPaymentEvent({
-                currentEvent: editableCurrentEvent,
-                input,
-                now,
-              }),
-            }
-          : event,
-      );
-
-      this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
-      this.emitHistory(subscriptionId);
-      return;
-    }
-
-    const mutation = buildReplacementPaymentEvent({
-      currentEvent: editableCurrentEvent,
-      input,
-      now,
-    });
-    const nextHistory = sortHistoryNewestFirst([
-      ...currentHistory.map((event) =>
-        event.id === eventId
-          ? {
-              ...event,
-              ...mutation.archivedCurrentEvent,
-            }
-          : event,
-      ),
-      {
-        id: mutation.nextEvent.id ?? nextEventId,
-        createdAt: now,
-        ...mutation.nextEvent,
-      },
-    ]);
-
-    this.history.set(subscriptionId, nextHistory);
+    this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
     this.emitHistory(subscriptionId);
   }
 
@@ -246,15 +216,7 @@ class MockSubscriptionStore {
       throw new Error("Only editable payment events can be deleted.");
     }
 
-    const nextHistory = currentHistory.map((event) =>
-      event.id === eventId
-        ? {
-            ...event,
-            deletedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
-        : event,
-    );
+    const nextHistory = currentHistory.filter((event) => event.id !== eventId);
 
     this.history.set(subscriptionId, sortHistoryNewestFirst(nextHistory));
     this.emitHistory(subscriptionId);

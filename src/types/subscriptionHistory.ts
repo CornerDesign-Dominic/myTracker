@@ -30,8 +30,6 @@ export interface SubscriptionHistoryEvent {
   notes?: string;
   metadata?: Record<string, string | number | boolean | null>;
   syncSuppressedDueDates?: string[];
-  replacedEventId?: string;
-  replacementEventId?: string;
   snapshot?: SubscriptionHistorySnapshot;
   amount?: number;
   dueDate?: string;

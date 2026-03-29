@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   deleteField,
   doc,
   documentId,
@@ -18,10 +19,9 @@ import {
 
 import { buildChangeEvents, buildCreatedEvent, getMissingPaymentHistoryEvents } from "@/domain/subscriptionHistory/events";
 import {
-  buildReplacementPaymentEvent,
   buildUpdatedPaymentEvent,
   buildEditablePaymentEventFields,
-  getPaymentEventId,
+  createPaymentEventId,
   hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
 } from "@/domain/subscriptionHistory/paymentEvents";
@@ -90,8 +90,6 @@ const mapHistoryEvent = (
   syncSuppressedDueDates: Array.isArray(data.syncSuppressedDueDates)
     ? data.syncSuppressedDueDates.map(String)
     : undefined,
-  replacedEventId: data.replacedEventId ? String(data.replacedEventId) : undefined,
-  replacementEventId: data.replacementEventId ? String(data.replacementEventId) : undefined,
   snapshot: (data.snapshot as SubscriptionHistoryEvent["snapshot"]) ?? undefined,
   amount: typeof data.amount === "number" ? data.amount : undefined,
   dueDate: data.dueDate ? String(data.dueDate) : undefined,
@@ -260,7 +258,7 @@ export const createFirestoreManualPayment = async (
       throw new Error("A payment event already exists for this due date.");
     }
 
-    const eventId = getPaymentEventId(input.type, input.dueDate);
+    const eventId = createPaymentEventId("manual_payment");
     const eventFields = buildEditablePaymentEventFields({
       type: input.type,
       amount: input.amount,
@@ -311,57 +309,29 @@ export const updateFirestoreHistoryEvent = async (
     }
 
     const now = new Date().toISOString();
-    const nextEventId = getPaymentEventId(input.type, input.dueDate);
-
-    if (nextEventId === currentEvent.id) {
-      const nextEventFields = buildUpdatedPaymentEvent({
-        currentEvent,
-        input,
-        now,
-      });
-
-      await updateDoc(historyDoc(userId, subscriptionId, eventId), {
-        ...removeUndefinedFields(nextEventFields),
-        notes: input.notes ?? deleteField(),
-        bookedAt:
-          input.type === "payment_booked"
-            ? ("bookedAt" in nextEventFields ? nextEventFields.bookedAt : undefined)
-            : deleteField(),
-        reason:
-          input.type === "payment_skipped_inactive"
-            ? ("reason" in nextEventFields ? nextEventFields.reason : undefined)
-            : deleteField(),
-        source:
-          input.type === "payment_booked"
-            ? ("source" in nextEventFields ? nextEventFields.source : undefined)
-            : deleteField(),
-        replacedEventId: deleteField(),
-        replacementEventId: deleteField(),
-        updatedAt: serverTimestamp(),
-      });
-
-      return;
-    }
-
-    const mutation = buildReplacementPaymentEvent({
+    const nextEventFields = buildUpdatedPaymentEvent({
       currentEvent,
       input,
       now,
     });
-    const batch = writeBatch(ensureFirestore());
 
-    batch.update(historyDoc(userId, subscriptionId, eventId), {
-      deletedAt: serverTimestamp(),
+    await updateDoc(historyDoc(userId, subscriptionId, eventId), {
+      ...removeUndefinedFields(nextEventFields),
+      notes: input.notes ?? deleteField(),
+      bookedAt:
+        input.type === "payment_booked"
+          ? ("bookedAt" in nextEventFields ? nextEventFields.bookedAt : undefined)
+          : deleteField(),
+      reason:
+        input.type === "payment_skipped_inactive"
+          ? ("reason" in nextEventFields ? nextEventFields.reason : undefined)
+          : deleteField(),
+      source:
+        input.type === "payment_booked"
+          ? ("source" in nextEventFields ? nextEventFields.source : undefined)
+          : deleteField(),
       updatedAt: serverTimestamp(),
-      replacementEventId: mutation.nextEvent.id,
     });
-    batch.set(
-      historyDoc(userId, subscriptionId, mutation.nextEvent.id ?? nextEventId),
-      toHistoryPayload(mutation.nextEvent),
-      { merge: false },
-    );
-
-    await batch.commit();
   } catch (error) {
     logFirestoreError("subscriptionFirestore.updateFirestoreHistoryEvent", error, {
       path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,
@@ -383,10 +353,7 @@ export const deleteFirestoreHistoryEvent = async (
     const history = await readSubscriptionHistory(userId, subscriptionId);
     getEditablePaymentEvent(history, eventId);
 
-    await updateDoc(historyDoc(userId, subscriptionId, eventId), {
-      deletedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await deleteDoc(historyDoc(userId, subscriptionId, eventId));
   } catch (error) {
     logFirestoreError("subscriptionFirestore.deleteFirestoreHistoryEvent", error, {
       path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,

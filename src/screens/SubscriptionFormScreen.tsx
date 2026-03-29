@@ -333,6 +333,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [draftText, setDraftText] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
   const [draftDate, setDraftDate] = useState(new Date());
+  const [requiresNextPaymentConfirmation, setRequiresNextPaymentConfirmation] = useState(false);
+  const [confirmedBillingCycle, setConfirmedBillingCycle] = useState<BillingCycle>("monthly");
 
   const categorySuggestion = useMemo(() => {
     if (activeField !== "category") {
@@ -383,6 +385,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       endDate: existingSubscription.endDate ?? "",
       notes: existingSubscription.notes ?? "",
     });
+    setConfirmedBillingCycle(existingSubscription.billingCycle);
+    setRequiresNextPaymentConfirmation(false);
   }, [existingSubscription]);
 
   const updateField = <K extends keyof SubscriptionInput>(key: K, value: SubscriptionInput[K]) =>
@@ -399,6 +403,12 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
     if (!isDateInputValid(formState.nextPaymentDate)) {
       return t("subscription.validationNextPayment");
+    }
+
+    if (requiresNextPaymentConfirmation) {
+      return language === "de"
+        ? "Bitte bestätige nach dem Intervallwechsel die neue Fälligkeit."
+        : "Please confirm the new due date after changing the billing cycle.";
     }
 
     if (
@@ -452,6 +462,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
     if (activeField === "nextPaymentDate") {
       updateField("nextPaymentDate", formatLocalDateInput(draftDate));
+      setConfirmedBillingCycle(formState.billingCycle);
+      setRequiresNextPaymentConfirmation(false);
       closeSheet();
     }
   };
@@ -496,6 +508,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const openStatusSheet = () => setActiveField("status");
 
   const selectBillingCycle = (value: BillingCycle) => {
+    setRequiresNextPaymentConfirmation(value !== confirmedBillingCycle);
     updateField("billingCycle", value);
     closeSheet();
   };
@@ -838,6 +851,14 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             />
           </View>
         </View>
+
+        {requiresNextPaymentConfirmation ? (
+          <Text style={[typography.secondary, styles.inlineHint]}>
+            {language === "de"
+              ? "Bitte die nächste Fälligkeit für das neue Intervall bestätigen."
+              : "Please confirm the next due date for the new billing cycle."}
+          </Text>
+        ) : null}
       </EditorSheet>
     </SafeAreaView>
   );
@@ -871,6 +892,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     primaryButtonText: {
       color: colors.accent,
+    },
+    inlineHint: {
+      color: colors.textSecondary,
+      marginTop: spacing.sm,
     },
     secondaryButtonText: {
       color: colors.textPrimary,

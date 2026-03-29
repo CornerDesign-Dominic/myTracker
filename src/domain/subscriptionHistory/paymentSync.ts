@@ -4,7 +4,7 @@ import type {
   HistoryEventInput,
 } from "../../types/subscriptionHistory.ts";
 import {
-  getPaymentEventId,
+  createPaymentEventId,
   hasActivePaymentEventForDueDate,
   isDueDateSuppressedForAutoSync,
 } from "./paymentEvents.ts";
@@ -37,7 +37,7 @@ const isDevEnvironment =
   "__DEV__" in globalThis &&
   Boolean((globalThis as { __DEV__?: boolean }).__DEV__);
 
-const isSubscriptionActiveOnDate = (
+const getSubscriptionStatusOnDate = (
   subscription: SubscriptionHistoryAware,
   history: SubscriptionHistoryEvent[],
   targetDate: string,
@@ -65,7 +65,7 @@ const isSubscriptionActiveOnDate = (
     }
 
     if (event.type === "subscription_deactivated") {
-      currentStatus = "paused";
+      currentStatus = event.snapshot?.status ?? "paused";
     }
 
     if (event.type === "subscription_reactivated") {
@@ -73,7 +73,7 @@ const isSubscriptionActiveOnDate = (
     }
   });
 
-  return currentStatus === "active";
+  return currentStatus;
 };
 
 export const getMissingPaymentHistoryEvents = (
@@ -111,10 +111,14 @@ export const getMissingPaymentHistoryEvents = (
       return [] satisfies HistoryEventInput[];
     }
 
-    const eventType = isSubscriptionActiveOnDate(subscription, history, dueDate)
-      ? "payment_booked"
-      : "payment_skipped_inactive";
-    const eventId = getPaymentEventId(eventType, dueDate);
+    const statusOnDueDate = getSubscriptionStatusOnDate(subscription, history, dueDate);
+
+    if (statusOnDueDate === "cancelled") {
+      return [] satisfies HistoryEventInput[];
+    }
+
+    const eventType =
+      statusOnDueDate === "active" ? "payment_booked" : "payment_skipped_inactive";
 
     if (isDevEnvironment && dueDate > todayKey) {
       console.log("[History] skipped future dueDate", {
@@ -127,7 +131,7 @@ export const getMissingPaymentHistoryEvents = (
 
     return [
       {
-        id: eventId,
+        id: createPaymentEventId("sync_payment"),
         subscriptionId: subscription.id,
         type: eventType,
         occurredAt: dueDate,

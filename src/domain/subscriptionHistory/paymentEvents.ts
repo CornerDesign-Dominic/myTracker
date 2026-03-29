@@ -1,5 +1,4 @@
 import type {
-  HistoryEventInput,
   SubscriptionHistoryEvent,
   SubscriptionHistoryEventType,
 } from "../../types/subscriptionHistory.ts";
@@ -25,10 +24,8 @@ export const isPaymentHistoryEvent = (
 ): event is SubscriptionHistoryEvent & { type: EditablePaymentEventType } =>
   isEditablePaymentEventType(event.type);
 
-export const getPaymentEventId = (
-  type: EditablePaymentEventType,
-  dueDate: string,
-) => `${type}_${dueDate}`;
+export const createPaymentEventId = (prefix = "payment") =>
+  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 export const hasActivePaymentEventForDueDate = (
   history: SubscriptionHistoryEvent[],
@@ -95,45 +92,9 @@ export const buildUpdatedPaymentEvent = ({
 }) => ({
   ...buildEditablePaymentEventFields({
     ...input,
-    source: "manual",
+    bookedAt: input.type === "payment_booked" ? input.bookedAt ?? now : undefined,
+    source: currentEvent.source ?? "manual",
   }),
   updatedAt: now,
   deletedAt: undefined,
-  replacementEventId: undefined,
 });
-
-export const buildReplacementPaymentEvent = ({
-  currentEvent,
-  input,
-  now,
-}: {
-  currentEvent: SubscriptionHistoryEvent & { type: EditablePaymentEventType };
-  input: EditablePaymentHistoryInput;
-  now: string;
-}): {
-  archivedCurrentEvent: Pick<
-    SubscriptionHistoryEvent,
-    "deletedAt" | "updatedAt" | "replacementEventId"
-  >;
-  nextEvent: HistoryEventInput;
-} => {
-  const nextEventId = getPaymentEventId(input.type, input.dueDate);
-
-  return {
-    archivedCurrentEvent: {
-      deletedAt: now,
-      updatedAt: now,
-      replacementEventId: nextEventId,
-    },
-    nextEvent: {
-      id: nextEventId,
-      subscriptionId: currentEvent.subscriptionId,
-      replacedEventId: currentEvent.id,
-      updatedAt: now,
-      ...buildEditablePaymentEventFields({
-        ...input,
-        source: "manual",
-      }),
-    },
-  };
-};

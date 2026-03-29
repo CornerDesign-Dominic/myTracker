@@ -13,14 +13,16 @@ import { spacing } from "./src/theme";
 
 function AppContent() {
   const { isHydrated } = useAppSettings();
-  const { authIsReady } = useAuth();
+  const { authIsReady, currentUser } = useAuth();
   const { colors, statusBarStyle } = useAppTheme();
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+  const onboardingScopeKey = currentUser?.uid ?? "guest";
 
   useEffect(() => {
     let isActive = true;
+    setHasSeenOnboarding(null);
 
-    readHasSeenOnboarding()
+    readHasSeenOnboarding(onboardingScopeKey)
       .then((value) => {
         if (!isActive) {
           return;
@@ -39,7 +41,7 @@ function AppContent() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [onboardingScopeKey]);
 
   if (!authIsReady || !isHydrated || hasSeenOnboarding === null) {
     return (
@@ -62,9 +64,10 @@ function AppContent() {
     <>
       <StatusBar style={statusBarStyle} />
       <AppNavigator
+        key={`navigator:${onboardingScopeKey}:${hasSeenOnboarding ? "seen" : "new"}`}
         showOnboarding={!hasSeenOnboarding}
         onCompleteOnboarding={async () => {
-          await writeHasSeenOnboarding();
+          await writeHasSeenOnboarding(onboardingScopeKey);
           setHasSeenOnboarding(true);
         }}
       />

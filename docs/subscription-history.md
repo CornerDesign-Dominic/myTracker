@@ -13,11 +13,18 @@ Die automatische Generierung von
 - `payment_booked`
 - `payment_skipped_inactive`
 
-erfolgt **nur fuer heute und Zukunft**.
+erfolgt **nur fuer bereits faellige Termine im gueltigen Auto-History-Fenster**.
 
 Kernregel:
 
-- Wenn `dueDate < today`, wird **kein Event erzeugt**.
+- Es wird nur dann automatisch ein Event erzeugt, wenn gleichzeitig gilt:
+- `dueDate <= today`
+- `dueDate >= createdAt` der Subscription, auf Kalendertag normalisiert
+
+Das bedeutet:
+
+- Zukunft bleibt **Forecast** und wird nicht als echte History angelegt.
+- Vor `createdAt` wird **niemals** automatisch History erzeugt.
 
 ## Kein Backfill
 
@@ -30,14 +37,16 @@ Das gilt auch dann, wenn:
 - ein Abo spaeter rueckdatiert wird
 - Betrag oder Faelligkeit nachtraeglich geaendert werden
 
-Die automatische Sync-Logik erstellt keine historischen Payment- oder Skipped-Payment-Events fuer vergangene Zeitraeume.
+Die automatische Sync-Logik erstellt keine historischen Payment- oder Skipped-Payment-Events fuer Zeitraeume vor `createdAt`.
+Zukuenftige Termine werden ebenfalls nicht automatisch als echte History angelegt.
 
 ## Gruende fuer dieses Verhalten
 
 - Vermeidung falscher oder erfundener Historie
 - Nutzer koennten alte Daten unvollstaendig oder falsch eingegeben haben
 - Das System bleibt deterministisch, kontrollierbar und nachvollziehbar
-- Automatische History-Sync soll nur sichere, aktuelle oder zukuenftige Termine erfassen
+- Automatische History-Sync soll nur sichere, bereits faellige Termine erfassen
+- Zukunft soll sauber Forecast bleiben und nicht mit echter Historie vermischt werden
 
 ## Monatsend-Logik bei wiederkehrenden Faelligkeiten
 
@@ -58,7 +67,7 @@ Wichtig:
 
 ## Konsequenzen
 
-Historie vor dem heutigen Tag ist nur vorhanden, wenn sie:
+Historie ausserhalb des gueltigen Auto-History-Fensters ist nur vorhanden, wenn sie:
 
 - manuell angelegt wurde
 - oder spaeter bewusst durch eine explizite Backfill-Funktion erzeugt wird
@@ -86,7 +95,8 @@ Die zentrale Regel ist in folgender Datei implementiert:
 
 Dort wird die automatische Event-Erzeugung abgebrochen, sobald gilt:
 
-- `dueDate < today`
+- `dueDate > today`
+- oder `dueDate < createdAt`
 
 Die wiederkehrende Monatsend-Logik fuer sichtbare und zukuenftige Faelligkeiten liegt zentral in:
 
@@ -101,7 +111,8 @@ Dieses Verhalten ist durch Unit Tests abgesichert in:
 
 Die Tests pruefen unter anderem:
 
-- keine automatische Erzeugung fuer vergangene Faelligkeiten
-- Erzeugung fuer zukuenftige Faelligkeiten
-- `payment_skipped_inactive` nur fuer zukuenftige deaktivierte Termine
-- kein rueckwirkender Backfill durch spaetere Aenderungen
+- keine automatische Erzeugung vor Erreichen des Faelligkeitstags
+- Erzeugung am Faelligkeitstag selbst
+- keine automatische Erzeugung vor `createdAt`
+- `payment_skipped_inactive` nur fuer bereits faellige deaktivierte Termine
+- kein rueckwirkender Backfill vor `createdAt`

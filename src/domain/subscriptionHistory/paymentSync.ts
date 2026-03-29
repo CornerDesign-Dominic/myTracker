@@ -12,6 +12,19 @@ const toCalendarDateString = (value: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const toCalendarDay = (value?: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return toCalendarDateString(parsed);
+};
+
 const isDevEnvironment =
   typeof globalThis !== "undefined" &&
   "__DEV__" in globalThis &&
@@ -68,15 +81,17 @@ export const getMissingPaymentHistoryEvents = (
 ) => {
   const todayKey = toCalendarDateString(today);
   const dueDate = subscription.nextPaymentDate;
+  const createdAtDay = toCalendarDay(subscription.createdAt);
   const suppressedDueDates = new Set(
     history.flatMap((event) => event.syncSuppressedDueDates ?? []),
   );
 
-  if (!dueDate || dueDate < todayKey) {
+  if (!dueDate || !createdAtDay || dueDate > todayKey || dueDate < createdAtDay) {
     if (isDevEnvironment && dueDate) {
-      console.log("[History] skipped past dueDate", {
+      console.log("[History] skipped out-of-range dueDate", {
         subscriptionId: subscription.id,
         dueDate,
+        createdAtDay,
         today: todayKey,
       });
     }

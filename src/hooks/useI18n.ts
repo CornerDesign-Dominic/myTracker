@@ -1,3 +1,5 @@
+import { useCallback, useMemo } from "react";
+
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { AppLanguage, TranslationKey, translations } from "@/i18n/translations";
 
@@ -20,20 +22,27 @@ export const useI18n = () => {
   const { language } = useAppSettings();
   const locale = language;
 
-  const t = (key: TranslationKey, variables?: Record<string, string | number>) => {
-    const template =
-      getNestedValue(locale, key) ??
-      getNestedValue("de", key) ??
-      getNestedValue("en", key) ??
-      key;
+  const t = useCallback(
+    (key: TranslationKey, variables?: Record<string, string | number>) => {
+      const template =
+        getNestedValue(locale, key) ??
+        getNestedValue("de", key) ??
+        getNestedValue("en", key) ??
+        key;
 
-    return Object.entries(variables ?? {}).reduce((result, [name, value]) => {
-      return result.replaceAll(`{{${name}}}`, String(value));
-    }, template);
-  };
+      return Object.entries(variables ?? {}).reduce((result, [name, value]) => {
+        return result.replaceAll(`{{${name}}}`, String(value));
+      }, template);
+    },
+    [locale],
+  );
 
-  return {
-    language: locale,
-    t,
-  } as const;
+  return useMemo(
+    () =>
+      ({
+        language: locale,
+        t,
+      }) as const,
+    [locale, t],
+  );
 };

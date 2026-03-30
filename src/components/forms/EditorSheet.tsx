@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect, useState } from "react";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -47,14 +48,39 @@ export const EditorSheet = ({
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !visible) {
+      setAndroidKeyboardHeight(0);
+      return;
+    }
+
+    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
+      setAndroidKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardShell}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={[
+            styles.keyboardShell,
+            Platform.OS === "android" && androidKeyboardHeight > 0
+              ? { paddingBottom: androidKeyboardHeight }
+              : null,
+          ]}
         >
           <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>
             <View style={styles.handle} />

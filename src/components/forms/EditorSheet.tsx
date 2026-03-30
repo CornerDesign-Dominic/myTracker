@@ -3,6 +3,7 @@ import { PropsWithChildren, useEffect, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
+  KeyboardEvent,
   Modal,
   Platform,
   Pressable,
@@ -11,7 +12,7 @@ import {
   ViewStyle,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import {
@@ -45,23 +46,29 @@ export const EditorSheet = ({
   children,
 }: EditorSheetProps) => {
   const { colors, typography } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
-  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
-    if (Platform.OS !== "android" || !visible) {
-      setAndroidKeyboardHeight(0);
+    if (!visible) {
+      setKeyboardHeight(0);
       return;
     }
 
-    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
-      setAndroidKeyboardHeight(event.endCoordinates.height);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      setAndroidKeyboardHeight(0);
-    });
+    const handleKeyboardFrame = (event: KeyboardEvent) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    };
+    const handleKeyboardHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const showEvent = Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardFrame);
+    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
 
     return () => {
       showSubscription.remove();
@@ -69,40 +76,42 @@ export const EditorSheet = ({
     };
   }, [visible]);
 
+  const sheetBottomOffset = Math.max(keyboardHeight - insets.bottom, 0);
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 0}
           style={[
             styles.keyboardShell,
-            Platform.OS === "android" && androidKeyboardHeight > 0
-              ? { paddingBottom: androidKeyboardHeight }
-              : null,
           ]}
         >
-          <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>
-            <View style={styles.handle} />
-            <View style={styles.header}>
-              <Text style={[typography.sectionTitle, styles.title]}>{title}</Text>
-              <Pressable style={styles.closeButton} onPress={onClose}>
-                <Ionicons name="close-outline" size={22} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-
-            <View style={[styles.content, contentStyle]}>{children}</View>
-            {showConfirm ? (
-              <View style={styles.actions}>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.primaryButton, styles.action]}
-                  onPress={onConfirm}
-                >
-                  <Text style={[typography.button, styles.primaryLabel]}>{confirmLabel}</Text>
+          <View style={[styles.sheetPositioner, { marginBottom: sheetBottomOffset }]}>
+            <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>
+              <View style={styles.handle} />
+              <View style={styles.header}>
+                <Text style={[typography.sectionTitle, styles.title]}>{title}</Text>
+                <Pressable style={styles.closeButton} onPress={onClose}>
+                  <Ionicons name="close-outline" size={22} color={colors.textSecondary} />
                 </Pressable>
               </View>
-            ) : null}
-          </SafeAreaView>
+
+              <View style={[styles.content, contentStyle]}>{children}</View>
+              {showConfirm ? (
+                <View style={styles.actions}>
+                  <Pressable
+                    style={[buttons.buttonBase, buttons.primaryButton, styles.action]}
+                    onPress={onConfirm}
+                  >
+                    <Text style={[typography.button, styles.primaryLabel]}>{confirmLabel}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </SafeAreaView>
+          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -118,6 +127,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     keyboardShell: {
       flex: 1,
+      justifyContent: "flex-end",
+    },
+    sheetPositioner: {
       justifyContent: "flex-end",
     },
     sheet: {

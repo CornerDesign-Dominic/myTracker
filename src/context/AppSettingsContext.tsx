@@ -9,12 +9,15 @@ import {
 } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePurchases } from "@/context/PurchaseContext";
 import { AppLanguage } from "@/i18n/translations";
 import {
   ensureSettingsDocument,
   subscribeToUserSettings,
   updateUserSettings,
 } from "@/services/firestore/userFirestore";
+import { FREE_ACCENT_COLOR } from "@/services/purchases/constants";
+import { canUseAccentColor, getSafeAccentColor } from "@/services/purchases/entitlements";
 import { AccentColor } from "@/theme";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
@@ -40,10 +43,11 @@ const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const { currentUser, authIsReady } = useAuth();
+  const { hasSupportColors } = usePurchases();
   const [language, setLanguageState] = useState<LanguageOption>("de");
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
   const [theme, setThemeState] = useState<ThemeOption>("Light");
-  const [accentColor, setAccentColorState] = useState<AccentColor>("indigo");
+  const [accentColor, setAccentColorState] = useState<AccentColor>(FREE_ACCENT_COLOR);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         }
 
         if (parsedSettings.accentColor) {
-          setAccentColorState(parsedSettings.accentColor);
+          setAccentColorState(getSafeAccentColor(parsedSettings.accentColor, hasSupportColors));
         }
       } catch {
         // Keep defaults if local hydration fails.
@@ -91,7 +95,15 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     };
 
     hydrateLocalSettings();
-  }, []);
+  }, [hasSupportColors]);
+
+  useEffect(() => {
+    if (canUseAccentColor(accentColor, hasSupportColors)) {
+      return;
+    }
+
+    setAccentColorState(FREE_ACCENT_COLOR);
+  }, [accentColor, hasSupportColors]);
 
   useEffect(() => {
     if (!authIsReady || !isHydrated || !currentUser) {
@@ -214,6 +226,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   };
 
   const setAccentColor = (value: AccentColor) => {
+    if (!canUseAccentColor(value, hasSupportColors)) {
+      return;
+    }
+
     setAccentColorState(value);
   };
 

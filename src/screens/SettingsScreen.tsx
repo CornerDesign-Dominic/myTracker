@@ -1,23 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
+import { usePurchases } from "@/context/PurchaseContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { RootStackParamList } from "@/navigation/types";
+import { FREE_ACCENT_COLOR } from "@/services/purchases/constants";
+import { canUseAccentColor } from "@/services/purchases/entitlements";
 import {
   accentColorOptions,
   createButtonStyles,
-  getAccentPalette,
   createScreenLayout,
   createSurfaceStyles,
+  getAccentPalette,
   radius,
   spacing,
 } from "@/theme";
 import { AccentColor } from "@/theme";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -81,6 +85,81 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setAccentColor,
   } = useAppSettings();
   const { isAnonymous, logout } = useAuth();
+  const {
+    hasSupportColors,
+    isPurchasing,
+    isRefreshing,
+    isStoreConnected,
+    purchaseError,
+    supportColorsProduct,
+    purchaseSupportColors,
+    restorePurchases,
+    clearPurchaseError,
+  } = usePurchases();
+  const [isPurchaseModalVisible, setIsPurchaseModalVisible] = useState(false);
+  const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
+  const hasLockedAccents = !hasSupportColors;
+  const purchaseMessage = useMemo(() => {
+    if (!purchaseError) {
+      return null;
+    }
+
+    if (purchaseError === "cancelled") {
+      return t("settings.purchaseCancelled");
+    }
+
+    return purchaseError;
+  }, [purchaseError, t]);
+
+  useEffect(() => {
+    if (!isPurchaseModalVisible) {
+      clearPurchaseError();
+    }
+  }, [clearPurchaseError, isPurchaseModalVisible]);
+
+  useEffect(() => {
+    if (hasSupportColors) {
+      setIsPurchaseModalVisible(false);
+    }
+  }, [hasSupportColors]);
+
+  const openPurchaseModal = () => {
+    clearPurchaseError();
+    setIsPurchaseModalVisible(true);
+  };
+
+  const closePurchaseModal = () => {
+    if (isPurchasing || isRefreshing) {
+      return;
+    }
+
+    setIsPurchaseModalVisible(false);
+  };
+
+  const handleAccentPress = (option: AccentColor) => {
+    if (!canUseAccentColor(option, hasSupportColors)) {
+      openPurchaseModal();
+      return;
+    }
+
+    setAccentColor(option);
+  };
+
+  const handlePurchase = async () => {
+    try {
+      await purchaseSupportColors();
+    } catch {
+      // Error state is handled inside the purchase context.
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      await restorePurchases();
+    } catch {
+      // Error state is handled inside the purchase context.
+    }
+  };
 
   return (
     <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
@@ -108,7 +187,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
                   onPress={() => navigation.navigate("Register")}
                 >
-                  <Text style={[typography.button, styles.optionTextActive]}>{t("settings.registerAction")}</Text>
+                  <Text style={[typography.button, styles.actionPrimaryText]}>{t("settings.registerAction")}</Text>
                 </Pressable>
               </>
             ) : (
@@ -147,14 +226,28 @@ export const SettingsScreen = ({ navigation }: Props) => {
         <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.cardHeaderRow}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
-            <View style={styles.lockBadge}>
-              <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
+            <View style={styles.badgeRow}>
+              <View style={[styles.accentStatusBadge, styles.accentStatusBadgeFree]}>
+                <Text style={[typography.meta, styles.accentStatusBadgeText]}>{t("settings.accentFreeBadge")}</Text>
+              </View>
+              {hasLockedAccents ? (
+                <View style={styles.lockBadge}>
+                  <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
+                </View>
+              ) : (
+                <View style={[styles.accentStatusBadge, styles.accentStatusBadgeUnlocked]}>
+                  <Text style={[typography.meta, styles.accentStatusBadgeText]}>{t("settings.accentPremiumBadge")}</Text>
+                </View>
+              )}
             </View>
           </View>
+          <Text style={[typography.secondary, styles.lockedHint]}>{t("settings.purchaseLockedHint")}</Text>
           <View style={styles.accentGrid}>
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
               const accentPreview = getAccentPalette(option, mode);
+              const isLocked = !canUseAccentColor(option, hasSupportColors);
+              const isFree = option === FREE_ACCENT_COLOR;
 
               return (
                 <Pressable
@@ -163,9 +256,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
                     styles.accentOption,
                     { borderColor: isActive ? colors.accent : colors.border },
                     isActive ? styles.accentOptionActive : null,
+                    isLocked ? styles.accentOptionLocked : null,
                   ]}
-                  onPress={() => setAccentColor(option)}
+                  onPress={() => handleAccentPress(option)}
                 >
+                  {isLocked ? (
+                    <View style={styles.accentOptionLock}>
+                      <Ionicons name="lock-closed" size={12} color={colors.textSecondary} />
+                    </View>
+                  ) : null}
                   <View
                     style={[
                       styles.accentSwatch,
@@ -181,10 +280,24 @@ export const SettingsScreen = ({ navigation }: Props) => {
                     style={[
                       typography.meta,
                       styles.accentOptionLabel,
-                      isActive ? styles.optionTextActive : null,
+                      isActive && !isLocked ? styles.optionTextActive : null,
+                      isLocked ? styles.accentOptionLabelLocked : null,
                     ]}
                   >
                     {getAccentLabel(option, t)}
+                  </Text>
+                  <Text
+                    style={[
+                      typography.meta,
+                      styles.accentMetaLabel,
+                      isLocked ? styles.accentOptionLabelLocked : null,
+                    ]}
+                  >
+                    {isFree
+                      ? t("settings.accentFreeBadge")
+                      : isLocked
+                        ? t("settings.accentLockedLabel")
+                        : t("settings.accentPremiumBadge")}
                   </Text>
                 </Pressable>
               );
@@ -204,6 +317,70 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isPurchaseModalVisible}
+        onRequestClose={closePurchaseModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closePurchaseModal} />
+          <View style={[surfaces.panel, styles.purchaseSheet]}>
+            <View style={styles.purchaseSheetHeader}>
+              <View style={styles.purchaseIconWrap}>
+                <Ionicons name="color-palette-outline" size={18} color={colors.accent} />
+              </View>
+              <Pressable onPress={closePurchaseModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.purchaseTitle")}</Text>
+            <Text style={[typography.secondary, styles.purchaseDescription]}>
+              {t("settings.purchaseDescription")}
+            </Text>
+            {purchaseMessage ? (
+              <Text style={[typography.secondary, styles.purchaseErrorText]}>{purchaseMessage}</Text>
+            ) : null}
+            {!isStoreConnected && !isRefreshing ? (
+              <Text style={[typography.secondary, styles.purchaseStoreHint]}>
+                {t("settings.purchaseUnavailable")}
+              </Text>
+            ) : null}
+            <Pressable
+              style={[
+                buttons.buttonBase,
+                buttons.primaryButton,
+                styles.purchaseButton,
+                !supportColorsPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
+              ]}
+              disabled={!supportColorsPrice || isPurchasing || isRefreshing}
+              onPress={handlePurchase}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator size="small" color={colors.accentText} />
+              ) : (
+                <Text style={[typography.button, styles.purchasePrimaryText]}>
+                  {supportColorsPrice
+                    ? t("settings.purchaseBuy", { price: supportColorsPrice })
+                    : t("settings.purchaseBuyUnavailable")}
+                </Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={[buttons.buttonBase, buttons.secondaryButton, styles.purchaseButton]}
+              disabled={isPurchasing || isRefreshing}
+              onPress={handleRestore}
+            >
+              {isRefreshing ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={[typography.button, styles.optionText]}>{t("settings.purchaseRestore")}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -256,6 +433,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "space-between",
       gap: spacing.sm,
     },
+    badgeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
     optionRow: {
       flexDirection: "row",
       gap: spacing.sm,
@@ -290,6 +472,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     optionTextActive: {
       color: colors.accent,
     },
+    actionPrimaryText: {
+      color: colors.accentText,
+    },
     accentGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -299,7 +484,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accentOption: {
       width: "23%",
       minWidth: 0,
-      minHeight: 86,
+      minHeight: 100,
       paddingHorizontal: spacing.xs,
       paddingVertical: spacing.sm,
       borderRadius: radius.md,
@@ -312,6 +497,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accentOptionActive: {
       backgroundColor: colors.accentSoft,
     },
+    accentOptionLocked: {
+      opacity: 0.82,
+    },
     lockBadge: {
       width: 28,
       height: 28,
@@ -319,6 +507,43 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surfaceSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    accentStatusBadge: {
+      minHeight: 28,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    accentStatusBadgeFree: {
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+    },
+    accentStatusBadgeUnlocked: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    accentStatusBadgeText: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    lockedHint: {
+      color: colors.textSecondary,
+      lineHeight: 21,
+    },
+    accentOptionLock: {
+      position: "absolute",
+      top: spacing.xs,
+      right: spacing.xs,
+      width: 18,
+      height: 18,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -342,12 +567,66 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 14,
       textAlign: "center",
     },
+    accentOptionLabelLocked: {
+      color: colors.textSecondary,
+    },
+    accentMetaLabel: {
+      color: colors.textSecondary,
+      fontSize: 10,
+      lineHeight: 12,
+      textTransform: "uppercase",
+      textAlign: "center",
+    },
     legalLinks: {
       gap: spacing.md,
       paddingTop: spacing.xs,
       paddingBottom: spacing.sm,
     },
     legalLink: {
+      color: colors.textSecondary,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: colors.overlay,
+      padding: spacing.lg,
+    },
+    purchaseSheet: {
+      gap: spacing.md,
+      borderRadius: radius.lg,
+      paddingBottom: spacing.lg,
+    },
+    purchaseSheetHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    purchaseIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    purchaseDescription: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    purchaseButton: {
+      minHeight: 48,
+    },
+    purchaseButtonDisabled: {
+      opacity: 0.55,
+    },
+    purchasePrimaryText: {
+      color: colors.accentText,
+    },
+    purchaseErrorText: {
+      color: colors.danger,
+      lineHeight: 21,
+    },
+    purchaseStoreHint: {
       color: colors.textSecondary,
     },
   });

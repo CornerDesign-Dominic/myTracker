@@ -53,7 +53,7 @@ export const EditorSheet = ({
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardShell}
         >
           <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>

@@ -1,18 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren } from "react";
+import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View, ViewStyle } from "react-native";
 import {
-  Keyboard,
+  KeyboardAwareScrollView,
   KeyboardAvoidingView,
-  KeyboardEvent,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  ViewStyle,
-  View,
-} from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+} from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import {
@@ -47,50 +40,38 @@ export const EditorSheet = ({
 }: EditorSheetProps) => {
   const { colors, typography } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    if (!visible) {
-      setKeyboardHeight(0);
-      return;
-    }
-
-    const handleKeyboardFrame = (event: KeyboardEvent) => {
-      setKeyboardHeight(event.endCoordinates.height);
-    };
-    const handleKeyboardHide = () => {
-      setKeyboardHeight(0);
-    };
-
-    const showEvent = Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardFrame);
-    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, [visible]);
-
-  const sheetBottomOffset = Math.max(keyboardHeight - insets.bottom, 0);
+  const sheetMaxHeight = Math.max(windowHeight - insets.top - insets.bottom - spacing.lg, 0);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={Platform.OS === "ios" ? insets.bottom : 0}
-          style={[
-            styles.keyboardShell,
-          ]}
+          behavior="padding"
+          enabled={visible}
+          style={styles.keyboardShell}
         >
-          <View style={[styles.sheetPositioner, { marginBottom: sheetBottomOffset }]}>
-            <SafeAreaView edges={["bottom"]} style={[surfaces.panel, styles.sheet, sheetStyle]}>
+          <View style={[styles.sheetPositioner, { paddingBottom: insets.bottom }]}>
+            <View
+              style={[
+                surfaces.panel,
+                styles.sheet,
+                { maxHeight: sheetMaxHeight },
+                sheetStyle,
+              ]}
+            >
               <View style={styles.handle} />
               <View style={styles.header}>
                 <Text style={[typography.sectionTitle, styles.title]}>{title}</Text>
@@ -99,7 +80,19 @@ export const EditorSheet = ({
                 </Pressable>
               </View>
 
-              <View style={[styles.content, contentStyle]}>{children}</View>
+              <KeyboardAwareScrollView
+                enabled={visible}
+                bottomOffset={spacing.md}
+                extraKeyboardSpace={insets.bottom}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
+                alwaysBounceVertical={false}
+                showsVerticalScrollIndicator={false}
+                style={styles.content}
+                contentContainerStyle={[styles.contentContainer, contentStyle]}
+              >
+                {children}
+              </KeyboardAwareScrollView>
               {showConfirm ? (
                 <View style={styles.actions}>
                   <Pressable
@@ -110,7 +103,7 @@ export const EditorSheet = ({
                   </Pressable>
                 </View>
               ) : null}
-            </SafeAreaView>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -130,7 +123,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "flex-end",
     },
     sheetPositioner: {
+      flex: 1,
       justifyContent: "flex-end",
+      paddingHorizontal: spacing.sm,
+      paddingTop: spacing.lg,
     },
     sheet: {
       borderBottomLeftRadius: 0,
@@ -139,6 +135,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: 0,
       paddingTop: spacing.sm,
       paddingBottom: spacing.lg,
+      paddingHorizontal: spacing.lg,
       gap: spacing.lg,
       ...shadowPresets.card(colors),
     },
@@ -170,8 +167,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderColor: colors.border,
     },
     content: {
+      flexGrow: 0,
       flexShrink: 1,
       minHeight: 0,
+    },
+    contentContainer: {
       gap: spacing.md,
     },
     actions: {

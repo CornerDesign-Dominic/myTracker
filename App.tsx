@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { readHasSeenOnboarding, writeHasSeenOnboarding } from "./src/onboarding/storage";
@@ -77,12 +78,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <AppSettingsProvider>
-          <AppContent />
-        </AppSettingsProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <KeyboardProvider navigationBarTranslucent preserveEdgeToEdge statusBarTranslucent>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <AppSettingsProvider>
+            <AppContent />
+          </AppSettingsProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }

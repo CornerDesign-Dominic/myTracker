@@ -2,8 +2,7 @@
   "expo": {
     "name": "Abo Tracker",
     "slug": "subscription-tracker-mvp",
-    "version": "1.0.0",
-    "newArchEnabled": true,
+    "version": "1.0.0",    
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -18,8 +17,8 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#F4F7F2"
-      },
-      "edgeToEdgeEnabled": true
+      }
+      
     },
     "web": {
       "bundler": "metro"
@@ -30,13 +29,9 @@
       "@react-native-firebase/crashlytics",
       "react-native-iap",
       "./plugins/withReactNativeIapAndroid",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "2.2.0"
-          }
-        }
+      [        
+          "expo-build-properties",
+           {}        
       ]
     ],
     "extra": {

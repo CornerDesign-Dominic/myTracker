@@ -29,6 +29,7 @@
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
       "react-native-iap",
+      "./plugins/withReactNativeIapAndroid",
       [
         "expo-build-properties",
         {

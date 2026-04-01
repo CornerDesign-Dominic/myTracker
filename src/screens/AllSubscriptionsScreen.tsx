@@ -18,12 +18,13 @@ import {
   createSurfaceStyles,
   spacing,
 } from "@/theme";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreenProps) => {
   const { colors, typography } = useAppTheme();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
@@ -44,10 +45,10 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
     }
 
     return subscriptions.filter((subscription) => {
-      const searchableText = `${subscription.name} ${subscription.category}`.toLowerCase();
+      const searchableText = `${subscription.name} ${localizeCategory(subscription.category, language)}`.toLowerCase();
       return searchableText.includes(normalizedQuery);
     });
-  }, [searchQuery, subscriptions]);
+  }, [language, searchQuery, subscriptions]);
 
   const totalYearlyAmount = useMemo(
     () => getProjectedYearlyCost(subscriptions, allHistory),
@@ -128,7 +129,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                           {subscription.name}
                         </Text>
                         <Text style={[typography.secondary, styles.subscriptionCategory]}>
-                          {subscription.category}
+                          {localizeCategory(subscription.category, language)}
                         </Text>
                       </View>
                     </View>

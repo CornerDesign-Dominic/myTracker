@@ -7,6 +7,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { createSurfaceStyles, radius, spacing } from "@/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Subscription } from "@/types/subscription";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
@@ -23,7 +24,7 @@ export const SubscriptionCard = ({
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
   const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
@@ -32,6 +33,8 @@ export const SubscriptionCard = ({
     cancelled: { label: t("subscription.status_cancelled"), color: colors.danger },
   };
   const status = statusMap[subscription.status];
+
+  const localizedCategory = localizeCategory(subscription.category, language);
 
   return (
     <View style={[surfaces.panel, styles.card]}>
@@ -44,7 +47,7 @@ export const SubscriptionCard = ({
             />
             <View style={styles.titleBlock}>
               <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
-              <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
+              <Text style={[typography.secondary, styles.category]}>{localizedCategory}</Text>
             </View>
           </View>
           {showStatus ? (

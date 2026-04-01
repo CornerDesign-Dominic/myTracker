@@ -10,6 +10,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { CalendarTabScreenProps } from "@/navigation/types";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { formatLocalDateInput } from "@/utils/date";
 import { getRecurringDueDateInputForMonth } from "@/utils/recurringDates";
@@ -296,7 +297,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
                     <View style={styles.dueRowCopy}>
                       <Text style={[typography.body, styles.dueName]}>{subscription.name}</Text>
                       <Text style={[typography.secondary, styles.dueMeta]}>
-                        {subscription.category}
+                        {localizeCategory(subscription.category, language)}
                       </Text>
                     </View>
                   </View>

@@ -11,6 +11,7 @@ type FormRowProps = {
   isFirst?: boolean;
   isLast?: boolean;
   multilineValue?: boolean;
+  highlighted?: boolean;
 };
 
 export const FormRow = ({
@@ -20,24 +21,39 @@ export const FormRow = ({
   isFirst = false,
   isLast = false,
   multilineValue = false,
+  highlighted = false,
 }: FormRowProps) => {
   const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
 
   return (
     <Pressable
-      style={[styles.row, isFirst ? styles.rowFirst : null, isLast ? styles.rowLast : null]}
+      style={[
+        styles.row,
+        isFirst ? styles.rowFirst : null,
+        isLast ? styles.rowLast : null,
+        highlighted ? styles.rowHighlighted : null,
+      ]}
       onPress={onPress}
     >
-      <Text style={[typography.body, styles.label]}>{label}</Text>
+      <Text style={[typography.body, styles.label, highlighted ? styles.labelHighlighted : null]}>{label}</Text>
       <View style={styles.right}>
         <Text
-          style={[typography.secondary, styles.value, multilineValue ? styles.valueMultiline : null]}
+          style={[
+            typography.secondary,
+            styles.value,
+            multilineValue ? styles.valueMultiline : null,
+            highlighted ? styles.valueHighlighted : null,
+          ]}
           numberOfLines={multilineValue ? 2 : 1}
         >
           {value}
         </Text>
-        <Ionicons name="chevron-forward-outline" size={18} color={colors.textMuted} />
+        <Ionicons
+          name="chevron-forward-outline"
+          size={18}
+          color={highlighted ? colors.accent : colors.textMuted}
+        />
       </View>
     </Pressable>
   );
@@ -56,6 +72,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
+    rowHighlighted: {
+      backgroundColor: colors.accentSoft,
+      borderBottomColor: colors.accent,
+    },
     rowFirst: {
       borderTopLeftRadius: radius.lg,
       borderTopRightRadius: radius.lg,
@@ -69,6 +89,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
       flex: 1,
     },
+    labelHighlighted: {
+      color: colors.accent,
+    },
     right: {
       flexDirection: "row",
       alignItems: "center",
@@ -80,6 +103,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       textAlign: "right",
       flexShrink: 1,
+    },
+    valueHighlighted: {
+      color: colors.textPrimary,
     },
     valueMultiline: {
       lineHeight: 20,

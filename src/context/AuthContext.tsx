@@ -71,6 +71,7 @@ const syncUserDocument = async (user: User, upgradedAt = false) => {
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     crashlyticsService.setUserId(currentUser?.uid ?? null);
@@ -114,6 +115,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         setCurrentUser(user);
         await syncUserDocument(user);
       } finally {
+        setIsLoggingOut(false);
         setIsInitializing(false);
       }
     });
@@ -162,7 +164,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const logout = async () => {
     const auth = ensureAuth();
-    await signOut(auth);
+    setIsLoggingOut(true);
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      setIsLoggingOut(false);
+      throw error;
+    }
   };
 
   const value = useMemo(
@@ -171,14 +180,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       isAnonymous: Boolean(currentUser?.isAnonymous),
       isAuthenticated: Boolean(currentUser),
       isInitializing,
-      authIsReady: !isInitializing,
+      authIsReady: !isInitializing && !isLoggingOut,
       login,
       register,
       signInAnonymous,
       upgradeAnonymousAccount,
       logout,
     }),
-    [currentUser, isInitializing],
+    [currentUser, isInitializing, isLoggingOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

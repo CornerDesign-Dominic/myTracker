@@ -24,6 +24,7 @@ import {
   hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
 } from "@/domain/subscriptionHistory/paymentEvents";
+import { SubscriptionError } from "@/application/subscriptions/errors";
 import { firestoreDb } from "@/firebase/config";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
 import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
@@ -251,7 +252,7 @@ export const createFirestoreManualPayment = async (
     );
 
     if (hasExistingScheduledEvent) {
-      throw new Error("A payment event already exists for this due date.");
+      throw new SubscriptionError("duplicate_payment_due_date");
     }
 
     const eventId = createPaymentEventId("manual_payment");
@@ -301,7 +302,7 @@ export const updateFirestoreHistoryEvent = async (
     );
 
     if (hasDuplicate) {
-      throw new Error("A payment event already exists for this due date.");
+      throw new SubscriptionError("duplicate_payment_due_date");
     }
 
     const now = new Date().toISOString();

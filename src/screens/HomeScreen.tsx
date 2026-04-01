@@ -3,11 +3,12 @@ import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
+import { buildHomeMonthlySummary } from "@/domain/subscriptions/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { HomeTabScreenProps } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
@@ -21,6 +22,9 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
+  const { history } = useSubscriptionsHistory(
+    subscriptions.map((subscription) => subscription.id),
+  );
 
   const visibleSubscriptions = useMemo(() => {
     const now = new Date();
@@ -49,48 +53,16 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
   const monthlySummary = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const todayKey = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0"),
-    ].join("-");
 
-    const currentMonthSubscriptions = subscriptions.filter((subscription) => {
-      if (subscription.status !== "active") {
-        return false;
-      }
-
-      const nextPayment = new Date(subscription.nextPaymentDate);
-
-      if (Number.isNaN(nextPayment.getTime())) {
-        return false;
-      }
-
-      return (
-        nextPayment.getMonth() === currentMonth &&
-        nextPayment.getFullYear() === currentYear
-      );
-    });
+    const summary = buildHomeMonthlySummary(subscriptions, history, now);
 
     return {
+      ...summary,
       monthLabel: new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
         month: "long",
       }).format(now),
-      subscriptionCount: currentMonthSubscriptions.length,
-      totalAmount: currentMonthSubscriptions.reduce(
-        (sum, subscription) => sum + subscription.amount,
-        0,
-      ),
-      dueAmount: currentMonthSubscriptions
-        .filter((subscription) => subscription.nextPaymentDate >= todayKey)
-        .reduce((sum, subscription) => sum + subscription.amount, 0),
-      paidAmount: currentMonthSubscriptions
-        .filter((subscription) => subscription.nextPaymentDate < todayKey)
-        .reduce((sum, subscription) => sum + subscription.amount, 0),
     };
-  }, [language, subscriptions]);
+  }, [history, language, subscriptions]);
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -144,13 +116,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
         {isLoading ? (
           <Text style={[typography.secondary, styles.helperText]}>{t("common.loading")}</Text>
-        ) : null}
-
-        {!isLoading && visibleSubscriptions.length === 0 ? (
-          <EmptyState
-            title={t("home.emptyTitle")}
-            description={t("home.emptyDescription")}
-          />
         ) : null}
 
         <View style={styles.list}>

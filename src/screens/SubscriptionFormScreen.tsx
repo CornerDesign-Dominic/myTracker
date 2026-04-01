@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
+import { NOTES_MAX_LENGTH, clampNotesLength } from "@/constants/formLimits";
 import { billingCycleOptions, statusOptions } from "@/constants/options";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -35,6 +36,8 @@ import {
 } from "@/theme";
 import { shouldRequireNextPaymentConfirmation } from "@/domain/subscriptions/formValidation";
 import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
+import { localizeCategory } from "@/utils/categories";
+import { formatCurrency } from "@/utils/currency";
 import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
@@ -67,6 +70,7 @@ const WHEEL_VISIBLE_ROWS = 5;
 const WHEEL_HEIGHT = WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_ROWS;
 const YEAR_RANGE_START = 2000;
 const YEAR_RANGE_END = 2045;
+type ValidationField = "name" | "category" | "amount" | null;
 
 const buildInitialState = (): SubscriptionInput => ({
   name: "",
@@ -98,6 +102,7 @@ const DEFAULT_CATEGORIES = {
     "Fitness",
     "Gaming",
     "Software",
+    "Shopping",
   ],
   en: [
     "Streaming",
@@ -108,6 +113,7 @@ const DEFAULT_CATEGORIES = {
     "Fitness",
     "Gaming",
     "Software",
+    "Shopping",
   ],
 } as const;
 
@@ -320,7 +326,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     [language],
   );
   const { subscriptions, createSubscription, updateSubscription } = useSubscriptions();
-  const { addCategory, getSuggestions } = useStoredCategories(defaultCategories);
+  const { addCategory, getSuggestions } = useStoredCategories(defaultCategories, language);
   const { addTemplate, getSuggestions: getSubscriptionSuggestions } =
     useStoredSubscriptionTemplates(defaultSubscriptionTemplates);
   const isEditing = Boolean(route.params?.subscriptionId);
@@ -336,6 +342,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [draftDate, setDraftDate] = useState(new Date());
   const [requiresNextPaymentConfirmation, setRequiresNextPaymentConfirmation] = useState(false);
   const [confirmedBillingCycle, setConfirmedBillingCycle] = useState<BillingCycle>("monthly");
+  const [validationNotice, setValidationNotice] = useState<string | null>(null);
+  const [highlightedField, setHighlightedField] = useState<ValidationField>(null);
 
   const categorySuggestion = useMemo(() => {
     if (activeField !== "category") {
@@ -378,17 +386,43 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
     setFormState({
       name: existingSubscription.name,
-      category: existingSubscription.category,
+      category: localizeCategory(existingSubscription.category, language),
       amount: existingSubscription.amount,
       billingCycle: existingSubscription.billingCycle,
       nextPaymentDate: existingSubscription.nextPaymentDate,
       status: existingSubscription.status,
       endDate: existingSubscription.endDate ?? "",
-      notes: existingSubscription.notes ?? "",
+      notes: clampNotesLength(existingSubscription.notes ?? ""),
     });
     setConfirmedBillingCycle(existingSubscription.billingCycle);
     setRequiresNextPaymentConfirmation(false);
-  }, [existingSubscription]);
+  }, [existingSubscription, language]);
+
+  useEffect(() => {
+    if (highlightedField === "name" && validationNotice && formState.name.trim()) {
+      setValidationNotice(null);
+      setHighlightedField(null);
+    }
+  }, [formState.name, highlightedField, validationNotice]);
+
+  useEffect(() => {
+    if (highlightedField === "category" && validationNotice && formState.category.trim()) {
+      setValidationNotice(null);
+      setHighlightedField(null);
+    }
+  }, [formState.category, highlightedField, validationNotice]);
+
+  useEffect(() => {
+    if (
+      highlightedField === "amount" &&
+      validationNotice &&
+      Number.isFinite(formState.amount) &&
+      formState.amount > 0
+    ) {
+      setValidationNotice(null);
+      setHighlightedField(null);
+    }
+  }, [formState.amount, highlightedField, validationNotice]);
 
   const updateField = <K extends keyof SubscriptionInput>(key: K, value: SubscriptionInput[K]) =>
     setFormState((current) => ({ ...current, [key]: value }));
@@ -424,7 +458,8 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   };
 
   const openTextSheet = (field: "name" | "category" | "notes") => {
-    setDraftText(String(formState[field] ?? ""));
+    const value = String(formState[field] ?? "");
+    setDraftText(field === "notes" ? clampNotesLength(value) : value);
     setActiveField(field);
   };
 
@@ -470,6 +505,30 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   };
 
   const handleSubmit = async () => {
+    if (!formState.name.trim()) {
+      setHighlightedField("name");
+      setValidationNotice(t("subscription.validationFieldInline", {
+        field: t("subscription.name"),
+      }));
+      return;
+    }
+
+    if (!formState.category.trim()) {
+      setHighlightedField("category");
+      setValidationNotice(t("subscription.validationFieldInline", {
+        field: t("subscription.category"),
+      }));
+      return;
+    }
+
+    if (!Number.isFinite(formState.amount) || formState.amount <= 0) {
+      setHighlightedField("amount");
+      setValidationNotice(t("subscription.validationAmountInline", {
+        field: t("subscription.amount"),
+      }));
+      return;
+    }
+
     const validationError = validateForm();
 
     if (validationError) {
@@ -502,7 +561,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const formatAmountLabel = () =>
     formState.amount
-      ? `${formState.amount.toFixed(2)} ${currency === "EUR" ? "EUR" : "USD"}`
+      ? formatCurrency(formState.amount, currency, language)
       : "";
 
   const openBillingCycleSheet = () => setActiveField("billingCycle");
@@ -561,13 +620,19 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     >
       <TextInput
         value={draftText}
-        onChangeText={setDraftText}
+        onChangeText={multiline ? (value) => setDraftText(clampNotesLength(value)) : setDraftText}
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
+        maxLength={multiline ? NOTES_MAX_LENGTH : undefined}
         autoFocus
         style={[inputs.input, multiline ? styles.notesInput : styles.sheetInput]}
         textAlignVertical={multiline ? "top" : "center"}
       />
+      {multiline ? (
+        <Text style={[typography.meta, styles.characterCount]}>
+          {draftText.length}/{NOTES_MAX_LENGTH}
+        </Text>
+      ) : null}
     </EditorSheet>
   );
 
@@ -623,7 +688,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
           onPress={() => {
             setDraftText(subscriptionSuggestion.name);
             if (!formState.category.trim()) {
-              updateField("category", subscriptionSuggestion.category);
+              updateField("category", localizeCategory(subscriptionSuggestion.category, language));
             }
           }}
         >
@@ -641,7 +706,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
                 {subscriptionSuggestion.name}
               </Text>
               <Text style={[typography.meta, styles.templateSuggestionMeta]}>
-                {subscriptionSuggestion.category}
+                {localizeCategory(subscriptionSuggestion.category, language)}
               </Text>
             </View>
           </View>
@@ -704,22 +769,33 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
           {isEditing ? t("subscription.formEditTitle") : t("subscription.formCreateTitle")}
         </Text>
 
+        {validationNotice ? (
+          <View style={[surfaces.subtlePanel, styles.validationNotice]}>
+            <Text style={[typography.secondary, styles.validationNoticeText]}>
+              {validationNotice}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={[surfaces.panel, styles.cardGroup]}>
           <FormRow
             label={t("subscription.name")}
             value={formState.name}
             onPress={() => openTextSheet("name")}
             isFirst
+            highlighted={highlightedField === "name"}
           />
           <FormRow
             label={t("subscription.category")}
             value={formState.category}
             onPress={() => openTextSheet("category")}
+            highlighted={highlightedField === "category"}
           />
           <FormRow
             label={t("subscription.amount")}
             value={formatAmountLabel()}
             onPress={openAmountSheet}
+            highlighted={highlightedField === "amount"}
           />
           <FormRow
             label={t("subscription.formBillingCycle")}
@@ -837,6 +913,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
         onClose={closeSheet}
         onConfirm={saveActiveField}
         confirmLabel={t("common.save")}
+        scrollContent={false}
         contentStyle={styles.dateSheetContent}
       >
         <View style={styles.datePickerWrap}>
@@ -883,6 +960,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
       marginBottom: spacing.xs,
     },
+    validationNotice: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    validationNoticeText: {
+      color: colors.textPrimary,
+    },
     content: {
       paddingTop: 0,
     },
@@ -924,6 +1008,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: 140,
       color: colors.textPrimary,
       borderRadius: radius.md,
+    },
+    characterCount: {
+      color: colors.textSecondary,
+      textAlign: "right",
     },
     dateSheetContent: {
       gap: 0,

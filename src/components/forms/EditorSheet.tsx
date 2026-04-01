@@ -1,10 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { PropsWithChildren } from "react";
-import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View, ViewStyle } from "react-native";
-import {
-  KeyboardAwareScrollView,
-  KeyboardAvoidingView,
-} from "react-native-keyboard-controller";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View, ViewStyle } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -23,6 +20,7 @@ type EditorSheetProps = PropsWithChildren<{
   onConfirm?: () => void;
   confirmLabel: string;
   showConfirm?: boolean;
+  scrollContent?: boolean;
   sheetStyle?: ViewStyle;
   contentStyle?: ViewStyle;
 }>;
@@ -34,17 +32,40 @@ export const EditorSheet = ({
   onConfirm,
   confirmLabel,
   showConfirm = true,
+  scrollContent = true,
   sheetStyle,
   contentStyle,
   children,
 }: EditorSheetProps) => {
   const { colors, typography } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const { height: keyboardHeight, isVisible: isKeyboardVisible } = useKeyboardState((state) => ({
+    height: state.height,
+    isVisible: state.isVisible,
+  }));
   const { height: windowHeight } = useWindowDimensions();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
-  const sheetMaxHeight = Math.max(windowHeight - insets.top - insets.bottom - spacing.lg, 0);
+  const keyboardMaxHeightOffset =
+    Platform.OS === "android" ? Math.max(keyboardHeight - insets.bottom, 0) : keyboardHeight;
+  const bottomOffset = isKeyboardVisible ? keyboardHeight : insets.bottom;
+  const maxHeightBottomOffset = isKeyboardVisible ? keyboardMaxHeightOffset : insets.bottom;
+  const sheetMaxHeight = Math.max(windowHeight - insets.top - maxHeightBottomOffset - spacing.lg, 0);
+  const content = scrollContent ? (
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      bounces={false}
+      alwaysBounceVertical={false}
+      showsVerticalScrollIndicator={false}
+      style={styles.content}
+      contentContainerStyle={[styles.contentContainer, contentStyle]}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[styles.contentContainer, contentStyle]}>{children}</View>
+  );
 
   return (
     <Modal
@@ -58,12 +79,8 @@ export const EditorSheet = ({
     >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <KeyboardAvoidingView
-          behavior="padding"
-          enabled={visible}
-          style={styles.keyboardShell}
-        >
-          <View style={[styles.sheetPositioner, { paddingBottom: insets.bottom }]}>
+        <View style={styles.keyboardShell}>
+          <View style={[styles.sheetPositioner, { paddingBottom: bottomOffset }]}>
             <View
               style={[
                 surfaces.panel,
@@ -80,19 +97,7 @@ export const EditorSheet = ({
                 </Pressable>
               </View>
 
-              <KeyboardAwareScrollView
-                enabled={visible}
-                bottomOffset={spacing.md}
-                extraKeyboardSpace={insets.bottom}
-                keyboardShouldPersistTaps="handled"
-                bounces={false}
-                alwaysBounceVertical={false}
-                showsVerticalScrollIndicator={false}
-                style={styles.content}
-                contentContainerStyle={[styles.contentContainer, contentStyle]}
-              >
-                {children}
-              </KeyboardAwareScrollView>
+              {content}
               {showConfirm ? (
                 <View style={styles.actions}>
                   <Pressable
@@ -105,7 +110,7 @@ export const EditorSheet = ({
               ) : null}
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </View>
     </Modal>
   );

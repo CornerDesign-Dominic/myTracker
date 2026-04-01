@@ -84,7 +84,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setTheme,
     setAccentColor,
   } = useAppSettings();
-  const { isAnonymous, logout } = useAuth();
+  const { currentUser, isAnonymous, logout } = useAuth();
   const {
     hasSupportColors,
     isPurchasing,
@@ -171,6 +171,22 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <View style={styles.sectionHeader}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accountTitle")}</Text>
           </View>
+          {!isAnonymous && currentUser?.email ? (
+            <View style={styles.accountStatusCard}>
+              <View style={styles.accountStatusHeader}>
+                <View style={styles.accountStatusBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+                  <Text style={[typography.meta, styles.accountStatusBadgeText]}>
+                    {t("settings.loggedInBadge")}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.accountIdentityRow}>
+                <Text style={[typography.meta, styles.accountIdentityLabel]}>{t("auth.email")}</Text>
+                <Text style={[typography.body, styles.accountIdentityValue]}>{currentUser.email}</Text>
+              </View>
+            </View>
+          ) : null}
           <Text style={[typography.secondary, styles.accountText]}>
             {isAnonymous ? t("settings.accountAnonymous") : t("settings.accountSignedIn")}
           </Text>
@@ -416,6 +432,44 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accountText: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    accountStatusCard: {
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    accountStatusHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-start",
+    },
+    accountStatusBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      minHeight: 28,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      backgroundColor: colors.surface,
+    },
+    accountStatusBadgeText: {
+      color: colors.accent,
+      textTransform: "uppercase",
+    },
+    accountIdentityRow: {
+      gap: spacing.xxs,
+    },
+    accountIdentityLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    accountIdentityValue: {
+      color: colors.textPrimary,
     },
     groupCard: {
       gap: spacing.md,

@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { CategoryLanguage, localizeCategory } from "@/utils/categories";
+
 const STORAGE_KEY = "tracker.subscription-categories";
 
 const normalizeCategory = (value: string) => value.trim().toLocaleLowerCase();
@@ -20,7 +22,13 @@ const dedupeCategories = (categories: readonly string[]) => {
   });
 };
 
-export const useStoredCategories = (defaultCategories: readonly string[]) => {
+const localizeCategories = (categories: readonly string[], language: CategoryLanguage) =>
+  dedupeCategories(categories.map((category) => localizeCategory(category, language)));
+
+export const useStoredCategories = (
+  defaultCategories: readonly string[],
+  language: CategoryLanguage,
+) => {
   const [categories, setCategories] = useState<string[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -30,24 +38,27 @@ export const useStoredCategories = (defaultCategories: readonly string[]) => {
         const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
 
         if (!storedValue) {
-          const seededCategories = dedupeCategories(defaultCategories);
+          const seededCategories = localizeCategories(defaultCategories, language);
           setCategories(seededCategories);
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seededCategories));
           return;
         }
 
         const parsed = JSON.parse(storedValue) as string[];
-        const nextCategories = dedupeCategories([...defaultCategories, ...(parsed ?? [])]);
+        const nextCategories = localizeCategories(
+          [...defaultCategories, ...(parsed ?? [])],
+          language,
+        );
         setCategories(nextCategories);
       } catch {
-        setCategories(dedupeCategories(defaultCategories));
+        setCategories(localizeCategories(defaultCategories, language));
       } finally {
         setIsHydrated(true);
       }
     };
 
     hydrateCategories();
-  }, [defaultCategories]);
+  }, [defaultCategories, language]);
 
   const persistCategories = useCallback(async (nextCategories: string[]) => {
     setCategories(nextCategories);
@@ -61,7 +72,7 @@ export const useStoredCategories = (defaultCategories: readonly string[]) => {
 
   const addCategory = useCallback(
     async (value: string) => {
-      const trimmed = value.trim();
+      const trimmed = localizeCategory(value.trim(), language);
       if (!trimmed) {
         return;
       }
@@ -76,7 +87,7 @@ export const useStoredCategories = (defaultCategories: readonly string[]) => {
 
       await persistCategories([...categories, trimmed]);
     },
-    [categories, persistCategories],
+    [categories, language, persistCategories],
   );
 
   const getSuggestions = useCallback(

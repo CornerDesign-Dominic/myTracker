@@ -15,6 +15,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { getRecurringDueDateForMonth } from "@/utils/recurringDates";
 
@@ -30,7 +31,7 @@ type SavingsSubscriptionItem = {
 export const SavingsScreen = () => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
@@ -150,7 +151,9 @@ export const SavingsScreen = () => {
                     <SubscriptionAvatar name={item.name} category={item.category} />
                     <View style={styles.rowCopy}>
                       <Text style={[typography.body, styles.rowTitle]}>{item.name}</Text>
-                      <Text style={[typography.secondary, styles.rowMeta]}>{item.category}</Text>
+                      <Text style={[typography.secondary, styles.rowMeta]}>
+                        {localizeCategory(item.category, language)}
+                      </Text>
                     </View>
                   </View>
 

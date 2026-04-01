@@ -12,6 +12,7 @@ import {
   hasActivePaymentEventForDueDate,
   isEditablePaymentEventType,
 } from "../../domain/subscriptionHistory/paymentEvents.ts";
+import { SubscriptionError } from "../../application/subscriptions/errors.ts";
 import type {
   HistoryEventInput,
   SubscriptionHistoryEvent,
@@ -146,7 +147,7 @@ export class MockSubscriptionStore {
     );
 
     if (hasExistingScheduledEvent) {
-      throw new Error("A payment event already exists for this due date.");
+      throw new SubscriptionError("duplicate_payment_due_date");
     }
 
     await this.createHistoryEvent(subscriptionId, {
@@ -190,7 +191,7 @@ export class MockSubscriptionStore {
     );
 
     if (hasDuplicate) {
-      throw new Error("A payment event already exists for this due date.");
+      throw new SubscriptionError("duplicate_payment_due_date");
     }
 
     const now = new Date().toISOString();

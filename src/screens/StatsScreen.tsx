@@ -28,6 +28,7 @@ import {
 } from "@/domain/subscriptions/statistics";
 import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 
 const CHART_HEIGHT = 180;
@@ -107,12 +108,10 @@ const getAxisRoundingUnit = (value: number) => {
 const roundToUnit = (value: number, unit: number) => Math.round(value / unit) * unit;
 
 const formatAxisCurrency = (value: number, currency: "EUR" | "Dollar", language: "de" | "en") =>
-  new Intl.NumberFormat(language === "de" ? "de-DE" : "en-US", {
-    style: "currency",
-    currency: currency === "Dollar" ? "USD" : "EUR",
+  formatCurrency(value, currency, language, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  });
 
 const getShortMonthLabel = (date: Date, language: "de" | "en") =>
   new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
@@ -373,7 +372,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               {categoryItems.map((item) => (
                 <View key={item.category} style={styles.chartItem}>
                   <View style={styles.chartHeader}>
-                    <Text style={[typography.body, styles.chartLabel]}>{item.category}</Text>
+                    <Text style={[typography.body, styles.chartLabel]}>
+                      {localizeCategory(item.category, language)}
+                    </Text>
                     <Text style={[typography.secondary, styles.chartValue]}>
                       {formatCurrency(item.monthlyTotal, currency)}
                     </Text>
@@ -520,8 +521,8 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                     <View style={styles.topCopy}>
                       <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
                       <Text style={[typography.secondary, styles.topMeta]}>
-                        {subscription.category}
-                      </Text>
+                    {localizeCategory(subscription.category, language)}
+                  </Text>
                     </View>
                   </View>
                   <Text style={[typography.body, styles.topValue]}>

@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Appearance } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
 import { usePurchases } from "@/context/PurchaseContext";
@@ -26,6 +27,42 @@ type CurrencyOption = "EUR" | "Dollar";
 type ThemeOption = "Dark" | "Light";
 
 const STORAGE_KEY = "tracker.app-settings";
+const FALLBACK_LANGUAGE: LanguageOption = "de";
+
+const getSystemLanguage = (): LanguageOption => {
+  const locale = Intl.NumberFormat().resolvedOptions().locale?.toLocaleLowerCase() ?? "";
+
+  if (locale.startsWith("en")) {
+    return "en";
+  }
+
+  if (locale.startsWith("de")) {
+    return "de";
+  }
+
+  return FALLBACK_LANGUAGE;
+};
+
+const getSystemTheme = (): ThemeOption =>
+  Appearance.getColorScheme() === "dark" ? "Dark" : "Light";
+
+const normalizeStoredLanguage = (
+  value?: LanguageOption | "DE" | "EN",
+): LanguageOption | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value === "DE") {
+    return "de";
+  }
+
+  if (value === "EN") {
+    return "en";
+  }
+
+  return value;
+};
 
 interface AppSettingsContextValue {
   language: LanguageOption;
@@ -44,9 +81,9 @@ const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const { currentUser, authIsReady } = useAuth();
   const { hasSupportColors } = usePurchases();
-  const [language, setLanguageState] = useState<LanguageOption>("de");
+  const [language, setLanguageState] = useState<LanguageOption>(() => getSystemLanguage());
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
-  const [theme, setThemeState] = useState<ThemeOption>("Light");
+  const [theme, setThemeState] = useState<ThemeOption>(() => getSystemTheme());
   const [accentColor, setAccentColorState] = useState<AccentColor>(FREE_ACCENT_COLOR);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -66,14 +103,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
           accentColor: AccentColor;
         }>;
 
-        if (parsedSettings.language) {
-          setLanguageState(
-            parsedSettings.language === "DE"
-              ? "de"
-              : parsedSettings.language === "EN"
-                ? "en"
-                : parsedSettings.language,
-          );
+        const storedLanguage = normalizeStoredLanguage(parsedSettings.language);
+
+        if (storedLanguage) {
+          setLanguageState(storedLanguage);
         }
 
         if (parsedSettings.currency) {
@@ -169,7 +202,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       isActive = false;
       unsubscribe();
     };
-  }, [authIsReady, currentUser, currency, isHydrated, language, theme]);
+  }, [authIsReady, currentUser, isHydrated]);
 
   useEffect(() => {
     if (!isHydrated) {

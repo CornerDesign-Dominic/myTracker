@@ -1,4 +1,5 @@
 import type { Subscription, SubscriptionMetrics } from "../../types/subscription.ts";
+import { CategoryLanguage, getCategoryGroupKey, localizeCategory } from "../../utils/categories.ts";
 
 export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {
@@ -28,6 +29,7 @@ export const getYearlyEquivalent = (subscription: Subscription) => {
 
 export const buildSubscriptionMetrics = (
   subscriptions: Subscription[],
+  language: CategoryLanguage = "de",
 ): SubscriptionMetrics => {
   const activeSubscriptions = subscriptions.filter(
     (subscription) => subscription.status !== "cancelled",
@@ -53,14 +55,16 @@ export const buildSubscriptionMetrics = (
   >();
 
   activeSubscriptions.forEach((subscription) => {
-    const current = groupedCategoryMap.get(subscription.category) ?? {
-      category: subscription.category,
+    const categoryKey = getCategoryGroupKey(subscription.category);
+    const localizedCategory = localizeCategory(subscription.category, language);
+    const current = groupedCategoryMap.get(categoryKey) ?? {
+      category: localizedCategory,
       monthlyTotal: 0,
       yearlyTotal: 0,
     };
 
-    groupedCategoryMap.set(subscription.category, {
-      category: subscription.category,
+    groupedCategoryMap.set(categoryKey, {
+      category: localizedCategory,
       monthlyTotal: current.monthlyTotal + getMonthlyEquivalent(subscription),
       yearlyTotal: current.yearlyTotal + getYearlyEquivalent(subscription),
     });

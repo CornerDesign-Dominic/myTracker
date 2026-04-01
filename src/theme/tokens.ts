@@ -263,12 +263,12 @@ export const accentColorOptions = [
   "rose",
 ] as const satisfies readonly AccentColor[];
 
-export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "indigo") => ({
+export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "green") => ({
   ...(mode === "dark" ? darkThemeBase : lightThemeBase),
   ...accentPalettes[accentColor][mode],
 });
 
-export const getThemeColors = (mode: AppThemeMode, accentColor: AccentColor = "indigo") =>
+export const getThemeColors = (mode: AppThemeMode, accentColor: AccentColor = "green") =>
   createTheme(mode, accentColor);
 
 export type AppThemeColors = ReturnType<typeof createTheme>;

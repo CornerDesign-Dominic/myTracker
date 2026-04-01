@@ -25,6 +25,12 @@ export type MonthlyCostPreviewItem = {
   totalAmount: number;
 };
 
+export type HomeMonthlySummary = {
+  paidAmount: number;
+  dueAmount: number;
+  totalAmount: number;
+};
+
 const toMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
@@ -38,8 +44,14 @@ const parseDate = (value?: string) => {
   return parseLocalDateInput(value);
 };
 
+const isSameMonth = (date: Date, reference: Date) =>
+  date.getMonth() === reference.getMonth() && date.getFullYear() === reference.getFullYear();
+
 const isBookedPaymentEvent = (event: SubscriptionHistoryEvent) =>
   event.type === "payment_booked" && !event.deletedAt;
+
+const getPaymentEventMonthDate = (event: SubscriptionHistoryEvent) =>
+  parseDate(event.dueDate) ?? parseDate(event.bookedAt);
 
 const isWithinCurrentYear = (date: Date, now: Date) => date.getFullYear() === now.getFullYear();
 
@@ -139,6 +151,40 @@ export const getProjectedYearlyCost = (
       sum + getProjectedSubscriptionYearlyCost(subscription, history, now),
     0,
   );
+
+export const buildHomeMonthlySummary = (
+  subscriptions: Subscription[],
+  history: SubscriptionHistoryEvent[],
+  now = new Date(),
+): HomeMonthlySummary => {
+  const todayKey = formatLocalDateInput(now);
+  const paidAmount = history
+    .filter(isBookedPaymentEvent)
+    .filter((event) => {
+      const eventDate = getPaymentEventMonthDate(event);
+      return eventDate instanceof Date && isSameMonth(eventDate, now);
+    })
+    .reduce((sum, event) => sum + (event.amount ?? 0), 0);
+
+  const dueAmount = subscriptions
+    .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
+    .filter((subscription) => {
+      const nextPaymentDate = parseDate(subscription.nextPaymentDate);
+
+      return (
+        nextPaymentDate instanceof Date &&
+        isSameMonth(nextPaymentDate, now) &&
+        subscription.nextPaymentDate > todayKey
+      );
+    })
+    .reduce((sum, subscription) => sum + subscription.amount, 0);
+
+  return {
+    paidAmount,
+    dueAmount,
+    totalAmount: paidAmount + dueAmount,
+  };
+};
 
 export const getProjectedSubscriptionYearlyCost = (
   subscription: Subscription,

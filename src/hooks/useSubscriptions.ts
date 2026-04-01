@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { createSubscriptionService } from "@/application/subscriptions/service";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/hooks/useI18n";
 import { subscriptionRepository, usingFirebase } from "@/services/subscriptionRepository";
 import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 import { useSubscriptionActions } from "@/presentation/subscriptions/useSubscriptionActions";
@@ -12,6 +13,7 @@ const subscriptionService = createSubscriptionService(subscriptionRepository);
 
 export const useSubscriptions = () => {
   const { currentUser, authIsReady } = useAuth();
+  const { language } = useI18n();
   const { subscriptions, isLoading, errorMessage, setErrorMessage } = useSubscriptionCollection({
     authIsReady,
     userId: currentUser?.uid,
@@ -25,8 +27,8 @@ export const useSubscriptions = () => {
   });
 
   const metrics = useMemo(
-    () => buildSubscriptionMetrics(subscriptions),
-    [subscriptions],
+    () => buildSubscriptionMetrics(subscriptions, language),
+    [language, subscriptions],
   );
   const actions = useSubscriptionActions({
     userId: currentUser?.uid,

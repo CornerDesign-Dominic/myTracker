@@ -13,10 +13,13 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
+import { SubscriptionError } from "@/application/subscriptions/errors";
 import { createSubscriptionService } from "@/application/subscriptions/service";
+import { NOTES_MAX_LENGTH, clampNotesLength } from "@/constants/formLimits";
 import { EditablePaymentEventType } from "@/domain/subscriptionHistory/paymentEvents";
 import { useAuth } from "@/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -159,6 +162,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   const [amountInput, setAmountInput] = useState(subscription ? String(subscription.amount.toFixed(2)) : "");
   const [notesInput, setNotesInput] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!subscription) {
@@ -187,7 +191,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       setSelectedDate(parseLocalDateInput(existingPayment.dueDate) ?? new Date());
     }
 
-    setNotesInput(existingPayment.notes ?? "");
+    setNotesInput(clampNotesLength(existingPayment.notes ?? ""));
   }, [existingPayment]);
 
   const dayOptions = useMemo(
@@ -221,6 +225,12 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   const selectedDateValue = formatLocalDateInput(selectedDate);
   const paymentTypeLabel =
     paymentType === "payment_skipped_inactive" ? t("addPayment.whileInactive") : t("addPayment.booked");
+
+  useEffect(() => {
+    if (saveNotice) {
+      setSaveNotice(null);
+    }
+  }, [paymentType, amountInput, notesInput, selectedDateValue]);
 
   const updateDraftDay = (day: number) => {
     setSelectedDate((current) => new Date(current.getFullYear(), current.getMonth(), day));
@@ -289,8 +299,14 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
           notes: notesInput.trim() || undefined,
         });
       }
+      setSaveNotice(null);
       navigation.goBack();
     } catch (error) {
+      if (error instanceof SubscriptionError && error.code === "duplicate_payment_due_date") {
+        setSaveNotice(t("addPayment.duplicateDueDate"));
+        return;
+      }
+
       const message = error instanceof Error ? error.message : t("addPayment.saveError");
       Alert.alert(t("addPayment.checkTitle"), message);
     }
@@ -332,6 +348,13 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
             {isEditing ? t("addPayment.editHint") : t("addPayment.createHint")}
           </Text>
         </View>
+
+        {saveNotice ? (
+          <View style={[surfaces.subtlePanel, styles.noticeCard]}>
+            <Ionicons name="alert-circle-outline" size={22} color={colors.accent} />
+            <Text style={[typography.secondary, styles.noticeText]}>{saveNotice}</Text>
+          </View>
+        ) : null}
 
         <View style={[surfaces.panel, styles.cardGroup]}>
           <FormRow
@@ -443,12 +466,16 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       >
         <TextInput
           value={notesInput}
-          onChangeText={setNotesInput}
+          onChangeText={(value) => setNotesInput(clampNotesLength(value))}
           multiline
+          maxLength={NOTES_MAX_LENGTH}
           autoFocus
           textAlignVertical="top"
           style={[inputs.input, styles.notesInput]}
         />
+        <Text style={[typography.meta, styles.characterCount]}>
+          {notesInput.length}/{NOTES_MAX_LENGTH}
+        </Text>
       </EditorSheet>
 
       <EditorSheet
@@ -457,6 +484,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
         onClose={() => setActiveField(null)}
         onConfirm={() => setActiveField(null)}
         confirmLabel={t("common.save")}
+        scrollContent={false}
         contentStyle={styles.dateSheetContent}
       >
         <View style={styles.datePickerWrap}>
@@ -503,8 +531,19 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     infoCard: {
       gap: spacing.xs,
     },
+    noticeCard: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
     cardTitle: {
       color: colors.textPrimary,
+    },
+    noticeText: {
+      color: colors.textPrimary,
+      flex: 1,
     },
     helperText: {
       color: colors.textSecondary,
@@ -555,6 +594,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: 140,
       color: colors.textPrimary,
       borderRadius: radius.md,
+    },
+    characterCount: {
+      color: colors.textSecondary,
+      textAlign: "right",
     },
     dateSheetContent: {
       gap: 0,

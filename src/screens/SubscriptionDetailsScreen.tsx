@@ -12,6 +12,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { RootStackParamList } from "@/navigation/types";
 import { createButtonStyles, createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
+import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
@@ -20,7 +21,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
@@ -63,7 +64,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
             <SubscriptionAvatar name={subscription.name} category={subscription.category} size={52} />
             <View style={styles.heroCopy}>
               <Text style={[typography.pageTitle, styles.name]}>{subscription.name}</Text>
-              <Text style={[typography.secondary, styles.category]}>{subscription.category}</Text>
+              <Text style={[typography.secondary, styles.category]}>
+                {localizeCategory(subscription.category, language)}
+              </Text>
               <Text style={[typography.metric, styles.amount]}>{formatCurrency(subscription.amount, currency)}</Text>
               <Text style={[typography.secondary, styles.cycle]}>/{t(`subscription.billing_${subscription.billingCycle}`)}</Text>
             </View>

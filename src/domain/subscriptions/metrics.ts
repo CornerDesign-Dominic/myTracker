@@ -1,5 +1,6 @@
 import type { Subscription, SubscriptionMetrics } from "../../types/subscription.ts";
-import { CategoryLanguage, getCategoryGroupKey, localizeCategory } from "../../utils/categories.ts";
+import type { CategoryLanguage } from "../../utils/categories.ts";
+import { getCategoryGroupKey, localizeCategory } from "../../utils/categories.ts";
 
 export const getMonthlyEquivalent = (subscription: Subscription) => {
   switch (subscription.billingCycle) {

@@ -1,6 +1,7 @@
 import type { Subscription } from "../../types/subscription.ts";
 import type { SubscriptionHistoryEvent } from "../../types/subscriptionHistory.ts";
 import { formatLocalDateInput, parseLocalDateInput } from "../../utils/date.ts";
+import { getRecurringDueDateInputForMonth } from "../../utils/recurringDates.ts";
 import { getRecurringAnchorDay, shiftRecurringDate } from "../../utils/recurringDates.ts";
 
 import { getMonthlyEquivalent } from "./metrics.ts";
@@ -29,6 +30,15 @@ export type HomeMonthlySummary = {
   paidAmount: number;
   dueAmount: number;
   totalAmount: number;
+};
+
+export type HomeDueSectionEntry = Subscription & {
+  homeDueDate: string;
+};
+
+export type HomeDueSections = {
+  currentMonthUpcoming: HomeDueSectionEntry[];
+  nextMonthUpcoming: HomeDueSectionEntry[];
 };
 
 const toMonthKey = (date: Date) =>
@@ -183,6 +193,56 @@ export const buildHomeMonthlySummary = (
     paidAmount,
     dueAmount,
     totalAmount: paidAmount + dueAmount,
+  };
+};
+
+const getProjectedHomeDueEntriesForMonth = (
+  subscriptions: Subscription[],
+  targetMonth: Date,
+  options?: {
+    minDueDate?: string;
+  },
+) =>
+  subscriptions
+    .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
+    .map((subscription) => {
+      const dueDate = getRecurringDueDateInputForMonth({
+        anchorDate: subscription.nextPaymentDate,
+        billingCycle: subscription.billingCycle,
+        targetMonth,
+        startsOn: subscription.createdAt,
+        endsOn: subscription.endDate,
+      });
+
+      if (!dueDate) {
+        return null;
+      }
+
+      if (options?.minDueDate && dueDate < options.minDueDate) {
+        return null;
+      }
+
+      return {
+        ...subscription,
+        nextPaymentDate: dueDate,
+        homeDueDate: dueDate,
+      } satisfies HomeDueSectionEntry;
+    })
+    .filter((subscription): subscription is HomeDueSectionEntry => Boolean(subscription))
+    .sort((left, right) => left.homeDueDate.localeCompare(right.homeDueDate));
+
+export const buildHomeDueSections = (
+  subscriptions: Subscription[],
+  now = new Date(),
+): HomeDueSections => {
+  const todayKey = formatLocalDateInput(now);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return {
+    currentMonthUpcoming: getProjectedHomeDueEntriesForMonth(subscriptions, now, {
+      minDueDate: todayKey,
+    }),
+    nextMonthUpcoming: getProjectedHomeDueEntriesForMonth(subscriptions, nextMonth),
   };
 };
 

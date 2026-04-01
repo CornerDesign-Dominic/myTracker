@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubscriptionCard } from "@/components/SubscriptionCard";
-import { buildHomeMonthlySummary } from "@/domain/subscriptions/statistics";
+import { buildHomeDueSections, buildHomeMonthlySummary } from "@/domain/subscriptions/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -25,31 +25,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const { history } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
-
-  const visibleSubscriptions = useMemo(() => {
-    const now = new Date();
-    const todayKey = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0"),
-    ].join("-");
-    const monthEndKey = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0"),
-    ].join("-");
-
-    return subscriptions.filter((subscription) => {
-      if (subscription.status !== "active") {
-        return false;
-      }
-
-      return (
-        subscription.nextPaymentDate >= todayKey &&
-        subscription.nextPaymentDate <= monthEndKey
-      );
-    });
-  }, [subscriptions]);
+  const dueSections = useMemo(() => buildHomeDueSections(subscriptions), [subscriptions]);
 
   const monthlySummary = useMemo(() => {
     const now = new Date();
@@ -74,7 +50,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             hitSlop={10}
             onPress={() => navigation.navigate("Settings")}
           >
-            <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
+            <Ionicons name="settings-outline" size={22} color={colors.accent} />
           </Pressable>
         </View>
 
@@ -118,19 +94,86 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           <Text style={[typography.secondary, styles.helperText]}>{t("common.loading")}</Text>
         ) : null}
 
-        <View style={styles.list}>
-          {visibleSubscriptions.map((subscription) => (
-            <SubscriptionCard
-              key={subscription.id}
-              subscription={subscription}
-              showStatus={false}
-              onPress={() =>
-                navigation.navigate("SubscriptionDetails", {
-                  subscriptionId: subscription.id,
-                })
-              }
-            />
-          ))}
+        <View style={styles.sections}>
+          <View style={styles.section}>
+            <Text style={[typography.sectionTitle, styles.sectionTitle]}>
+              {t("home.dueFromToday")}
+            </Text>
+            {dueSections.currentMonthUpcoming.length === 0 ? (
+              <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                <Text style={[typography.secondary, styles.emptySectionText]}>
+                  {t("home.dueFromTodayEmpty")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {dueSections.currentMonthUpcoming.map((subscription) => (
+                  <SubscriptionCard
+                    key={`${subscription.id}:${subscription.homeDueDate}`}
+                    subscription={subscription}
+                    showStatus={false}
+                    onPress={() =>
+                      navigation.navigate("SubscriptionDetails", {
+                        subscriptionId: subscription.id,
+                      })
+                    }
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={[surfaces.subtlePanel, styles.monthDividerCard]}>
+            <Text style={[typography.meta, styles.monthDividerText]}>
+              {t("home.nextMonthSection")}
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            {dueSections.nextMonthUpcoming.length === 0 ? (
+              <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                <Text style={[typography.secondary, styles.emptySectionText]}>
+                  {t("home.nextMonthEmpty")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {dueSections.nextMonthUpcoming.map((subscription) => (
+                  <SubscriptionCard
+                    key={`${subscription.id}:${subscription.homeDueDate}`}
+                    subscription={subscription}
+                    showStatus={false}
+                    onPress={() =>
+                      navigation.navigate("SubscriptionDetails", {
+                        subscriptionId: subscription.id,
+                      })
+                    }
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          <Pressable
+            style={[surfaces.panel, styles.monthlyPreviewCard]}
+            onPress={() => navigation.navigate("MonthlyPreview")}
+          >
+            <View style={styles.monthlyPreviewHeader}>
+              <View style={styles.monthlyPreviewCopy}>
+                <Text style={[typography.cardTitle, styles.monthlyPreviewTitle]}>
+                  {t("home.monthlyPreviewSection")}
+                </Text>
+                <Text style={[typography.secondary, styles.monthlyPreviewDescription]}>
+                  {t("home.monthlyPreviewDescription")}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward-outline"
+                size={18}
+                color={colors.textSecondary}
+              />
+            </View>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -206,6 +249,53 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryDueValue: {
       color: colors.accent,
+    },
+    sections: {
+      gap: spacing.lg,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.textPrimary,
+    },
+    monthDividerCard: {
+      minHeight: 40,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+      justifyContent: "center",
+    },
+    monthDividerText: {
+      color: colors.accent,
+      textTransform: "uppercase",
+    },
+    emptySectionRow: {
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    emptySectionText: {
+      color: colors.textSecondary,
+    },
+    monthlyPreviewCard: {
+      paddingVertical: spacing.md,
+    },
+    monthlyPreviewHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    monthlyPreviewCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    monthlyPreviewTitle: {
+      color: colors.textPrimary,
+    },
+    monthlyPreviewDescription: {
+      color: colors.textSecondary,
     },
     list: {
       gap: 20,

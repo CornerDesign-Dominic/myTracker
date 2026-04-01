@@ -128,7 +128,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
     () =>
       subscriptions.filter(
         (subscription) => {
-          if (subscription.status === "cancelled") {
+          if (subscription.status !== "active") {
             return false;
           }
 
@@ -345,6 +345,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: 0,
       borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
       alignItems: "center",
       justifyContent: "center",
       marginRight: -spacing.xxs,

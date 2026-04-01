@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { CategoryLanguage, localizeCategory } from "@/utils/categories";
+import type { CategoryLanguage } from "@/utils/categories";
+import { localizeCategory } from "@/utils/categories";
 
 const STORAGE_KEY = "tracker.subscription-categories";
 

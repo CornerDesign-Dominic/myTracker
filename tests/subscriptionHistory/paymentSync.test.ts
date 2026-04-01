@@ -500,6 +500,191 @@ test("quarterly sync follows the new due date basis after interval change", () =
   );
 });
 
+test("explicitly changing nextPaymentDate after an already booked first payment sets the new future sync basis", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-03-28T09:00:00.000Z",
+    updatedAt: "2026-03-28T12:00:00.000Z",
+    nextPaymentDate: "2026-03-29",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-03-28T09:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      initialNextPaymentDate: "2026-03-28",
+    }),
+    createEvent({
+      id: "payment-first",
+      type: "payment_booked",
+      createdAt: "2026-03-28T09:05:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      dueDate: "2026-03-28",
+      amount: 13.99,
+      bookedAt: "2026-03-28T09:05:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+    createEvent({
+      id: "due-date-changed",
+      type: "due_date_changed",
+      createdAt: "2026-03-28T12:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      previousNextPaymentDate: "2026-03-28",
+      nextNextPaymentDate: "2026-03-29",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 2, 29));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type]),
+    [["2026-03-29", "payment_booked"]],
+  );
+});
+
+test("an already booked first payment remains untouched when the next due date is changed", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-03-28T09:00:00.000Z",
+    updatedAt: "2026-03-28T12:00:00.000Z",
+    nextPaymentDate: "2026-03-29",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-03-28T09:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      initialNextPaymentDate: "2026-03-28",
+    }),
+    createEvent({
+      id: "payment-first",
+      type: "payment_booked",
+      createdAt: "2026-03-28T09:05:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      dueDate: "2026-03-28",
+      amount: 13.99,
+      bookedAt: "2026-03-28T09:05:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+    createEvent({
+      id: "due-date-changed",
+      type: "due_date_changed",
+      createdAt: "2026-03-28T12:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      previousNextPaymentDate: "2026-03-28",
+      nextNextPaymentDate: "2026-03-29",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 2, 29));
+
+  assert.equal(history.filter((event) => event.type === "payment_booked").length, 1);
+  assert.equal(history[1]?.dueDate, "2026-03-28");
+  assert.equal(result[0]?.dueDate, "2026-03-29");
+});
+
+test("changing billing cycle with a newly confirmed due date uses that due date as the new sync basis", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-03-28T09:00:00.000Z",
+    updatedAt: "2026-03-28T12:00:00.000Z",
+    billingCycle: "quarterly",
+    nextPaymentDate: "2026-04-15",
+  });
+  const history = [
+    createEvent({
+      id: "created",
+      createdAt: "2026-03-28T09:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      initialBillingCycle: "monthly",
+      initialNextPaymentDate: "2026-03-28",
+    }),
+    createEvent({
+      id: "payment-first",
+      type: "payment_booked",
+      createdAt: "2026-03-28T09:05:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      dueDate: "2026-03-28",
+      amount: 13.99,
+      bookedAt: "2026-03-28T09:05:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+    createEvent({
+      id: "billing-cycle-changed",
+      type: "billing_cycle_changed",
+      createdAt: "2026-03-28T12:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      previousBillingCycle: "monthly",
+      nextBillingCycle: "quarterly",
+    }),
+    createEvent({
+      id: "due-date-changed",
+      type: "due_date_changed",
+      createdAt: "2026-03-28T12:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      previousNextPaymentDate: "2026-03-28",
+      nextNextPaymentDate: "2026-04-15",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 3, 15));
+
+  assert.deepEqual(
+    result.map((event) => [event.dueDate, event.type, event.billingCycleSnapshot]),
+    [["2026-04-15", "payment_booked", "quarterly"]],
+  );
+});
+
+test("sync does not duplicate a payment when the explicit new due date already exists", () => {
+  const subscription = createSubscription({
+    createdAt: "2026-03-28T09:00:00.000Z",
+    updatedAt: "2026-03-28T12:00:00.000Z",
+    nextPaymentDate: "2026-03-29",
+  });
+  const history = [
+    createEvent({
+      id: "payment-first",
+      type: "payment_booked",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      dueDate: "2026-03-28",
+      amount: 13.99,
+      bookedAt: "2026-03-28T09:05:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+    createEvent({
+      id: "due-date-changed",
+      type: "due_date_changed",
+      createdAt: "2026-03-28T12:00:00.000Z",
+      effectiveDate: "2026-03-28",
+      occurredAt: "2026-03-28",
+      previousNextPaymentDate: "2026-03-28",
+      nextNextPaymentDate: "2026-03-29",
+    }),
+    createEvent({
+      id: "payment-second",
+      type: "payment_booked",
+      effectiveDate: "2026-03-29",
+      occurredAt: "2026-03-29",
+      dueDate: "2026-03-29",
+      amount: 13.99,
+      bookedAt: "2026-03-29T09:00:00.000Z",
+      billingCycleSnapshot: "monthly",
+    }),
+  ];
+
+  const result = getMissingPaymentHistoryEvents(subscription, history, new Date(2026, 2, 29));
+
+  assert.equal(result.length, 0);
+});
+
 test("yearly sync respects yearly cycles and does not create future events", () => {
   const subscription = createSubscription({
     createdAt: "2024-01-10T09:00:00.000Z",

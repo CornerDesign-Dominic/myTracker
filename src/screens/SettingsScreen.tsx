@@ -203,7 +203,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
                   onPress={() => navigation.navigate("Register")}
                 >
-                  <Text style={[typography.button, styles.actionPrimaryText]}>{t("settings.registerAction")}</Text>
+                  <Text
+                    style={[
+                      typography.button,
+                      styles.actionPrimaryText,
+                      mode === "light" ? styles.actionPrimaryTextLight : null,
+                    ]}
+                  >
+                    {t("settings.registerAction")}
+                  </Text>
                 </Pressable>
               </>
             ) : (
@@ -529,6 +537,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     actionPrimaryText: {
       color: colors.accentText,
     },
+    actionPrimaryTextLight: {
+      color: colors.textPrimary,
+    },
     accentGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -641,7 +652,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     modalBackdrop: {
       flex: 1,
-      justifyContent: "flex-end",
+      justifyContent: "center",
       backgroundColor: colors.overlay,
       padding: spacing.lg,
     },

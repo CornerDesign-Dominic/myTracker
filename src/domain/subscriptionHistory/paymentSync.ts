@@ -148,7 +148,7 @@ const getLatestActivePaymentAnchor = (
 const getLatestExplicitDueDateBasis = (
   subscription: SubscriptionHistoryAware,
   history: SubscriptionHistoryEvent[],
-): { anchor: SyncAnchor; anchorDate: string } | null => {
+): SyncAnchor | null => {
   const latestDueDateChange = [...history]
     .filter((event) => event.type === "due_date_changed" && !!event.nextNextPaymentDate)
     .sort((left, right) => getEventCalendarDate(right).localeCompare(getEventCalendarDate(left)))[0];
@@ -159,11 +159,8 @@ const getLatestExplicitDueDateBasis = (
 
   const anchorDate = getEventCalendarDate(latestDueDateChange);
   return {
-    anchor: {
-      dueDate: latestDueDateChange.nextNextPaymentDate,
-      billingCycle: getBillingCycleOnDate(subscription, history, anchorDate),
-    },
-    anchorDate,
+    dueDate: latestDueDateChange.nextNextPaymentDate,
+    billingCycle: getBillingCycleOnDate(subscription, history, anchorDate),
   };
 };
 
@@ -200,14 +197,14 @@ const getSyncAnchor = (
   const latestDueDateBasis = getLatestExplicitDueDateBasis(subscription, history);
 
   if (!latestPaymentAnchor) {
-    return latestDueDateBasis?.anchor ?? getInitialSyncAnchor(subscription, history);
+    return latestDueDateBasis ?? getInitialSyncAnchor(subscription, history);
   }
 
   if (
     latestDueDateBasis &&
-    latestDueDateBasis.anchorDate > latestPaymentAnchor.dueDate
+    latestDueDateBasis.dueDate > latestPaymentAnchor.dueDate
   ) {
-    return latestDueDateBasis.anchor;
+    return latestDueDateBasis;
   }
 
   return latestPaymentAnchor;

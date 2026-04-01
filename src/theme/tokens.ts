@@ -245,22 +245,22 @@ export const getAccentPalette = (accentColor: AccentColor, mode: AppThemeMode) =
   accentPalettes[accentColor][mode];
 
 export const accentColorOptions = [
-  "slate",
-  "graphite",
-  "indigo",
-  "blue",
-  "cyan",
-  "teal",
   "green",
   "forest",
   "sage",
-  "sand",
-  "amber",
-  "orange",
-  "coral",
-  "gold",
+  "blue",
+  "cyan",
+  "teal",
+  "indigo",
   "violet",
   "rose",
+  "coral",
+  "orange",
+  "amber",
+  "gold",
+  "sand",
+  "slate",
+  "graphite",
 ] as const satisfies readonly AccentColor[];
 
 export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "green") => ({

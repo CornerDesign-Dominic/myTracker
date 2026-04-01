@@ -1,18 +1,17 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
-import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { AllSubscriptionsTabScreenProps } from "@/navigation/types";
-import { getProjectedYearlyCost } from "@/domain/subscriptions/statistics";
 import {
-  createButtonStyles,
   createInputStyles,
   createScreenLayout,
   createSurfaceStyles,
@@ -27,15 +26,17 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
-  const buttons = createButtonStyles(colors);
-  const inputs = createInputStyles(colors);
   const styles = getStyles(colors);
+  const inputs = createInputStyles(colors);
   const { currency } = useAppSettings();
   const { subscriptions } = useSubscriptions();
-  const { history: allHistory } = useSubscriptionsHistory(
-    subscriptions.map((subscription) => subscription.id),
-  );
   const [searchQuery, setSearchQuery] = useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      setSearchQuery("");
+    }, []),
+  );
 
   const filteredSubscriptions = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -45,14 +46,15 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
     }
 
     return subscriptions.filter((subscription) => {
-      const searchableText = `${subscription.name} ${localizeCategory(subscription.category, language)}`.toLowerCase();
+      const searchableText =
+        `${subscription.name} ${localizeCategory(subscription.category, language)}`.toLowerCase();
       return searchableText.includes(normalizedQuery);
     });
   }, [language, searchQuery, subscriptions]);
 
-  const totalYearlyAmount = useMemo(
-    () => getProjectedYearlyCost(subscriptions, allHistory),
-    [allHistory, subscriptions],
+  const pausedSubscriptionsCount = useMemo(
+    () => subscriptions.filter((subscription) => subscription.status === "paused").length,
+    [subscriptions],
   );
 
   return (
@@ -70,39 +72,40 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <View style={styles.summaryCopy}>
-            <Text style={[typography.cardTitle, styles.summaryTitle]}>
+            <Text style={[typography.metric, styles.summaryTitle]}>
               {t("allSubscriptions.totalSubscriptions", { count: subscriptions.length })}
             </Text>
-            <Text style={[typography.meta, styles.summaryLabel]}>
-              {t("allSubscriptions.yearlySpend")}
-            </Text>
-            <Text style={[typography.metric, styles.summaryAmount]}>
-              {formatCurrency(totalYearlyAmount, currency)}
+            <Text style={[typography.secondary, styles.summaryAmount]}>
+              {t("allSubscriptions.pausedSubscriptionsCount", { count: pausedSubscriptionsCount })}
             </Text>
           </View>
-        </View>
-
-        <View style={[surfaces.panel, styles.listCard]}>
-          <View style={styles.listSearch}>
+          <View style={[inputs.input, styles.searchField]}>
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder={t("allSubscriptions.searchPlaceholder")}
               placeholderTextColor={colors.textSecondary}
-              style={[inputs.input, styles.searchInput]}
+              style={styles.searchInput}
             />
-            <Text style={[typography.secondary, styles.listMeta]}>
-              {t("allSubscriptions.entries", { count: filteredSubscriptions.length })}
-            </Text>
+            <Pressable style={styles.clearSearchButton} onPress={() => setSearchQuery("")} hitSlop={8}>
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
+            </Pressable>
           </View>
+        </View>
 
-          <View style={styles.searchDivider} />
-
+        <View style={[surfaces.panel, styles.listCard]}>
           {filteredSubscriptions.length === 0 ? (
-            <EmptyState
-              title={t("allSubscriptions.emptyTitle")}
-              description={t("allSubscriptions.emptyDescription")}
-            />
+            subscriptions.length === 0 ? (
+              <EmptyState
+                title={t("allSubscriptions.emptyTitle")}
+                description={t("allSubscriptions.emptyDescription")}
+              />
+            ) : (
+              <EmptyState
+                title={t("allSubscriptions.noSearchResultsTitle")}
+                description={t("allSubscriptions.noSearchResultsDescription")}
+              />
+            )
           ) : (
             <View style={styles.subscriptionList}>
               {filteredSubscriptions.map((subscription, index) => (
@@ -142,19 +145,25 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 
                   <View style={styles.metaGrid}>
                     <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                      <Text style={[typography.meta, styles.metaLabel]}>
+                        {t("allSubscriptions.amount")}
+                      </Text>
                       <Text style={[typography.secondary, styles.metaValue]}>
                         {formatCurrency(subscription.amount, currency)}
                       </Text>
                     </View>
                     <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.billingCycle")}</Text>
+                      <Text style={[typography.meta, styles.metaLabel]}>
+                        {t("allSubscriptions.billingCycle")}
+                      </Text>
                       <Text style={[typography.secondary, styles.metaValue]}>
                         {t(`subscription.billing_${subscription.billingCycle}`)}
                       </Text>
                     </View>
                     <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.nextPayment")}</Text>
+                      <Text style={[typography.meta, styles.metaLabel]}>
+                        {t("allSubscriptions.nextPayment")}
+                      </Text>
                       <Text style={[typography.secondary, styles.metaValue]}>
                         {formatDate(subscription.nextPaymentDate)}
                       </Text>
@@ -196,15 +205,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryTitle: {
       color: colors.textPrimary,
+      fontSize: 23,
+      lineHeight: 28,
     },
     summaryLabel: {
       color: colors.textSecondary,
       textTransform: "uppercase",
     },
     summaryAmount: {
-      color: colors.accent,
-      fontSize: 23,
-      lineHeight: 28,
+      color: colors.textPrimary,
+      fontSize: 17,
+      lineHeight: 22,
     },
     addButton: {
       width: 40,
@@ -221,22 +232,29 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     addButtonText: {
       color: colors.accent,
     },
-    listSearch: {
+    searchField: {
+      flexDirection: "row",
+      alignItems: "center",
       gap: spacing.sm,
+      paddingRight: spacing.sm,
     },
     searchInput: {
       color: colors.textPrimary,
+      flex: 1,
+      minHeight: 0,
+      backgroundColor: "transparent",
+      borderWidth: 0,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+    },
+    clearSearchButton: {
+      width: 28,
+      height: 28,
+      alignItems: "center",
+      justifyContent: "center",
     },
     listCard: {
-      gap: spacing.lg,
-    },
-    listMeta: {
-      color: colors.textSecondary,
-    },
-    searchDivider: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      marginTop: -spacing.xs,
+      gap: spacing.xs,
     },
     subscriptionList: {
       gap: spacing.xs,

@@ -1,7 +1,10 @@
-export type SubscriptionErrorCode = "duplicate_payment_due_date";
+export type SubscriptionErrorCode =
+  | "duplicate_payment_due_date"
+  | "subscription_limit_reached";
 
 const DEFAULT_SUBSCRIPTION_ERROR_MESSAGES: Record<SubscriptionErrorCode, string> = {
   duplicate_payment_due_date: "A payment for this due date already exists.",
+  subscription_limit_reached: "The free plan supports up to 10 subscriptions.",
 };
 
 export class SubscriptionError extends Error {

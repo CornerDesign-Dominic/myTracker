@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -33,7 +33,7 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
 
   if (!subscription) {
     return (
-      <SafeAreaView style={styles.emptyContainer} edges={["top", "bottom"]}>
+      <SafeAreaView style={styles.emptyContainer} edges={["bottom"]}>
         <Text style={[typography.secondary, styles.emptyText]}>{t("subscription.detailsNotFound")}</Text>
       </SafeAreaView>
     );
@@ -50,14 +50,18 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const isPaused = subscription.status === "paused";
 
   const handlePause = async () => {
-    await updateSubscription(subscription.id, {
-      status: isPaused ? "active" : "paused",
-    });
-    setPauseSheetVisible(false);
+    try {
+      await updateSubscription(subscription.id, {
+        status: isPaused ? "active" : "paused",
+      });
+      setPauseSheetVisible(false);
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
   };
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={layout.content}>
         <View style={[surfaces.panel, styles.heroCard]}>
           <View style={styles.heroMain}>

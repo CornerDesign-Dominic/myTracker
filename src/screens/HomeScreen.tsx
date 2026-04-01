@@ -96,9 +96,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
         <View style={styles.sections}>
           <View style={styles.section}>
-            <Text style={[typography.sectionTitle, styles.sectionTitle]}>
-              {t("home.dueFromToday")}
-            </Text>
             {dueSections.currentMonthUpcoming.length === 0 ? (
               <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
                 <Text style={[typography.secondary, styles.emptySectionText]}>
@@ -280,6 +277,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     monthlyPreviewCard: {
       paddingVertical: spacing.md,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
     },
     monthlyPreviewHeader: {
       flexDirection: "row",
@@ -292,10 +291,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.xxs,
     },
     monthlyPreviewTitle: {
-      color: colors.textPrimary,
+      color: colors.accent,
     },
     monthlyPreviewDescription: {
-      color: colors.textSecondary,
+      color: colors.accent,
     },
     list: {
       gap: 20,

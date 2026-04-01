@@ -12,10 +12,12 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
-import { formatDate } from "@/utils/date";
 import { getRecurringDueDateForMonth } from "@/utils/recurringDates";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MonthlyPreview">;
+
+const formatShortDueDate = (date: Date) =>
+  `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.`;
 
 export const MonthlyCostPreviewScreen = (_props: Props) => {
   const { colors, typography } = useAppTheme();
@@ -49,9 +51,7 @@ export const MonthlyCostPreviewScreen = (_props: Props) => {
             return {
               id: `${item.key}:${subscription.id}`,
               name: subscription.name,
-              dueDate: formatDate(
-                `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, "0")}-${String(dueDate.getDate()).padStart(2, "0")}`,
-              ),
+              dueDate: formatShortDueDate(dueDate),
               amount: subscription.amount,
             };
           })
@@ -61,7 +61,7 @@ export const MonthlyCostPreviewScreen = (_props: Props) => {
   );
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView
         contentContainerStyle={[
           layout.content,

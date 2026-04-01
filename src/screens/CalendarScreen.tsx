@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
@@ -81,6 +82,9 @@ const getDisplayDate = (date: Date, language: "de" | "en") =>
     month: "long",
   }).format(date);
 
+const getShortDisplayDate = (date: Date) =>
+  `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.`;
+
 const getWeekdayLabels = (language: "de" | "en") => {
   const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
     weekday: "short",
@@ -98,11 +102,20 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
   const { subscriptions } = useSubscriptions();
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [selectedDate, setSelectedDate] = useState(() => new Date(today));
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = new Date();
+      setToday(now);
+      setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+      setSelectedDate(now);
+    }, []),
+  );
 
   const monthLabel = useMemo(() => getMonthLabel(visibleMonth, language), [language, visibleMonth]);
   const weekdayLabels = useMemo(() => getWeekdayLabels(language), [language]);
@@ -124,6 +137,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
     today.getMonth() === visibleMonth.getMonth();
   const selectedDateKey = formatLocalDateInput(selectedDate);
   const selectedDayLabel = getDisplayDate(selectedDate, language);
+  const selectedShortDayLabel = getShortDisplayDate(selectedDate);
   const dueSubscriptions = useMemo(
     () =>
       subscriptions.filter(
@@ -179,7 +193,6 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
 
   const selectCalendarDate = (date: Date) => {
     setSelectedDate(date);
-    setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   };
 
   return (
@@ -313,7 +326,13 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
               ))}
             </View>
           </View>
-        ) : null}
+        ) : (
+          <View style={[surfaces.subtlePanel, styles.emptyDueCard]}>
+            <Text style={[typography.secondary, styles.emptyDueText]}>
+              {t("calendar.noDueOn", { date: selectedShortDayLabel })}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -452,6 +471,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     dueCard: {
       gap: spacing.md,
+    },
+    emptyDueCard: {
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 68,
+    },
+    emptyDueText: {
+      color: colors.textSecondary,
+      textAlign: "center",
     },
     dueTitle: {
       color: colors.textPrimary,

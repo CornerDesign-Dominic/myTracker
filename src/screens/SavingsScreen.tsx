@@ -5,8 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import {
-  getSavedAmountForPreviousMonth,
-  getSavedAmountForYear,
+  buildSavingsSummary,
 } from "@/domain/subscriptionHistory/statistics";
 import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -17,7 +16,6 @@ import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
-import { getRecurringDueDateForMonth } from "@/utils/recurringDates";
 
 type SavingsSubscriptionItem = {
   id: string;
@@ -52,31 +50,31 @@ export const SavingsScreen = () => {
     [history],
   );
 
-  const currentYearSavings = useMemo(
-    () => getSavedAmountForYear(skippedEvents, new Date().getFullYear()),
-    [skippedEvents],
+  const savingsSummary = useMemo(
+    () => buildSavingsSummary(subscriptions, skippedEvents, new Date()),
+    [skippedEvents, subscriptions],
   );
-  const lastMonthSavings = useMemo(
-    () => getSavedAmountForPreviousMonth(skippedEvents),
-    [skippedEvents],
-  );
-  const nextMonthSavings = useMemo(() => {
-    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
 
-    return subscriptions
-      .filter((subscription) => subscription.status === "paused")
-      .reduce((sum, subscription) => {
-        const dueDate = getRecurringDueDateForMonth({
-          anchorDate: subscription.nextPaymentDate,
-          billingCycle: subscription.billingCycle,
-          targetMonth: nextMonth,
-          startsOn: subscription.createdAt,
-          endsOn: subscription.endDate ?? null,
-        });
+  const summaryLabels = useMemo(() => {
+    const now = new Date();
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthFormatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+      month: "long",
+    });
 
-        return dueDate ? sum + subscription.amount : sum;
-      }, 0);
-  }, [subscriptions]);
+    return {
+      currentYear: String(now.getFullYear()),
+      previousYear: String(now.getFullYear() - 1),
+      currentMonth: monthFormatter.format(now),
+      previousMonth: monthFormatter.format(previousMonth),
+      currentMonthProjection:
+        language === "de"
+          ? `${monthFormatter.format(now)} Soll`
+          : `${monthFormatter.format(now)} projected`,
+      currentYearProjection:
+        language === "de" ? `${now.getFullYear()} Soll` : `${now.getFullYear()} projected`,
+    };
+  }, [language]);
 
   const savingsSubscriptions = useMemo<SavingsSubscriptionItem[]>(() => {
     const totalsBySubscription = new Map<string, number>();
@@ -102,28 +100,56 @@ export const SavingsScreen = () => {
   }, [skippedEvents, subscriptions]);
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={layout.content}>
         <View style={[surfaces.panel, styles.summaryCard]}>
-          <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>{t("common.thisYear")}</Text>
-            <Text style={[typography.sectionTitle, styles.metricValue]}>
-              {formatCurrency(currentYearSavings, currency)}
-            </Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.currentYear}</Text>
+              <Text style={[typography.sectionTitle, styles.metricValue]}>
+                {formatCurrency(savingsSummary.currentYearActual, currency)}
+              </Text>
+            </View>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.previousYear}</Text>
+              <Text style={[typography.sectionTitle, styles.metricValue]}>
+                {formatCurrency(savingsSummary.previousYearActual, currency)}
+              </Text>
+            </View>
           </View>
           <View style={styles.divider} />
-          <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>{t("common.lastMonth")}</Text>
-            <Text style={[typography.sectionTitle, styles.metricValue]}>
-              {formatCurrency(lastMonthSavings, currency)}
-            </Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.currentMonth}</Text>
+              <Text style={[typography.sectionTitle, styles.metricValue]}>
+                {formatCurrency(savingsSummary.currentMonthActual, currency)}
+              </Text>
+            </View>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.previousMonth}</Text>
+              <Text style={[typography.sectionTitle, styles.metricValue]}>
+                {formatCurrency(savingsSummary.previousMonthActual, currency)}
+              </Text>
+            </View>
           </View>
           <View style={styles.divider} />
-          <View style={styles.metricBlock}>
-            <Text style={[typography.meta, styles.metricLabel]}>{t("common.nextMonth")}</Text>
-            <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
-              {formatCurrency(nextMonthSavings, currency)}
-            </Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>
+                {summaryLabels.currentMonthProjection}
+              </Text>
+              <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
+                {formatCurrency(savingsSummary.currentMonthProjected, currency)}
+              </Text>
+            </View>
+            <View style={styles.metricBlock}>
+              <Text style={[typography.meta, styles.metricLabel]}>
+                {summaryLabels.currentYearProjection}
+              </Text>
+              <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
+                {formatCurrency(savingsSummary.currentYearProjected, currency)}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -189,7 +215,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryCard: {
       gap: spacing.md,
     },
+    summaryRow: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
     metricBlock: {
+      flex: 1,
       gap: spacing.xxs,
     },
     metricLabel: {

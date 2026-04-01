@@ -1,12 +1,13 @@
-import { Purchase } from "react-native-iap";
+import type { Purchase } from "react-native-iap";
 
-import { AccentColor } from "@/theme";
+import type { AccentColor } from "@/theme";
 
-import { FREE_ACCENT_COLOR, SUPPORT_COLORS_PRODUCT_ID } from "./constants";
-import { PurchaseEntitlements, PurchaseSnapshot } from "./types";
+import { FREE_ACCENT_COLOR, SUPPORT_COLORS_PRODUCT_ID } from "./constants.ts";
+import type { PurchaseEntitlements, PurchaseSnapshot } from "./types.ts";
 
 export const getDefaultEntitlements = (): PurchaseEntitlements => ({
   hasSupportColors: false,
+  isPremium: false,
 });
 
 export const isSupportColorsPurchase = (purchase: Pick<Purchase, "productId" | "purchaseState">) =>
@@ -20,6 +21,7 @@ export const isPurchaseEligibleForEntitlement = (
 
 export const deriveEntitlementsFromPurchases = (purchases: Purchase[]): PurchaseEntitlements => ({
   hasSupportColors: purchases.some(isPurchaseEligibleForEntitlement),
+  isPremium: purchases.some(isPurchaseEligibleForEntitlement),
 });
 
 export const buildPurchaseSnapshot = (
@@ -45,6 +47,7 @@ export const buildSnapshotFromSinglePurchase = (
 ): PurchaseSnapshot => ({
   entitlements: {
     hasSupportColors: isPurchaseEligibleForEntitlement(purchase),
+    isPremium: isPurchaseEligibleForEntitlement(purchase),
   },
   lastValidatedAt: new Date().toISOString(),
   platform,

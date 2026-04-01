@@ -1,5 +1,6 @@
 export interface PurchaseEntitlements {
   hasSupportColors: boolean;
+  isPremium: boolean;
 }
 
 export interface PurchaseSnapshot {

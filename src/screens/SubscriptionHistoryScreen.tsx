@@ -26,7 +26,7 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
   );
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.content]}>
         <Pressable
           style={[surfaces.panel, styles.actionCard]}

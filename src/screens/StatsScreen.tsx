@@ -742,6 +742,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.md,
+      borderColor: colors.accent,
     },
     summaryDivider: {
       height: 1,

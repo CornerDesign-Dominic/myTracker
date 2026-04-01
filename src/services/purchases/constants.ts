@@ -1,4 +1,4 @@
-import { AccentColor } from "@/theme";
+import type { AccentColor } from "@/theme";
 
 export const SUPPORT_COLORS_PRODUCT_ID = "support_colors";
 export const PURCHASES_CACHE_KEY_PREFIX = "tracker.purchases";

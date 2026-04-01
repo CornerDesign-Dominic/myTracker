@@ -252,7 +252,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
 
   if (!subscription) {
     return (
-      <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+      <SafeAreaView style={layout.screen} edges={["bottom"]}>
         <View style={styles.emptyState}>
           <Text style={[typography.secondary, styles.helperText]}>{t("subscription.detailsNotFound")}</Text>
         </View>
@@ -340,7 +340,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   };
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.content]}>
         <View style={[surfaces.panel, styles.infoCard]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{subscription.name}</Text>

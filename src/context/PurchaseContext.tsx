@@ -14,6 +14,7 @@ import { PurchaseProductDetails, PurchaseSnapshot } from "@/services/purchases/t
 
 type PurchaseContextValue = {
   hasSupportColors: boolean;
+  isPremium: boolean;
   isHydrated: boolean;
   isPurchasing: boolean;
   isRefreshing: boolean;
@@ -30,6 +31,7 @@ const PurchaseContext = createContext<PurchaseContextValue | null>(null);
 
 const DEFAULT_VALUE: PurchaseContextValue = {
   hasSupportColors: false,
+  isPremium: false,
   isHydrated: true,
   isPurchasing: false,
   isRefreshing: false,
@@ -237,6 +239,7 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
   const value = useMemo<PurchaseContextValue>(
     () => ({
       hasSupportColors: snapshot.entitlements.hasSupportColors,
+      isPremium: snapshot.entitlements.isPremium,
       isHydrated,
       isPurchasing,
       isRefreshing,

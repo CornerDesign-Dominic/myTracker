@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { AppSettingsProvider } from "./src/context/AppSettingsContext";
 import { PurchaseProvider, usePurchases } from "./src/context/PurchaseContext";
 import { useAppSettings } from "./src/context/AppSettingsContext";
+import { UserStatsMirrorSync } from "./src/context/UserStatsMirrorSync";
 import { useAppTheme } from "./src/hooks/useAppTheme";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { spacing } from "./src/theme";
@@ -85,6 +86,7 @@ export default function App() {
         <AuthProvider>
           <PurchaseProvider>
             <AppSettingsProvider>
+              <UserStatsMirrorSync />
               <AppContent />
             </AppSettingsProvider>
           </PurchaseProvider>

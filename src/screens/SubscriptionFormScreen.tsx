@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { FormRow } from "@/components/forms/FormRow";
@@ -35,6 +37,7 @@ import {
   spacing,
 } from "@/theme";
 import { shouldRequireNextPaymentConfirmation } from "@/domain/subscriptions/formValidation";
+import { SubscriptionError } from "@/application/subscriptions/errors";
 import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
 import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
@@ -344,6 +347,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   const [confirmedBillingCycle, setConfirmedBillingCycle] = useState<BillingCycle>("monthly");
   const [validationNotice, setValidationNotice] = useState<string | null>(null);
   const [highlightedField, setHighlightedField] = useState<ValidationField>(null);
+  const [isLimitModalVisible, setIsLimitModalVisible] = useState(false);
 
   const categorySuggestion = useMemo(() => {
     if (activeField !== "category") {
@@ -544,19 +548,28 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       notes: formState.notes?.trim() || undefined,
     };
 
-    if (isEditing && route.params?.subscriptionId) {
-      await updateSubscription(route.params.subscriptionId, payload);
-    } else {
-      await createSubscription(payload);
+    try {
+      if (isEditing && route.params?.subscriptionId) {
+        await updateSubscription(route.params.subscriptionId, payload);
+      } else {
+        await createSubscription(payload);
+      }
+
+      await addCategory(payload.category);
+      await addTemplate({
+        name: payload.name,
+        category: payload.category,
+      });
+
+      navigation.goBack();
+    } catch (error) {
+      if (error instanceof SubscriptionError && error.code === "subscription_limit_reached") {
+        setIsLimitModalVisible(true);
+        return;
+      }
+
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
     }
-
-    await addCategory(payload.category);
-    await addTemplate({
-      name: payload.name,
-      category: payload.category,
-    });
-
-    navigation.goBack();
   };
 
   const formatAmountLabel = () =>
@@ -950,6 +963,54 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
           </Text>
         ) : null}
       </EditorSheet>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isLimitModalVisible}
+        onRequestClose={() => setIsLimitModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setIsLimitModalVisible(false)}
+          />
+          <View style={[surfaces.panel, styles.limitModal]}>
+            <View style={styles.limitModalHeader}>
+              <View style={styles.limitModalIconWrap}>
+                <Ionicons name="diamond-outline" size={18} color={colors.accent} />
+              </View>
+            </View>
+            <Text style={[typography.cardTitle, styles.limitModalTitle]}>
+              {t("subscription.limitReachedTitle")}
+            </Text>
+            <Text style={[typography.secondary, styles.limitModalDescription]}>
+              {t("subscription.limitReachedMessage")}
+            </Text>
+            <View style={styles.limitModalActions}>
+              <Pressable
+                style={[buttons.buttonBase, buttons.secondaryButton, styles.limitModalButton]}
+                onPress={() => setIsLimitModalVisible(false)}
+              >
+                <Text style={[typography.button, styles.secondaryButtonText]}>
+                  {t("common.cancel")}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[buttons.buttonBase, buttons.primaryButton, styles.limitModalButton]}
+                onPress={() => {
+                  setIsLimitModalVisible(false);
+                  navigation.navigate("Settings");
+                }}
+              >
+                <Text style={[typography.button, styles.primaryButtonText]}>
+                  {t("subscription.limitReachedUpgrade")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1133,5 +1194,41 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     templateSuggestionMeta: {
       color: colors.textSecondary,
       textTransform: "uppercase",
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "center",
+      backgroundColor: colors.overlay,
+      padding: spacing.lg,
+    },
+    limitModal: {
+      gap: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    limitModalHeader: {
+      alignItems: "flex-start",
+    },
+    limitModalIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    limitModalTitle: {
+      color: colors.textPrimary,
+    },
+    limitModalDescription: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    limitModalActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    limitModalButton: {
+      flex: 1,
     },
   });

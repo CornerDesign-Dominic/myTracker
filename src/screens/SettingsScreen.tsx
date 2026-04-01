@@ -162,7 +162,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView
         contentContainerStyle={[layout.content, styles.contentWithTabBar]}
         showsVerticalScrollIndicator={false}

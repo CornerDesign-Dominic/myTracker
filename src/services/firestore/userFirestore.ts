@@ -17,6 +17,12 @@ export type UserSettingsDocument = {
   updatedAt?: unknown;
 };
 
+export type UserStatsMirrorDocument = {
+  subscriptionCount?: number;
+  isPremium?: boolean;
+  updatedAt?: unknown;
+};
+
 const ensureFirestore = () => {
   if (!firestoreDb) {
     throw new Error("Firestore is not configured.");
@@ -149,6 +155,29 @@ export const updateUserSettings = async (
       path: `users/${userId}/settings/app`,
       userId,
       settings,
+    });
+    throw error;
+  }
+};
+
+export const updateUserStatsMirror = async (
+  userId: string,
+  stats: Omit<UserStatsMirrorDocument, "updatedAt">,
+) => {
+  try {
+    await setDoc(
+      userDocRef(userId),
+      {
+        ...stats,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    logFirestoreError("userFirestore.updateUserStatsMirror", error, {
+      path: `users/${userId}`,
+      userId,
+      stats,
     });
     throw error;
   }

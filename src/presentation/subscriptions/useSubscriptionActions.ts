@@ -1,16 +1,25 @@
 import { SubscriptionInput } from "@/types/subscription";
 import { SubscriptionService } from "@/application/subscriptions/service";
-import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
+import { SubscriptionError, getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
 import { useI18n } from "@/hooks/useI18n";
+import { canCreateSubscription } from "@/services/purchases/freemium";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type Options = {
   userId?: string | null;
   service: SubscriptionService;
   setErrorMessage: (value: string | null) => void;
+  isPremium: boolean;
+  subscriptionCount: number;
 };
 
-export const useSubscriptionActions = ({ userId, service, setErrorMessage }: Options) => {
+export const useSubscriptionActions = ({
+  userId,
+  service,
+  setErrorMessage,
+  isPremium,
+  subscriptionCount,
+}: Options) => {
   const { t } = useI18n();
 
   const execute = async (action: () => Promise<void>) => {
@@ -22,13 +31,20 @@ export const useSubscriptionActions = ({ userId, service, setErrorMessage }: Opt
         userId: userId ?? null,
       });
       setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
+      throw error;
     }
   };
 
   return {
     createSubscription: (input: SubscriptionInput) =>
       hasUserScope(userId)
-        ? execute(() => service.createForUser(userId, input))
+        ? execute(async () => {
+            if (!canCreateSubscription({ subscriptionCount, isPremium })) {
+              throw new SubscriptionError("subscription_limit_reached");
+            }
+
+            await service.createForUser(userId, input);
+          })
         : Promise.resolve(),
     updateSubscription: (id: string, input: Partial<SubscriptionInput>) =>
       hasUserScope(userId)

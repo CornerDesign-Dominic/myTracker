@@ -51,7 +51,7 @@ export const RegisterScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={layout.screen} edges={["top", "bottom"]}>
+    <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <View style={layout.content}>
         <Text style={[typography.pageTitle, styles.title]}>{t("auth.registerTitle")}</Text>
 

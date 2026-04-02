@@ -213,10 +213,10 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
           </Pressable>
         </View>
 
-        <View style={[surfaces.panel, styles.calendarCard]}>
+        <View style={[surfaces.mainPanel, styles.calendarCard]}>
           <View style={styles.headerRow}>
             <Pressable
-              style={[surfaces.subtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
+              style={[surfaces.mainSubtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
               onPress={() => changeMonth(-1)}
             >
               <Ionicons
@@ -229,7 +229,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
             <Text style={[typography.cardTitle, styles.monthLabel]}>{monthLabel}</Text>
 
             <Pressable
-              style={[surfaces.subtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
+              style={[surfaces.mainSubtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
               onPress={() => changeMonth(1)}
             >
               <Ionicons
@@ -400,7 +400,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
     },
     monthActionLight: {
-      backgroundColor: colors.surfaceMuted,
+      backgroundColor: colors.surfaceSoft,
       borderColor: colors.borderStrong,
     },
     monthLabel: {

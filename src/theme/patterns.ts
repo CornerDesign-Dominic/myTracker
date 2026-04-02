@@ -29,12 +29,35 @@ export const createSurfaceStyles = (colors: AppThemeColors) =>
       padding: spacing.lg,
       ...shadowPresets.card(colors),
     },
+    mainPanel: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      padding: spacing.lg,
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 26,
+      shadowOffset: {
+        width: 0,
+        height: 14,
+      },
+      elevation: 5,
+    },
     subtlePanel: {
       backgroundColor: isLightTheme(colors) ? colors.surfaceMuted : colors.surfaceSoft,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: isLightTheme(colors) ? colors.borderStrong : colors.border,
       padding: spacing.lg,
+    },
+    mainSubtlePanel: {
+      backgroundColor: isLightTheme(colors) ? colors.surfaceSoft : colors.surfaceSoft,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      padding: spacing.lg,
+      ...shadowPresets.soft(colors),
     },
   });
 

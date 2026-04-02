@@ -70,7 +70,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           </Pressable>
         </View>
 
-        <View style={[surfaces.panel, styles.summaryCard]}>
+        <View style={[surfaces.mainPanel, styles.summaryCard]}>
           <View style={styles.summaryCopy}>
             <Text style={[typography.metric, styles.summaryTitle]}>
               {t("allSubscriptions.totalSubscriptions", { count: subscriptions.length })}
@@ -79,7 +79,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               {t("allSubscriptions.pausedSubscriptionsCount", { count: pausedSubscriptionsCount })}
             </Text>
           </View>
-          <View style={[inputs.input, styles.searchField]}>
+          <View style={[inputs.input, styles.searchField, styles.searchFieldMain]}>
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -263,6 +263,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.sm,
       paddingRight: spacing.sm,
     },
+    searchFieldMain: {
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSoft,
+    },
     searchInput: {
       color: colors.textPrimary,
       flex: 1,
@@ -279,7 +283,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
     },
     clearSearchButtonLight: {
-      backgroundColor: colors.surfaceMuted,
+      backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderStrong,
       borderRadius: 999,

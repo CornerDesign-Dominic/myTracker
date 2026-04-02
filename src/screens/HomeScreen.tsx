@@ -54,7 +54,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </Pressable>
         </View>
 
-        <View style={[surfaces.panel, styles.summaryCard]}>
+        <View style={[surfaces.mainPanel, styles.summaryCard]}>
           <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
           <View style={styles.summaryRow}>
             <View style={styles.summaryPrimaryBlock}>

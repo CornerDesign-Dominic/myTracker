@@ -439,6 +439,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   </View>
                 </View>
 
+                <View style={styles.premiumPriceCard}>
+                  <Text style={[typography.button, styles.premiumPriceText]}>
+                    {supportColorsPrice
+                      ? t("settings.premiumOneTimePrice", { price: supportColorsPrice })
+                      : t("settings.premiumOneTimePriceLoading")}
+                  </Text>
+                </View>
+
                 <View style={[styles.premiumTierCard, styles.premiumTierCardPremium]}>
                   <View style={styles.premiumTierHeader}>
                     <Text style={[typography.cardTitle, styles.premiumTierTitle]}>{t("settings.premiumPlanBadge")}</Text>
@@ -697,6 +705,21 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     premiumTierCardPremium: {
       borderColor: colors.accent,
       backgroundColor: colors.accentSoft,
+    },
+    premiumPriceCard: {
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    premiumPriceText: {
+      color: colors.accent,
+      textAlign: "center",
     },
     premiumTierTitle: {
       color: colors.textPrimary,

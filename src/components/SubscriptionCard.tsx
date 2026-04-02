@@ -17,6 +17,7 @@ interface SubscriptionCardProps {
   showStatus?: boolean;
   neutralInactiveStatus?: boolean;
   compact?: boolean;
+  actionIconName?: "pencil-outline" | "chevron-forward-outline";
 }
 
 export const SubscriptionCard = ({
@@ -25,6 +26,7 @@ export const SubscriptionCard = ({
   showStatus = true,
   neutralInactiveStatus = false,
   compact = false,
+  actionIconName = "pencil-outline",
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -112,7 +114,7 @@ export const SubscriptionCard = ({
             <View style={styles.metaItem}>
               <View style={styles.iconMetaItem}>
                 <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
-                  <Ionicons name="pencil-outline" size={18} color={colors.textPrimary} />
+                  <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
                 </Pressable>
               </View>
             </View>

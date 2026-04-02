@@ -50,7 +50,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             hitSlop={10}
             onPress={() => navigation.navigate("Settings")}
           >
-            <Ionicons name="settings-outline" size={22} color={colors.accent} />
+            <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
           </Pressable>
         </View>
 
@@ -109,6 +109,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
                     key={`${subscription.id}:${subscription.homeDueDate}`}
                     subscription={subscription}
                     showStatus={false}
+                    actionIconName="chevron-forward-outline"
                     onPress={() =>
                       navigation.navigate("SubscriptionDetails", {
                         subscriptionId: subscription.id,
@@ -140,6 +141,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
                     key={`${subscription.id}:${subscription.homeDueDate}`}
                     subscription={subscription}
                     showStatus={false}
+                    actionIconName="chevron-forward-outline"
                     onPress={() =>
                       navigation.navigate("SubscriptionDetails", {
                         subscriptionId: subscription.id,
@@ -201,7 +203,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.sm,
-      borderColor: colors.accent,
     },
     summaryMonth: {
       color: colors.textSecondary,

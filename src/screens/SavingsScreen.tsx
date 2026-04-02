@@ -157,76 +157,83 @@ export const SavingsScreen = () => {
               {t("stats.savingsCardTitle")}
             </Text>
           </View>
-          <View style={styles.savedMetric}>
-            <Text style={[typography.meta, styles.savedLabel]}>
-              {t("stats.savingsAllTime")}
+          {skippedEvents.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noSavingsAvailable")}
             </Text>
-            <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-              {formatCurrency(totalSavedAmount, currency)}
-            </Text>
-          </View>
-          <View style={styles.savedDivider} />
+          ) : (
+            <>
+              <View style={styles.savedMetric}>
+                <Text style={[typography.meta, styles.savedLabel]}>
+                  {t("stats.savingsAllTime")}
+                </Text>
+                <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
+                  {formatCurrency(totalSavedAmount, currency)}
+                </Text>
+              </View>
+              <View style={styles.savedDivider} />
 
-          <View style={styles.savedSummaryRow}>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentYear}</Text>
-              <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                {formatCurrency(savingsSummary.currentYearActual, currency)}
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsPerYear")}
               </Text>
-            </View>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousYear}</Text>
-              <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                {formatCurrency(savingsSummary.previousYearActual, currency)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.savedDivider} />
+              <View style={styles.savedSummaryRow}>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentYear}</Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                    {formatCurrency(savingsSummary.currentYearActual, currency)}
+                  </Text>
+                </View>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousYear}</Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                    {formatCurrency(savingsSummary.previousYearActual, currency)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.savedDivider} />
 
-          <View style={styles.savedSummaryRow}>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentMonth}</Text>
-              <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                {formatCurrency(savingsSummary.currentMonthActual, currency)}
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsPerMonth")}
               </Text>
-            </View>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousMonth}</Text>
-              <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                {formatCurrency(savingsSummary.previousMonthActual, currency)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.savedDivider} />
+              <View style={styles.savedSummaryRow}>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentMonth}</Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                    {formatCurrency(savingsSummary.currentMonthActual, currency)}
+                  </Text>
+                </View>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousMonth}</Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmount]}>
+                    {formatCurrency(savingsSummary.previousMonthActual, currency)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.savedDivider} />
 
-          <View style={styles.savedSummaryRow}>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>
-                {summaryLabels.currentMonthProjection}
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsProjectionLabel")}
               </Text>
-              <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                {formatCurrency(savingsSummary.currentMonthProjected, currency)}
-              </Text>
-            </View>
-            <View style={styles.savedMetric}>
-              <Text style={[typography.meta, styles.savedLabel]}>
-                {summaryLabels.currentYearProjection}
-              </Text>
-              <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                {formatCurrency(savingsSummary.currentYearProjected, currency)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.savedFooter}>
-            <Text style={[typography.secondary, styles.savedFooterText]}>
-              {t("stats.savingsFooter")}
-            </Text>
-            <Ionicons
-              name="chevron-forward-outline"
-              size={16}
-              color={colors.textSecondary}
-            />
-          </View>
+              <View style={styles.savedSummaryRow}>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {summaryLabels.currentMonthProjection}
+                  </Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
+                    {formatCurrency(savingsSummary.currentMonthProjected, currency)}
+                  </Text>
+                </View>
+                <View style={styles.savedMetric}>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {summaryLabels.currentYearProjection}
+                  </Text>
+                  <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
+                    {formatCurrency(savingsSummary.currentYearProjected, currency)}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         {monthlySavingsGroups.length === 0 ? (
@@ -312,11 +319,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flex: 1,
       gap: spacing.xxs,
     },
+    helperText: {
+      color: colors.textSecondary,
+    },
     savedLabel: {
       color: colors.textPrimary,
       fontSize: 13,
       lineHeight: 18,
       fontWeight: "700",
+    },
+    savedSectionLabel: {
+      color: colors.textSecondary,
     },
     savedAmount: {
       color: colors.textPrimary,
@@ -327,17 +340,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     savedDivider: {
       height: 1,
       backgroundColor: colors.border,
-    },
-    savedFooter: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.sm,
-      paddingTop: spacing.xs,
-    },
-    savedFooterText: {
-      flex: 1,
-      color: colors.textSecondary,
     },
     listCard: {
       gap: spacing.md,

@@ -16,6 +16,7 @@ interface SubscriptionCardProps {
   onPress?: () => void;
   showStatus?: boolean;
   neutralInactiveStatus?: boolean;
+  compact?: boolean;
 }
 
 export const SubscriptionCard = ({
@@ -23,6 +24,7 @@ export const SubscriptionCard = ({
   onPress,
   showStatus = true,
   neutralInactiveStatus = false,
+  compact = false,
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -54,7 +56,12 @@ export const SubscriptionCard = ({
               <Text style={[typography.secondary, styles.category]}>{localizedCategory}</Text>
             </View>
           </View>
-          {showStatus ? (
+          {compact ? (
+            <Text style={[typography.body, styles.compactAmount]}>
+              {formatCurrency(subscription.amount, currency)}
+            </Text>
+          ) : null}
+          {showStatus && !compact ? (
             <View
               style={[
                 styles.badge,
@@ -78,35 +85,39 @@ export const SubscriptionCard = ({
           ) : null}
         </View>
 
-        <View style={styles.metaGrid}>
-          <View style={styles.metaItem}>
-            <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
-            <Text style={[typography.body, styles.metaValue]}>
-              {formatCurrency(subscription.amount, currency)}
-            </Text>
+        {compact ? null : (
+          <View style={styles.metaGrid}>
+            <View style={styles.metaItem}>
+              <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+              <Text style={[typography.body, styles.metaValue]}>
+                {formatCurrency(subscription.amount, currency)}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={[typography.meta, styles.metaLabel]}>
+                {t("subscription.formBillingCycle")}
+              </Text>
+              <Text style={[typography.body, styles.metaValue]}>
+                {t(`subscription.billing_${subscription.billingCycle}`)}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Text style={[typography.meta, styles.metaLabel]}>
+                {t("subscription.formNextPaymentDate")}
+              </Text>
+              <Text style={[typography.body, styles.metaValue]}>
+                {formatDate(subscription.nextPaymentDate)}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <View style={styles.iconMetaItem}>
+                <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
+                  <Ionicons name="pencil-outline" size={18} color={colors.textPrimary} />
+                </Pressable>
+              </View>
+            </View>
           </View>
-          <View style={styles.metaItem}>
-            <Text style={[typography.meta, styles.metaLabel]}>
-              {t("subscription.formBillingCycle")}
-            </Text>
-            <Text style={[typography.body, styles.metaValue]}>
-              {t(`subscription.billing_${subscription.billingCycle}`)}
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[typography.meta, styles.metaLabel]}>
-              {t("subscription.formNextPaymentDate")}
-            </Text>
-            <Text style={[typography.body, styles.metaValue]}>
-              {formatDate(subscription.nextPaymentDate)}
-            </Text>
-          </View>
-          <View style={[styles.metaItem, styles.iconMetaItem]}>
-            <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
-              <Ionicons name="pencil-outline" size={18} color={colors.textPrimary} />
-            </Pressable>
-          </View>
-        </View>
+        )}
       </Pressable>
     </View>
   );
@@ -167,6 +178,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   },
   metaValue: {
     color: colors.textPrimary,
+  },
+  compactAmount: {
+    color: colors.textPrimary,
+    textAlign: "right",
+    alignSelf: "center",
   },
   iconMetaItem: {
     alignItems: "flex-end",

@@ -93,6 +93,7 @@ export const BillingFrequencyScreen = ({ navigation }: Props) => {
                     <SubscriptionCard
                       key={subscription.id}
                       subscription={subscription}
+                      compact
                       neutralInactiveStatus
                       onPress={() =>
                         navigation.navigate("SubscriptionDetails", {

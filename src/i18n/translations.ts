@@ -129,7 +129,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumTitle: "Premium",
       premiumDescription: "Free enthält bis zu 10 Abos. Premium hebt dieses Limit auf und schaltet weitere Akzentfarben frei.",
       premiumActiveTitle: "Premium (aktiv: {{plan}})",
-      premiumCardDescription: "Schaue dir deine Vorteile mit Premium an.",
+      premiumCardDescription: "Entdecke, was Premium dir zusätzlich bietet",
       premiumPlanBadge: "Premium",
       freePlanBadge: "Free",
       premiumFreeLimit: "Bis zu 10 Abos",

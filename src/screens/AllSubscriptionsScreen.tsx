@@ -109,6 +109,10 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           ) : (
             <View style={styles.subscriptionList}>
               {filteredSubscriptions.map((subscription, index) => (
+                (() => {
+                  const isAccentStatus = subscription.status === "active";
+
+                  return (
                 <Pressable
                   key={subscription.id}
                   style={[
@@ -136,8 +140,19 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.statusBadge}>
-                      <Text style={[typography.meta, styles.statusText]}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        !isAccentStatus ? styles.statusBadgeMuted : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          typography.meta,
+                          styles.statusText,
+                          !isAccentStatus ? styles.statusTextMuted : null,
+                        ]}
+                      >
                         {t(`subscription.status_${subscription.status}`)}
                       </Text>
                     </View>
@@ -170,6 +185,8 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                     </View>
                   </View>
                 </Pressable>
+                  );
+                })()
               ))}
             </View>
           )}
@@ -295,9 +312,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
     },
+    statusBadgeMuted: {
+      backgroundColor: colors.surfaceSoft,
+    },
     statusText: {
       color: colors.accent,
       textTransform: "capitalize",
+    },
+    statusTextMuted: {
+      color: colors.textSecondary,
     },
     metaGrid: {
       flexDirection: "row",

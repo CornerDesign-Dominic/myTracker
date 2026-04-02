@@ -341,6 +341,17 @@ export const getBillingStructure = (subscriptions: Subscription[]) => {
   });
 };
 
+export const getSubscriptionsByBillingCycle = (
+  subscriptions: Subscription[],
+  cycle: Subscription["billingCycle"],
+) =>
+  subscriptions.filter(
+    (subscription) =>
+      subscription.billingCycle === cycle &&
+      subscription.status !== "cancelled" &&
+      !subscription.archivedAt,
+  );
+
 export const getTopExpensiveSubscriptions = (
   subscriptions: Subscription[],
   limit = 3,

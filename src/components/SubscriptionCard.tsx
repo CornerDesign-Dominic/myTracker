@@ -15,12 +15,14 @@ interface SubscriptionCardProps {
   subscription: Subscription;
   onPress?: () => void;
   showStatus?: boolean;
+  neutralInactiveStatus?: boolean;
 }
 
 export const SubscriptionCard = ({
   subscription,
   onPress,
   showStatus = true,
+  neutralInactiveStatus = false,
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
   const { currency } = useAppSettings();
@@ -33,6 +35,8 @@ export const SubscriptionCard = ({
     cancelled: { label: t("subscription.status_cancelled"), color: colors.danger },
   };
   const status = statusMap[subscription.status];
+  const useNeutralInactiveStatus =
+    neutralInactiveStatus && subscription.status !== "active";
 
   const localizedCategory = localizeCategory(subscription.category, language);
 
@@ -51,8 +55,23 @@ export const SubscriptionCard = ({
             </View>
           </View>
           {showStatus ? (
-            <View style={[styles.badge, { backgroundColor: `${status.color}20` }]}>
-              <Text style={[typography.meta, styles.badgeText, { color: status.color }]}>
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: useNeutralInactiveStatus
+                    ? colors.surfaceSoft
+                    : `${status.color}20`,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  typography.meta,
+                  styles.badgeText,
+                  { color: useNeutralInactiveStatus ? colors.textSecondary : status.color },
+                ]}
+              >
                 {status.label}
               </Text>
             </View>

@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import {
   buildSavingsSummary,
+  getTotalSavedAmount,
 } from "@/domain/subscriptionHistory/statistics";
 import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -53,6 +54,10 @@ export const SavingsScreen = () => {
   const savingsSummary = useMemo(
     () => buildSavingsSummary(subscriptions, skippedEvents, new Date()),
     [skippedEvents, subscriptions],
+  );
+  const totalSavedAmount = useMemo(
+    () => getTotalSavedAmount(skippedEvents),
+    [skippedEvents],
   );
 
   const summaryLabels = useMemo(() => {
@@ -103,50 +108,67 @@ export const SavingsScreen = () => {
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={layout.content}>
         <View style={[surfaces.panel, styles.summaryCard]}>
-          <View style={styles.summaryRow}>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.currentYear}</Text>
-              <Text style={[typography.sectionTitle, styles.metricValue]}>
+          <View style={styles.cardHeader}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>
+              {t("stats.savingsCardTitle")}
+            </Text>
+          </View>
+          <View style={styles.savedMetric}>
+            <Text style={[typography.meta, styles.savedLabel]}>
+              {t("stats.savingsAllTime")}
+            </Text>
+            <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
+              {formatCurrency(totalSavedAmount, currency)}
+            </Text>
+          </View>
+          <View style={styles.savedDivider} />
+
+          <View style={styles.savedSummaryRow}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentYear}</Text>
+              <Text style={[typography.sectionTitle, styles.savedAmount]}>
                 {formatCurrency(savingsSummary.currentYearActual, currency)}
               </Text>
             </View>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.previousYear}</Text>
-              <Text style={[typography.sectionTitle, styles.metricValue]}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousYear}</Text>
+              <Text style={[typography.sectionTitle, styles.savedAmount]}>
                 {formatCurrency(savingsSummary.previousYearActual, currency)}
               </Text>
             </View>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.currentMonth}</Text>
-              <Text style={[typography.sectionTitle, styles.metricValue]}>
+          <View style={styles.savedDivider} />
+
+          <View style={styles.savedSummaryRow}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentMonth}</Text>
+              <Text style={[typography.sectionTitle, styles.savedAmount]}>
                 {formatCurrency(savingsSummary.currentMonthActual, currency)}
               </Text>
             </View>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>{summaryLabels.previousMonth}</Text>
-              <Text style={[typography.sectionTitle, styles.metricValue]}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousMonth}</Text>
+              <Text style={[typography.sectionTitle, styles.savedAmount]}>
                 {formatCurrency(savingsSummary.previousMonthActual, currency)}
               </Text>
             </View>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>
+          <View style={styles.savedDivider} />
+
+          <View style={styles.savedSummaryRow}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>
                 {summaryLabels.currentMonthProjection}
               </Text>
-              <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
+              <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
                 {formatCurrency(savingsSummary.currentMonthProjected, currency)}
               </Text>
             </View>
-            <View style={styles.metricBlock}>
-              <Text style={[typography.meta, styles.metricLabel]}>
+            <View style={styles.savedMetric}>
+              <Text style={[typography.meta, styles.savedLabel]}>
                 {summaryLabels.currentYearProjection}
               </Text>
-              <Text style={[typography.sectionTitle, styles.metricValueAccent]}>
+              <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
                 {formatCurrency(savingsSummary.currentYearProjected, currency)}
               </Text>
             </View>
@@ -215,33 +237,41 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryCard: {
       gap: spacing.md,
     },
-    summaryRow: {
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    cardTitle: {
+      color: colors.textPrimary,
+    },
+    savedSummaryRow: {
       flexDirection: "row",
       gap: spacing.md,
     },
-    metricBlock: {
+    savedMetric: {
       flex: 1,
       gap: spacing.xxs,
     },
-    metricLabel: {
-      color: colors.textSecondary,
-      textTransform: "uppercase",
+    savedLabel: {
+      color: colors.textPrimary,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
     },
-    metricValue: {
+    savedAmount: {
       color: colors.textPrimary,
     },
-    metricValueAccent: {
+    savedAmountAccent: {
       color: colors.accent,
     },
-    divider: {
+    savedDivider: {
       height: 1,
       backgroundColor: colors.border,
     },
     listCard: {
       gap: spacing.md,
-    },
-    cardTitle: {
-      color: colors.textPrimary,
     },
     list: {
       gap: spacing.xs,

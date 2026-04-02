@@ -250,16 +250,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <View style={[surfaces.mainPanel, styles.primaryCard]}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>
-              {t("settings.premiumActiveTitle", {
-                plan: isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge"),
-              })}
-            </Text>
-            <View style={styles.purchaseIconWrap}>
-              <Ionicons name="diamond-outline" size={18} color={colors.accent} />
-            </View>
-          </View>
+          <Text style={[typography.cardTitle, styles.groupTitle]}>
+            {t("settings.premiumActiveTitle", {
+              plan: isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge"),
+            })}
+          </Text>
           <Text style={[typography.secondary, styles.premiumLead]}>{t("settings.premiumCardDescription")}</Text>
 
           <Pressable
@@ -468,6 +463,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
                       <Ionicons name="bar-chart-outline" size={16} color={colors.accent} />
                       <Text style={[typography.secondary, styles.premiumFeatureText]}>
                         {t("settings.premiumItemStats")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="color-palette-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemAccents")}
                       </Text>
                     </View>
                     <View style={styles.premiumFeatureRow}>
@@ -895,7 +896,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     purchaseSheet: {
       maxHeight: "82%",
       borderRadius: radius.lg,
-      paddingVertical: spacing.md,
+      padding: 0,
+      overflow: "hidden",
     },
     purchaseScroll: {
       flexGrow: 0,
@@ -903,7 +905,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     purchaseScrollContent: {
       gap: spacing.md,
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
+      paddingVertical: spacing.lg,
     },
     purchaseSheetHeader: {
       flexDirection: "row",
@@ -929,7 +931,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       opacity: 0.55,
     },
     purchasePrimaryText: {
-      color: colors.accentText,
+      color: colors.accent,
     },
     purchaseErrorText: {
       color: colors.danger,

@@ -175,7 +175,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     gap: 2,
   },
   metaLabel: {
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textTransform: "uppercase",
   },
   metaValue: {

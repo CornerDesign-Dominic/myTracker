@@ -95,7 +95,7 @@ const getWeekdayLabels = (language: "de" | "en") => {
 };
 
 export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
-  const { colors, typography } = useAppTheme();
+  const { colors, typography, isDark } = useAppTheme();
   const { language, t } = useI18n();
   const { currency } = useAppSettings();
   const layout = createScreenLayout(colors);
@@ -216,19 +216,27 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
         <View style={[surfaces.panel, styles.calendarCard]}>
           <View style={styles.headerRow}>
             <Pressable
-              style={[surfaces.subtlePanel, styles.monthAction]}
+              style={[surfaces.subtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
               onPress={() => changeMonth(-1)}
             >
-              <Ionicons name="chevron-back-outline" size={18} color={colors.textPrimary} />
+              <Ionicons
+                name="chevron-back-outline"
+                size={18}
+                color={!isDark ? colors.textSecondary : colors.textPrimary}
+              />
             </Pressable>
 
             <Text style={[typography.cardTitle, styles.monthLabel]}>{monthLabel}</Text>
 
             <Pressable
-              style={[surfaces.subtlePanel, styles.monthAction]}
+              style={[surfaces.subtlePanel, styles.monthAction, !isDark ? styles.monthActionLight : null]}
               onPress={() => changeMonth(1)}
             >
-              <Ionicons name="chevron-forward-outline" size={18} color={colors.textPrimary} />
+              <Ionicons
+                name="chevron-forward-outline"
+                size={18}
+                color={!isDark ? colors.textSecondary : colors.textPrimary}
+              />
             </Pressable>
           </View>
 
@@ -391,6 +399,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "center",
     },
+    monthActionLight: {
+      backgroundColor: colors.surfaceMuted,
+      borderColor: colors.borderStrong,
+    },
     monthLabel: {
       flex: 1,
       color: colors.textPrimary,
@@ -466,10 +478,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     dueDot: {
       backgroundColor: colors.accent,
+      opacity: 0.95,
     },
     selectedDueDot: {
       backgroundColor: colors.accent,
-      opacity: 0.9,
+      opacity: 1,
     },
     dueCard: {
       gap: spacing.md,

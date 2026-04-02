@@ -53,7 +53,7 @@ const TabsNavigator = () => {
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          borderTopColor: colors.borderStrong,
           borderTopWidth: 1,
           height: tabBarHeight,
           paddingTop: tabBarPaddingTop,

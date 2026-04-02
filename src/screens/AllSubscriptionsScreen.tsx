@@ -22,7 +22,7 @@ import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreenProps) => {
-  const { colors, typography } = useAppTheme();
+  const { colors, typography, isDark } = useAppTheme();
   const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
@@ -87,8 +87,16 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               placeholderTextColor={colors.textSecondary}
               style={styles.searchInput}
             />
-            <Pressable style={styles.clearSearchButton} onPress={() => setSearchQuery("")} hitSlop={8}>
-              <Ionicons name="close" size={18} color={colors.textSecondary} />
+            <Pressable
+              style={[styles.clearSearchButton, !isDark ? styles.clearSearchButtonLight : null]}
+              onPress={() => setSearchQuery("")}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="close"
+                size={18}
+                color={!isDark ? colors.textPrimary : colors.textSecondary}
+              />
             </Pressable>
           </View>
         </View>
@@ -270,6 +278,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "center",
     },
+    clearSearchButtonLight: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      borderRadius: 999,
+    },
     listCard: {
       gap: spacing.xs,
     },
@@ -332,7 +346,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.xxs,
     },
     metaLabel: {
-      color: colors.textSecondary,
+      color: colors.textMuted,
       textTransform: "uppercase",
     },
     metaValue: {

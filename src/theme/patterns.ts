@@ -3,6 +3,8 @@ import { StyleSheet, TextStyle, ViewStyle } from "react-native";
 import { radius, shadowPresets, spacing } from "./tokens";
 import { AppThemeColors } from "./tokens";
 
+const isLightTheme = (colors: AppThemeColors) => colors.background === "#F8FAFD";
+
 export const createScreenLayout = (colors: AppThemeColors) =>
   StyleSheet.create({
     screen: {
@@ -28,10 +30,10 @@ export const createSurfaceStyles = (colors: AppThemeColors) =>
       ...shadowPresets.card(colors),
     },
     subtlePanel: {
-      backgroundColor: colors.surfaceSoft,
+      backgroundColor: isLightTheme(colors) ? colors.surfaceMuted : colors.surfaceSoft,
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isLightTheme(colors) ? colors.borderStrong : colors.border,
       padding: spacing.lg,
     },
   });
@@ -77,10 +79,10 @@ export const createInputStyles = (colors: AppThemeColors) =>
   StyleSheet.create({
     input: {
       minHeight: 54,
-      backgroundColor: colors.surface,
+      backgroundColor: isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isLightTheme(colors) ? colors.borderStrong : colors.border,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
     },

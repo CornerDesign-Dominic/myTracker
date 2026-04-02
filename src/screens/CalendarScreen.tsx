@@ -400,7 +400,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
     },
     monthActionLight: {
-      backgroundColor: colors.surfaceSoft,
+      backgroundColor: colors.surface,
       borderColor: colors.borderStrong,
     },
     monthLabel: {

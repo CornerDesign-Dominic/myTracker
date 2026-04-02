@@ -265,7 +265,16 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     searchFieldMain: {
       borderColor: colors.borderStrong,
-      backgroundColor: colors.surfaceSoft,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 16,
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      elevation: 2,
     },
     searchInput: {
       color: colors.textPrimary,
@@ -284,7 +293,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     clearSearchButtonLight: {
       backgroundColor: colors.surface,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.borderStrong,
       borderRadius: 999,
     },

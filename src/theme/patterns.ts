@@ -32,17 +32,17 @@ export const createSurfaceStyles = (colors: AppThemeColors) =>
     mainPanel: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.borderStrong,
       padding: spacing.lg,
       shadowColor: colors.shadow,
       shadowOpacity: 1,
-      shadowRadius: 26,
+      shadowRadius: 30,
       shadowOffset: {
         width: 0,
-        height: 14,
+        height: 16,
       },
-      elevation: 5,
+      elevation: 6,
     },
     subtlePanel: {
       backgroundColor: isLightTheme(colors) ? colors.surfaceMuted : colors.surfaceSoft,
@@ -54,10 +54,17 @@ export const createSurfaceStyles = (colors: AppThemeColors) =>
     mainSubtlePanel: {
       backgroundColor: isLightTheme(colors) ? colors.surfaceSoft : colors.surfaceSoft,
       borderRadius: radius.md,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.borderStrong,
       padding: spacing.lg,
-      ...shadowPresets.soft(colors),
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 3,
     },
   });
 

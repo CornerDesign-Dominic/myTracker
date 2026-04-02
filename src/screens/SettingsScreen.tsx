@@ -251,54 +251,22 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
         <View style={[surfaces.mainPanel, styles.primaryCard]}>
           <View style={styles.cardHeaderRow}>
-            <View style={styles.cardHeaderCopy}>
-              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.premiumTitle")}</Text>
-              <Text style={[typography.secondary, styles.premiumLead]}>
-                {t("settings.premiumDescription")}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.premiumStatusBadge,
-                isPremium ? styles.premiumStatusBadgeActive : styles.premiumStatusBadgeFree,
-              ]}
-            >
-              <Text
-                style={[
-                  typography.meta,
-                  styles.premiumStatusBadgeText,
-                  isPremium ? styles.premiumStatusBadgeTextActive : null,
-                ]}
-              >
-                {isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge")}
-              </Text>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>
+              {t("settings.premiumActiveTitle", {
+                plan: isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge"),
+              })}
+            </Text>
+            <View style={styles.purchaseIconWrap}>
+              <Ionicons name="diamond-outline" size={18} color={colors.accent} />
             </View>
           </View>
-
-          <View style={styles.premiumComparisonList}>
-            <View style={styles.premiumComparisonRow}>
-              <Text style={[typography.meta, styles.premiumComparisonLabel]}>
-                {t("settings.freePlanBadge")}
-              </Text>
-              <Text style={[typography.secondary, styles.premiumComparisonValue]}>
-                {t("settings.premiumFreeLimit")}
-              </Text>
-            </View>
-            <View style={styles.premiumComparisonRow}>
-              <Text style={[typography.meta, styles.premiumComparisonLabel]}>
-                {t("settings.premiumPlanBadge")}
-              </Text>
-              <Text style={[typography.secondary, styles.premiumComparisonValue]}>
-                {t("settings.premiumUnlimited")}
-              </Text>
-            </View>
-          </View>
+          <Text style={[typography.secondary, styles.premiumLead]}>{t("settings.premiumCardDescription")}</Text>
 
           <Pressable
-            style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
+            style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
             onPress={openPremiumModal}
           >
-            <Text style={[typography.button, styles.optionText]}>{t("settings.premiumLearnMore")}</Text>
+            <Text style={[typography.button, styles.purchasePrimaryText]}>{t("settings.premiumLearnMore")}</Text>
           </Pressable>
         </View>
 
@@ -424,67 +392,129 @@ export const SettingsScreen = ({ navigation }: Props) => {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closePremiumModal} />
           <View style={[surfaces.panel, styles.purchaseSheet]}>
-            <View style={styles.purchaseSheetHeader}>
-              <View style={styles.purchaseIconWrap}>
-                <Ionicons name="diamond-outline" size={18} color={colors.accent} />
+            <ScrollView
+              style={styles.purchaseScroll}
+              contentContainerStyle={styles.purchaseScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.purchaseSheetHeader}>
+                <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.premiumModalTitle")}</Text>
+                <Pressable onPress={closePremiumModal} hitSlop={10}>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
+                </Pressable>
               </View>
-              <Pressable onPress={closePremiumModal} hitSlop={10}>
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.premiumModalTitle")}</Text>
-            <Text style={[typography.secondary, styles.purchaseDescription]}>
-              {t("settings.premiumModalDescription")}
-            </Text>
-            <View style={styles.premiumModalInfo}>
-              <View style={styles.premiumInfoRow}>
-                <Text style={[typography.meta, styles.premiumComparisonLabel]}>{t("settings.freePlanBadge")}</Text>
-                <Text style={[typography.secondary, styles.premiumComparisonValue]}>{t("settings.premiumFreeLimit")}</Text>
-              </View>
-              <View style={styles.premiumInfoRow}>
-                <Text style={[typography.meta, styles.premiumComparisonLabel]}>{t("settings.premiumPlanBadge")}</Text>
-                <Text style={[typography.secondary, styles.premiumComparisonValue]}>{t("settings.premiumUnlimited")}</Text>
-              </View>
-            </View>
-            {purchaseMessage ? (
-              <Text style={[typography.secondary, styles.purchaseErrorText]}>{purchaseMessage}</Text>
-            ) : null}
-            {!isStoreConnected && !isRefreshing ? (
-              <Text style={[typography.secondary, styles.purchaseStoreHint]}>
-                {t("settings.purchaseUnavailable")}
+              <Text style={[typography.secondary, styles.purchaseDescription]}>
+                {t("settings.premiumModalDescription")}
               </Text>
-            ) : null}
-            <Pressable
-              style={[
-                buttons.buttonBase,
-                buttons.primaryButton,
-                styles.purchaseButton,
-                !supportColorsPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
-              ]}
-              disabled={!supportColorsPrice || isPurchasing || isRefreshing}
-              onPress={handlePurchase}
-            >
-              {isPurchasing ? (
-                <ActivityIndicator size="small" color={colors.accentText} />
-              ) : (
-                <Text style={[typography.button, styles.purchasePrimaryText]}>
-                  {supportColorsPrice
-                    ? t("settings.purchaseBuy", { price: supportColorsPrice })
-                    : t("settings.purchaseBuyUnavailable")}
+              <View style={styles.premiumTierList}>
+                <View style={[styles.premiumTierCard, styles.premiumTierCardFree]}>
+                  <View style={styles.premiumTierHeader}>
+                    <Text style={[typography.cardTitle, styles.premiumTierTitle]}>{t("settings.premiumFreeCardTitle")}</Text>
+                    <Ionicons name="leaf-outline" size={18} color={colors.textSecondary} />
+                  </View>
+                  <View style={styles.premiumFeatureList}>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="albums-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemSubscriptionsFree")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemHistoryFree")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="cloud-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemCloudFree")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="bar-chart-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemStats")}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.premiumTierCard, styles.premiumTierCardPremium]}>
+                  <View style={styles.premiumTierHeader}>
+                    <Text style={[typography.cardTitle, styles.premiumTierTitle]}>{t("settings.premiumPlanBadge")}</Text>
+                    <Ionicons name="diamond-outline" size={18} color={colors.accent} />
+                  </View>
+                  <View style={styles.premiumFeatureList}>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="albums-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemSubscriptionsPremium")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="time-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemHistoryPremium")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="cloud-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemCloudPremium")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="bar-chart-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemStats")}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumFeatureRow}>
+                      <Ionicons name="heart-outline" size={16} color={colors.accent} />
+                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                        {t("settings.premiumItemSupport")}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+              {purchaseMessage ? (
+                <Text style={[typography.secondary, styles.purchaseErrorText]}>{purchaseMessage}</Text>
+              ) : null}
+              {!isStoreConnected && !isRefreshing ? (
+                <Text style={[typography.secondary, styles.purchaseStoreHint]}>
+                  {t("settings.purchaseUnavailable")}
                 </Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={[buttons.buttonBase, buttons.secondaryButton, styles.purchaseButton]}
-              disabled={isPurchasing || isRefreshing}
-              onPress={handleRestore}
-            >
-              {isRefreshing ? (
-                <ActivityIndicator size="small" color={colors.accent} />
-              ) : (
-                <Text style={[typography.button, styles.optionText]}>{t("settings.purchaseRestore")}</Text>
-              )}
-            </Pressable>
+              ) : null}
+              <Pressable
+                style={[
+                  buttons.buttonBase,
+                  buttons.primaryButton,
+                  styles.purchaseButton,
+                  !supportColorsPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
+                ]}
+                disabled={!supportColorsPrice || isPurchasing || isRefreshing}
+                onPress={handlePurchase}
+              >
+                {isPurchasing ? (
+                  <ActivityIndicator size="small" color={colors.accentText} />
+                ) : (
+                  <Text style={[typography.button, styles.purchasePrimaryText]}>{t("settings.premiumUpgrade")}</Text>
+                )}
+              </Pressable>
+              <Pressable
+                style={[buttons.buttonBase, buttons.secondaryButton, styles.purchaseButton]}
+                disabled={isPurchasing || isRefreshing}
+                onPress={handleRestore}
+              >
+                {isRefreshing ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Text style={[typography.button, styles.optionText]}>{t("settings.purchaseRestore")}</Text>
+                )}
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -640,46 +670,44 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       lineHeight: 22,
     },
-    premiumStatusBadge: {
-      minHeight: 30,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      alignItems: "center",
-      justifyContent: "center",
+    premiumTierList: {
+      gap: spacing.sm,
     },
-    premiumStatusBadgeFree: {
-      borderColor: colors.border,
+    premiumTierCard: {
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
       backgroundColor: colors.surfaceSoft,
     },
-    premiumStatusBadgeActive: {
-      borderColor: colors.accent,
-      backgroundColor: colors.accentSoft,
-    },
-    premiumStatusBadgeText: {
-      color: colors.textSecondary,
-      textTransform: "uppercase",
-    },
-    premiumStatusBadgeTextActive: {
-      color: colors.accent,
-    },
-    premiumComparisonList: {
-      gap: spacing.sm,
-      paddingTop: spacing.xs,
-    },
-    premiumComparisonRow: {
+    premiumTierHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: spacing.md,
+      gap: spacing.sm,
     },
-    premiumComparisonLabel: {
-      color: colors.textSecondary,
+    premiumTierCardFree: {
+      borderColor: colors.border,
+    },
+    premiumTierCardPremium: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    premiumTierTitle: {
+      color: colors.textPrimary,
       textTransform: "uppercase",
     },
-    premiumComparisonValue: {
+    premiumFeatureList: {
+      gap: spacing.sm,
+    },
+    premiumFeatureRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    premiumFeatureText: {
+      flex: 1,
       color: colors.textPrimary,
-      textAlign: "right",
     },
     premiumModalInfo: {
       gap: spacing.sm,
@@ -865,8 +893,16 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       padding: spacing.lg,
     },
     purchaseSheet: {
-      gap: spacing.md,
+      maxHeight: "82%",
       borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+    },
+    purchaseScroll: {
+      flexGrow: 0,
+    },
+    purchaseScrollContent: {
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
       paddingBottom: spacing.lg,
     },
     purchaseSheetHeader: {

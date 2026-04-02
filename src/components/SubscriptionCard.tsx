@@ -11,6 +11,12 @@ import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
+type StatusTone = {
+  backgroundColor: string;
+  borderColor: string;
+  textColor: string;
+};
+
 interface SubscriptionCardProps {
   subscription: Subscription;
   onPress?: () => void;
@@ -19,6 +25,34 @@ interface SubscriptionCardProps {
   compact?: boolean;
   actionIconName?: "pencil-outline" | "chevron-forward-outline";
 }
+
+export const getSubscriptionStatusTone = (
+  status: Subscription["status"],
+  colors: ReturnType<typeof useAppTheme>["colors"],
+  neutralInactiveStatus = false,
+): StatusTone => {
+  if (status === "active") {
+    return {
+      backgroundColor: colors.accentSoft,
+      borderColor: `${colors.accent}30`,
+      textColor: colors.accent,
+    };
+  }
+
+  if (neutralInactiveStatus || status === "paused") {
+    return {
+      backgroundColor: colors.surfaceSoft,
+      borderColor: colors.border,
+      textColor: colors.textSecondary,
+    };
+  }
+
+  return {
+    backgroundColor: `${colors.danger}14`,
+    borderColor: `${colors.danger}2E`,
+    textColor: colors.danger,
+  };
+};
 
 export const SubscriptionCard = ({
   subscription,
@@ -33,16 +67,12 @@ export const SubscriptionCard = ({
   const { language, t } = useI18n();
   const styles = getStyles(colors);
   const surfaces = createSurfaceStyles(colors);
-  const statusMap: Record<Subscription["status"], { label: string; color: string }> = {
-    active: { label: t("subscription.status_active"), color: colors.accent },
-    paused: { label: t("subscription.status_paused"), color: colors.warning },
-    cancelled: { label: t("subscription.status_cancelled"), color: colors.danger },
-  };
-  const status = statusMap[subscription.status];
-  const useNeutralInactiveStatus =
-    neutralInactiveStatus && subscription.status !== "active";
-
   const localizedCategory = localizeCategory(subscription.category, language);
+  const statusTone = getSubscriptionStatusTone(
+    subscription.status,
+    colors,
+    neutralInactiveStatus,
+  );
 
   return (
     <View style={[surfaces.panel, styles.card]}>
@@ -68,9 +98,8 @@ export const SubscriptionCard = ({
               style={[
                 styles.badge,
                 {
-                  backgroundColor: useNeutralInactiveStatus
-                    ? colors.surfaceSoft
-                    : `${status.color}20`,
+                  backgroundColor: statusTone.backgroundColor,
+                  borderColor: statusTone.borderColor,
                 },
               ]}
             >
@@ -78,10 +107,10 @@ export const SubscriptionCard = ({
                 style={[
                   typography.meta,
                   styles.badgeText,
-                  { color: useNeutralInactiveStatus ? colors.textSecondary : status.color },
+                  { color: statusTone.textColor },
                 ]}
               >
-                {status.label}
+                {t(`subscription.status_${subscription.status}`)}
               </Text>
             </View>
           ) : null}
@@ -162,6 +191,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
+    borderWidth: 1,
   },
   badgeText: {
   },

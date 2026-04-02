@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
+import { getSubscriptionStatusTone } from "@/components/SubscriptionCard";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -118,7 +119,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
             <View style={styles.subscriptionList}>
               {filteredSubscriptions.map((subscription, index) => (
                 (() => {
-                  const isAccentStatus = subscription.status === "active";
+                  const statusTone = getSubscriptionStatusTone(subscription.status, colors);
 
                   return (
                 <Pressable
@@ -151,14 +152,17 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                     <View
                       style={[
                         styles.statusBadge,
-                        !isAccentStatus ? styles.statusBadgeMuted : null,
+                        {
+                          backgroundColor: statusTone.backgroundColor,
+                          borderColor: statusTone.borderColor,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           typography.meta,
                           styles.statusText,
-                          !isAccentStatus ? styles.statusTextMuted : null,
+                          { color: statusTone.textColor },
                         ]}
                       >
                         {t(`subscription.status_${subscription.status}`)}
@@ -238,7 +242,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textTransform: "uppercase",
     },
     summaryAmount: {
-      color: colors.textPrimary,
+      color: colors.textSecondary,
       fontSize: 17,
       lineHeight: 22,
     },
@@ -334,20 +338,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
     },
     statusBadge: {
-      backgroundColor: colors.accentSoft,
       borderRadius: 999,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
-    },
-    statusBadgeMuted: {
-      backgroundColor: colors.surfaceSoft,
+      borderWidth: 1,
     },
     statusText: {
-      color: colors.accent,
       textTransform: "capitalize",
-    },
-    statusTextMuted: {
-      color: colors.textSecondary,
     },
     metaGrid: {
       flexDirection: "row",

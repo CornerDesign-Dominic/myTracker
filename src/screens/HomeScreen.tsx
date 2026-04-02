@@ -205,7 +205,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.sm,
     },
     summaryMonth: {
-      color: colors.textSecondary,
+      color: colors.accent,
       textTransform: "capitalize",
       fontSize: 22,
       lineHeight: 28,
@@ -230,7 +230,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: 2,
     },
     summaryLabel: {
-      color: colors.textSecondary,
+      color: colors.textMuted,
       textTransform: "uppercase",
     },
     summaryAmount: {
@@ -243,7 +243,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
     },
     summarySecondaryValue: {
-      color: colors.textPrimary,
+      color: colors.textSecondary,
     },
     summaryDueValue: {
       color: colors.accent,

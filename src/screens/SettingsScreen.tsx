@@ -87,6 +87,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const { currentUser, isAnonymous, logout } = useAuth();
   const {
     hasSupportColors,
+    isPremium,
     isPurchasing,
     isRefreshing,
     isStoreConnected,
@@ -96,7 +97,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
     restorePurchases,
     clearPurchaseError,
   } = usePurchases();
-  const [isPurchaseModalVisible, setIsPurchaseModalVisible] = useState(false);
+  const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
+  const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasSupportColors;
   const purchaseMessage = useMemo(() => {
@@ -112,33 +114,33 @@ export const SettingsScreen = ({ navigation }: Props) => {
   }, [purchaseError, t]);
 
   useEffect(() => {
-    if (!isPurchaseModalVisible) {
+    if (!isPremiumModalVisible) {
       clearPurchaseError();
     }
-  }, [clearPurchaseError, isPurchaseModalVisible]);
+  }, [clearPurchaseError, isPremiumModalVisible]);
 
   useEffect(() => {
     if (hasSupportColors) {
-      setIsPurchaseModalVisible(false);
+      setIsPremiumModalVisible(false);
     }
   }, [hasSupportColors]);
 
-  const openPurchaseModal = () => {
+  const openPremiumModal = () => {
     clearPurchaseError();
-    setIsPurchaseModalVisible(true);
+    setIsPremiumModalVisible(true);
   };
 
-  const closePurchaseModal = () => {
+  const closePremiumModal = () => {
     if (isPurchasing || isRefreshing) {
       return;
     }
 
-    setIsPurchaseModalVisible(false);
+    setIsPremiumModalVisible(false);
   };
 
   const handleAccentPress = (option: AccentColor) => {
     if (!canUseAccentColor(option, hasSupportColors)) {
-      openPurchaseModal();
+      openPremiumModal();
       return;
     }
 
@@ -167,51 +169,73 @@ export const SettingsScreen = ({ navigation }: Props) => {
         contentContainerStyle={[layout.content, styles.contentWithTabBar]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[surfaces.panel, styles.groupCard]}>
+        <View style={[surfaces.mainPanel, styles.primaryCard]}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accountTitle")}</Text>
           </View>
           {!isAnonymous && currentUser?.email ? (
-            <View style={styles.accountStatusCard}>
-              <View style={styles.accountStatusHeader}>
-                <View style={styles.accountStatusBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
-                  <Text style={[typography.meta, styles.accountStatusBadgeText]}>
-                    {t("settings.loggedInBadge")}
+            <>
+              <View style={styles.accountStatusCard}>
+                <View style={styles.accountStatusHeader}>
+                  <View style={styles.accountStatusBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+                    <Text style={[typography.meta, styles.accountStatusBadgeText]}>
+                      {t("settings.loggedInBadge")}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.accountIdentityRow}>
+                  <Text style={[typography.meta, styles.accountIdentityLabel]}>{t("auth.email")}</Text>
+                  <Text style={[typography.body, styles.accountIdentityValue]}>{currentUser.email}</Text>
+                </View>
+              </View>
+              <Text style={[typography.secondary, styles.accountText]}>
+                {t("settings.accountSignedIn")}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[typography.secondary, styles.accountText]}>
+                {t("settings.accountAnonymous")}
+              </Text>
+              <View style={styles.accountBenefitList}>
+                <View style={styles.accountBenefitRow}>
+                  <Ionicons name="cloud-upload-outline" size={16} color={colors.accent} />
+                  <Text style={[typography.secondary, styles.accountBenefitText]}>
+                    {t("settings.accountBenefitBackup")}
+                  </Text>
+                </View>
+                <View style={styles.accountBenefitRow}>
+                  <Ionicons name="phone-portrait-outline" size={16} color={colors.accent} />
+                  <Text style={[typography.secondary, styles.accountBenefitText]}>
+                    {t("settings.accountBenefitDevices")}
+                  </Text>
+                </View>
+                <View style={styles.accountBenefitRow}>
+                  <Ionicons name="refresh-outline" size={16} color={colors.accent} />
+                  <Text style={[typography.secondary, styles.accountBenefitText]}>
+                    {t("settings.accountBenefitRestore")}
                   </Text>
                 </View>
               </View>
-              <View style={styles.accountIdentityRow}>
-                <Text style={[typography.meta, styles.accountIdentityLabel]}>{t("auth.email")}</Text>
-                <Text style={[typography.body, styles.accountIdentityValue]}>{currentUser.email}</Text>
-              </View>
-            </View>
-          ) : null}
-          <Text style={[typography.secondary, styles.accountText]}>
-            {isAnonymous ? t("settings.accountAnonymous") : t("settings.accountSignedIn")}
-          </Text>
+            </>
+          )}
           <View style={styles.optionRow}>
             {isAnonymous ? (
               <>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
+                  onPress={() => navigation.navigate("Register")}
+                >
+                  <Text style={[typography.button, styles.actionPrimaryText]}>
+                    {t("settings.registerAction")}
+                  </Text>
+                </Pressable>
                 <Pressable
                   style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
                   onPress={() => navigation.navigate("Login")}
                 >
                   <Text style={[typography.button, styles.optionText]}>{t("settings.loginAction")}</Text>
-                </Pressable>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
-                  onPress={() => navigation.navigate("Register")}
-                >
-                  <Text
-                    style={[
-                      typography.button,
-                      styles.actionPrimaryText,
-                      mode === "light" ? styles.actionPrimaryTextLight : null,
-                    ]}
-                  >
-                    {t("settings.registerAction")}
-                  </Text>
                 </Pressable>
               </>
             ) : (
@@ -223,6 +247,59 @@ export const SettingsScreen = ({ navigation }: Props) => {
               </Pressable>
             )}
           </View>
+        </View>
+
+        <View style={[surfaces.mainPanel, styles.primaryCard]}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCopy}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.premiumTitle")}</Text>
+              <Text style={[typography.secondary, styles.premiumLead]}>
+                {t("settings.premiumDescription")}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.premiumStatusBadge,
+                isPremium ? styles.premiumStatusBadgeActive : styles.premiumStatusBadgeFree,
+              ]}
+            >
+              <Text
+                style={[
+                  typography.meta,
+                  styles.premiumStatusBadgeText,
+                  isPremium ? styles.premiumStatusBadgeTextActive : null,
+                ]}
+              >
+                {isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge")}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.premiumComparisonList}>
+            <View style={styles.premiumComparisonRow}>
+              <Text style={[typography.meta, styles.premiumComparisonLabel]}>
+                {t("settings.freePlanBadge")}
+              </Text>
+              <Text style={[typography.secondary, styles.premiumComparisonValue]}>
+                {t("settings.premiumFreeLimit")}
+              </Text>
+            </View>
+            <View style={styles.premiumComparisonRow}>
+              <Text style={[typography.meta, styles.premiumComparisonLabel]}>
+                {t("settings.premiumPlanBadge")}
+              </Text>
+              <Text style={[typography.secondary, styles.premiumComparisonValue]}>
+                {t("settings.premiumUnlimited")}
+              </Text>
+            </View>
+          </View>
+
+          <Pressable
+            style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
+            onPress={openPremiumModal}
+          >
+            <Text style={[typography.button, styles.optionText]}>{t("settings.premiumLearnMore")}</Text>
+          </Pressable>
         </View>
 
         <OptionGroup
@@ -248,24 +325,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
         />
 
         <View style={[surfaces.panel, styles.groupCard]}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
-            <View style={styles.badgeRow}>
-              <View style={[styles.accentStatusBadge, styles.accentStatusBadgeFree]}>
-                <Text style={[typography.meta, styles.accentStatusBadgeText]}>{t("settings.accentFreeBadge")}</Text>
-              </View>
-              {hasLockedAccents ? (
-                <View style={styles.lockBadge}>
-                  <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
-                </View>
-              ) : (
-                <View style={[styles.accentStatusBadge, styles.accentStatusBadgeUnlocked]}>
-                  <Text style={[typography.meta, styles.accentStatusBadgeText]}>{t("settings.accentPremiumBadge")}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-          <Text style={[typography.secondary, styles.lockedHint]}>{t("settings.purchaseLockedHint")}</Text>
+          <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
           <View style={styles.accentGrid}>
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
@@ -329,40 +389,63 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
         </View>
 
-        <View style={styles.legalLinks}>
-          <Pressable onPress={() => navigation.navigate("Terms")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{t("common.terms")}</Text>
-          </Pressable>
-          <Pressable onPress={() => navigation.navigate("Privacy")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{t("common.privacy")}</Text>
-          </Pressable>
-          <Pressable onPress={() => navigation.navigate("Imprint")}>
-            <Text style={[typography.secondary, styles.legalLink]}>{t("common.imprint")}</Text>
-          </Pressable>
+        <Pressable style={[surfaces.panel, styles.contactCard]} onPress={() => setIsContactModalVisible(true)}>
+          <View style={styles.contactRow}>
+            <View style={styles.contactCopy}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
+              <Text style={[typography.secondary, styles.contactText]}>{t("settings.contactSubtitle")}</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={colors.textSecondary} />
+          </View>
+        </Pressable>
+
+        <View style={styles.legalSection}>
+          <Text style={[typography.meta, styles.legalHeading]}>{t("settings.legalTitle")}</Text>
+          <View style={[surfaces.panel, styles.legalCard]}>
+            <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Terms")}>
+              <Text style={[typography.secondary, styles.legalLink]}>{t("common.terms")}</Text>
+            </Pressable>
+            <Pressable style={[styles.legalRow, styles.legalRowDivider]} onPress={() => navigation.navigate("Privacy")}>
+              <Text style={[typography.secondary, styles.legalLink]}>{t("common.privacy")}</Text>
+            </Pressable>
+            <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Imprint")}>
+              <Text style={[typography.secondary, styles.legalLink]}>{t("common.imprint")}</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 
       <Modal
         animationType="fade"
         transparent
-        visible={isPurchaseModalVisible}
-        onRequestClose={closePurchaseModal}
+        visible={isPremiumModalVisible}
+        onRequestClose={closePremiumModal}
       >
         <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closePurchaseModal} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closePremiumModal} />
           <View style={[surfaces.panel, styles.purchaseSheet]}>
             <View style={styles.purchaseSheetHeader}>
               <View style={styles.purchaseIconWrap}>
-                <Ionicons name="color-palette-outline" size={18} color={colors.accent} />
+                <Ionicons name="diamond-outline" size={18} color={colors.accent} />
               </View>
-              <Pressable onPress={closePurchaseModal} hitSlop={10}>
+              <Pressable onPress={closePremiumModal} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
             </View>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.purchaseTitle")}</Text>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.premiumModalTitle")}</Text>
             <Text style={[typography.secondary, styles.purchaseDescription]}>
-              {t("settings.purchaseDescription")}
+              {t("settings.premiumModalDescription")}
             </Text>
+            <View style={styles.premiumModalInfo}>
+              <View style={styles.premiumInfoRow}>
+                <Text style={[typography.meta, styles.premiumComparisonLabel]}>{t("settings.freePlanBadge")}</Text>
+                <Text style={[typography.secondary, styles.premiumComparisonValue]}>{t("settings.premiumFreeLimit")}</Text>
+              </View>
+              <View style={styles.premiumInfoRow}>
+                <Text style={[typography.meta, styles.premiumComparisonLabel]}>{t("settings.premiumPlanBadge")}</Text>
+                <Text style={[typography.secondary, styles.premiumComparisonValue]}>{t("settings.premiumUnlimited")}</Text>
+              </View>
+            </View>
             {purchaseMessage ? (
               <Text style={[typography.secondary, styles.purchaseErrorText]}>{purchaseMessage}</Text>
             ) : null}
@@ -405,6 +488,45 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isContactModalVisible}
+        onRequestClose={() => setIsContactModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsContactModalVisible(false)} />
+          <View style={[surfaces.panel, styles.purchaseSheet]}>
+            <View style={styles.purchaseSheetHeader}>
+              <View style={styles.purchaseIconWrap}>
+                <Ionicons name="mail-outline" size={18} color={colors.accent} />
+              </View>
+              <Pressable onPress={() => setIsContactModalVisible(false)} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
+            <Text style={[typography.secondary, styles.purchaseDescription]}>
+              {t("settings.contactModalDescription")}
+            </Text>
+            <View style={styles.contactActionList}>
+              <View style={styles.contactActionRow}>
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.textSecondary} />
+                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactFeedback")}</Text>
+              </View>
+              <View style={styles.contactActionRow}>
+                <Ionicons name="bug-outline" size={16} color={colors.textSecondary} />
+                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactBug")}</Text>
+              </View>
+              <View style={styles.contactActionRow}>
+                <Ionicons name="mail-open-outline" size={16} color={colors.textSecondary} />
+                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactEmail")}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -437,9 +559,24 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: "100%",
       paddingTop: 0,
     },
+    primaryCard: {
+      gap: spacing.md,
+    },
     accountText: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    accountBenefitList: {
+      gap: spacing.sm,
+    },
+    accountBenefitRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    accountBenefitText: {
+      flex: 1,
+      color: colors.textSecondary,
     },
     accountStatusCard: {
       gap: spacing.sm,
@@ -491,14 +628,72 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     cardHeaderRow: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "space-between",
       gap: spacing.sm,
     },
-    badgeRow: {
+    cardHeaderCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    premiumLead: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    premiumStatusBadge: {
+      minHeight: 30,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    premiumStatusBadgeFree: {
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+    },
+    premiumStatusBadgeActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    premiumStatusBadgeText: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    premiumStatusBadgeTextActive: {
+      color: colors.accent,
+    },
+    premiumComparisonList: {
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    premiumComparisonRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: spacing.xs,
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    premiumComparisonLabel: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+    },
+    premiumComparisonValue: {
+      color: colors.textPrimary,
+      textAlign: "right",
+    },
+    premiumModalInfo: {
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+    },
+    premiumInfoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
     },
     optionRow: {
       flexDirection: "row",
@@ -535,10 +730,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
     },
     actionPrimaryText: {
-      color: colors.accentText,
-    },
-    actionPrimaryTextLight: {
-      color: colors.textPrimary,
+      color: colors.accent,
     },
     accentGrid: {
       flexDirection: "row",
@@ -564,40 +756,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     accentOptionLocked: {
       opacity: 0.82,
-    },
-    lockBadge: {
-      width: 28,
-      height: 28,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    accentStatusBadge: {
-      minHeight: 28,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    accentStatusBadgeFree: {
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-    },
-    accentStatusBadgeUnlocked: {
-      borderColor: colors.accent,
-      backgroundColor: colors.accentSoft,
-    },
-    accentStatusBadgeText: {
-      color: colors.textSecondary,
-      textTransform: "uppercase",
-    },
-    lockedHint: {
-      color: colors.textSecondary,
-      lineHeight: 21,
     },
     accentOptionLock: {
       position: "absolute",
@@ -642,13 +800,63 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textTransform: "uppercase",
       textAlign: "center",
     },
-    legalLinks: {
+    contactCard: {
+      gap: spacing.sm,
+    },
+    contactRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: spacing.md,
+    },
+    contactCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    contactText: {
+      color: colors.textSecondary,
+      lineHeight: 21,
+    },
+    contactActionList: {
+      gap: spacing.sm,
+    },
+    contactActionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      minHeight: 40,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+    },
+    contactActionText: {
+      color: colors.textPrimary,
+    },
+    legalSection: {
+      gap: spacing.sm,
       paddingTop: spacing.xs,
       paddingBottom: spacing.sm,
     },
+    legalHeading: {
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    legalCard: {
+      gap: 0,
+    },
     legalLink: {
       color: colors.textSecondary,
+    },
+    legalRow: {
+      minHeight: 48,
+      justifyContent: "center",
+    },
+    legalRowDivider: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     modalBackdrop: {
       flex: 1,

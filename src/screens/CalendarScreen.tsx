@@ -298,6 +298,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
               {t("calendar.dueOn", { date: selectedDayLabel })}
             </Text>
             <View style={styles.dueList}>
+              <View style={styles.dueListDivider} />
               {dueSubscriptions.map((subscription, index) => (
                 <Pressable
                   key={subscription.id}
@@ -405,7 +406,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     monthLabel: {
       flex: 1,
-      color: colors.textPrimary,
+      color: colors.accent,
       textAlign: "center",
       textTransform: "capitalize",
     },
@@ -419,7 +420,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingVertical: 2,
     },
     weekdayText: {
-      color: colors.textSecondary,
+      color: colors.textMuted,
       textTransform: "uppercase",
     },
     grid: {
@@ -501,6 +502,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     dueList: {
       gap: spacing.xs,
+    },
+    dueListDivider: {
+      height: 1,
+      backgroundColor: colors.border,
     },
     dueRow: {
       flexDirection: "row",

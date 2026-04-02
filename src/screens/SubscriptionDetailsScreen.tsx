@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { getSubscriptionStatusTone } from "@/components/SubscriptionCard";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { EditorSheet } from "@/components/forms/EditorSheet";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -78,7 +79,12 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
-          <InfoRow label={t("subscription.status")} value={t(`subscription.status_${subscription.status}`)} colors={colors} />
+          <InfoRow
+            label={t("subscription.status")}
+            value={t(`subscription.status_${subscription.status}`)}
+            colors={colors}
+            badgeTone={getSubscriptionStatusTone(subscription.status, colors)}
+          />
           <InfoRow label={t("allSubscriptions.nextPayment")} value={formatDate(subscription.nextPaymentDate)} colors={colors} />
           <InfoRow
             label={t("subscription.startDate")}
@@ -152,10 +158,16 @@ const InfoRow = ({
   label,
   value,
   colors,
+  badgeTone,
 }: {
   label: string;
   value: string;
   colors: ReturnType<typeof useAppTheme>["colors"];
+  badgeTone?: {
+    backgroundColor: string;
+    borderColor: string;
+    textColor: string;
+  };
 }) => {
   const { typography } = useAppTheme();
   const styles = getStyles(colors);
@@ -163,7 +175,23 @@ const InfoRow = ({
   return (
     <View style={styles.infoRow}>
       <Text style={[typography.meta, styles.infoLabel]}>{label}</Text>
-      <Text style={[typography.body, styles.infoValue]}>{value}</Text>
+      {badgeTone ? (
+        <View
+          style={[
+            styles.infoBadge,
+            {
+              backgroundColor: badgeTone.backgroundColor,
+              borderColor: badgeTone.borderColor,
+            },
+          ]}
+        >
+          <Text style={[typography.meta, styles.infoBadgeText, { color: badgeTone.textColor }]}>
+            {value}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[typography.body, styles.infoValue]}>{value}</Text>
+      )}
     </View>
   );
 };
@@ -232,6 +260,16 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flex: 1,
       textAlign: "right",
       color: colors.textPrimary,
+    },
+    infoBadge: {
+      borderRadius: 999,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderWidth: 1,
+      alignSelf: "flex-start",
+    },
+    infoBadgeText: {
+      textTransform: "capitalize",
     },
     notesBlock: {
       gap: spacing.xs,

@@ -249,7 +249,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         </View>
 
         <Pressable
-          style={[surfaces.panel, styles.summaryCard]}
+          style={[surfaces.mainPanel, styles.summaryCard]}
           onPress={() => navigation.navigate("MonthlyPreview")}
         >
           <Text style={[typography.meta, styles.homeSummaryMonth]}>
@@ -631,7 +631,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.md,
-      borderColor: colors.accent,
     },
     homeSummaryMonth: {
       color: colors.textSecondary,

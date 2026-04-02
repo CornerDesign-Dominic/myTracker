@@ -43,7 +43,7 @@ type ThemeBaseTokens = {
 };
 
 const lightThemeBase: ThemeBaseTokens = {
-  background: "#F8FAFD",
+  background: "#EFF2F5",
   surface: "#FFFFFF",
   surfaceSoft: "#EDF3F8",
   surfaceMuted: "#E8EEF6",

@@ -251,17 +251,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
         <View style={[surfaces.mainPanel, styles.primaryCard]}>
           <Text style={[typography.cardTitle, styles.groupTitle]}>
-            {t("settings.premiumActiveTitle", {
-              plan: isPremium ? t("settings.premiumPlanBadge") : t("settings.freePlanBadge"),
-            })}
+            {isPremium ? t("settings.premiumCardTitlePremium") : t("settings.premiumCardTitleFree")}
           </Text>
-          <Text style={[typography.secondary, styles.premiumLead]}>{t("settings.premiumCardDescription")}</Text>
+          <Text style={[typography.secondary, styles.premiumLead]}>
+            {isPremium
+              ? t("settings.premiumCardDescriptionPremium")
+              : t("settings.premiumCardDescriptionFree")}
+          </Text>
 
           <Pressable
             style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
             onPress={openPremiumModal}
           >
-            <Text style={[typography.button, styles.purchasePrimaryText]}>{t("settings.premiumLearnMore")}</Text>
+            <Text style={[typography.button, styles.purchasePrimaryText]}>
+              {isPremium ? t("settings.premiumViewBenefits") : t("settings.premiumLearnMore")}
+            </Text>
           </Pressable>
         </View>
 

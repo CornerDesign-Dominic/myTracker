@@ -326,6 +326,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 </Text>
               </View>
               <View style={styles.savedDivider} />
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsPerYear")}
+              </Text>
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
@@ -345,6 +348,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 </View>
               </View>
               <View style={styles.savedDivider} />
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsPerMonth")}
+              </Text>
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
@@ -364,6 +370,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 </View>
               </View>
               <View style={styles.savedDivider} />
+              <Text style={[typography.meta, styles.savedSectionLabel]}>
+                {t("stats.savingsProjectionLabel")}
+              </Text>
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
@@ -455,7 +464,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
             <View style={styles.developmentSummaryRow}>
               <View style={styles.developmentSummaryItem}>
                 <Text style={[typography.meta, styles.developmentSummaryLabel]}>
-                  {t("stats.currentMonthProjected")}
+                  {t("stats.currentMonthProjected", { month: homeStyleSummary.monthLabel })}
                 </Text>
                 <Text style={[typography.sectionTitle, styles.developmentSummaryValue]}>
                   {formatCurrency(developmentSummary.currentMonthProjected, currency)}
@@ -463,7 +472,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               </View>
               <View style={styles.developmentSummaryItem}>
                 <Text style={[typography.meta, styles.developmentSummaryLabel]}>
-                  {t("stats.currentMonthProjectedSavings")}
+                  {t("stats.currentMonthProjectedSavings", {
+                    month: homeStyleSummary.monthLabel,
+                  })}
                 </Text>
                 <Text style={[typography.sectionTitle, styles.developmentSummaryValue]}>
                   {formatCurrency(savingsDevelopmentSummary.currentMonthProjected, currency)}
@@ -722,6 +733,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 18,
       fontWeight: "700",
     },
+    savedSectionLabel: {
+      color: colors.textSecondary,
+    },
     savedDivider: {
       height: 1,
       backgroundColor: colors.border,
@@ -744,7 +758,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     developmentCompareHeading: {
       flex: 1,
-      color: colors.textSecondary,
+      color: colors.accent,
       textTransform: "uppercase",
     },
     developmentCompareHeadingRight: {
@@ -797,7 +811,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
     },
     chartValue: {
-      color: colors.textSecondary,
+      color: colors.textPrimary,
+      fontWeight: "600",
     },
     chartTrack: {
       width: "100%",

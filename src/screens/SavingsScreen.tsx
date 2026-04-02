@@ -1,30 +1,33 @@
-import { useMemo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
-import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import {
   buildSavingsSummary,
   getTotalSavedAmount,
 } from "@/domain/subscriptionHistory/statistics";
-import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
-import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
+import { parseLocalDateInput } from "@/utils/date";
 
-type SavingsSubscriptionItem = {
-  id: string;
-  name: string;
-  category: string;
-  status: "active" | "paused" | "cancelled";
-  monthlyCost: number;
-  totalSaved: number;
+type MonthlySavingsItem = {
+  subscriptionId: string;
+  subscriptionName: string;
+  amount: number;
+};
+
+type MonthlySavingsGroup = {
+  key: string;
+  label: string;
+  totalAmount: number;
+  items: MonthlySavingsItem[];
 };
 
 export const SavingsScreen = () => {
@@ -38,6 +41,7 @@ export const SavingsScreen = () => {
   const { history } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
 
   const skippedEvents = useMemo(
     () =>
@@ -81,28 +85,68 @@ export const SavingsScreen = () => {
     };
   }, [language]);
 
-  const savingsSubscriptions = useMemo<SavingsSubscriptionItem[]>(() => {
-    const totalsBySubscription = new Map<string, number>();
-
-    skippedEvents.forEach((event) => {
-      totalsBySubscription.set(
-        event.subscriptionId,
-        (totalsBySubscription.get(event.subscriptionId) ?? 0) + (event.amount ?? 0),
-      );
+  const monthlySavingsGroups = useMemo<MonthlySavingsGroup[]>(() => {
+    const subscriptionNames = new Map(
+      subscriptions.map((subscription) => [subscription.id, subscription.name]),
+    );
+    const groups = new Map<
+      string,
+      {
+        date: Date;
+        totalAmount: number;
+        items: Map<string, MonthlySavingsItem>;
+      }
+    >();
+    const monthFormatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+      month: "long",
+      year: "numeric",
     });
 
-    return subscriptions
-      .filter((subscription) => totalsBySubscription.has(subscription.id))
-      .map((subscription) => ({
-        id: subscription.id,
-        name: subscription.name,
-        category: subscription.category,
-        status: subscription.status,
-        monthlyCost: getMonthlyEquivalent(subscription),
-        totalSaved: totalsBySubscription.get(subscription.id) ?? 0,
+    skippedEvents.forEach((event) => {
+      const dueDate = parseLocalDateInput(event.dueDate ?? "");
+      if (!dueDate) {
+        return;
+      }
+
+      const key = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, "0")}`;
+      const existingGroup = groups.get(key) ?? {
+        date: new Date(dueDate.getFullYear(), dueDate.getMonth(), 1),
+        totalAmount: 0,
+        items: new Map<string, MonthlySavingsItem>(),
+      };
+      const existingItem = existingGroup.items.get(event.subscriptionId);
+
+      existingGroup.totalAmount += event.amount ?? 0;
+      if (existingItem) {
+        existingItem.amount += event.amount ?? 0;
+      } else {
+        existingGroup.items.set(event.subscriptionId, {
+          subscriptionId: event.subscriptionId,
+          subscriptionName:
+            subscriptionNames.get(event.subscriptionId) ?? t("common.unavailable"),
+          amount: event.amount ?? 0,
+        });
+      }
+
+      groups.set(key, existingGroup);
+    });
+
+    return Array.from(groups.entries())
+      .map(([key, group]) => ({
+        key,
+        label: monthFormatter.format(group.date),
+        totalAmount: group.totalAmount,
+        items: Array.from(group.items.values()).sort((left, right) => right.amount - left.amount),
       }))
-      .sort((left, right) => right.totalSaved - left.totalSaved);
-  }, [skippedEvents, subscriptions]);
+      .sort((left, right) => right.key.localeCompare(left.key));
+  }, [language, skippedEvents, subscriptions, t]);
+
+  const toggleMonth = (monthKey: string) => {
+    setExpandedMonths((current) => ({
+      ...current,
+      [monthKey]: !current[monthKey],
+    }));
+  };
 
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
@@ -173,60 +217,74 @@ export const SavingsScreen = () => {
               </Text>
             </View>
           </View>
+          <View style={styles.savedFooter}>
+            <Text style={[typography.secondary, styles.savedFooterText]}>
+              {t("stats.savingsFooter")}
+            </Text>
+            <Ionicons
+              name="chevron-forward-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
+          </View>
         </View>
 
-        <View style={[surfaces.panel, styles.listCard]}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>
-            {t("savings.subscriptionsWithSavings")}
-          </Text>
-
-          {savingsSubscriptions.length === 0 ? (
+        {monthlySavingsGroups.length === 0 ? (
+          <View style={[surfaces.panel, styles.listCard]}>
             <EmptyState
               title={t("savings.emptyTitle")}
               description={t("savings.emptyDescription")}
             />
-          ) : (
-            <View style={styles.list}>
-              {savingsSubscriptions.map((item, index) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.row,
-                    index < savingsSubscriptions.length - 1 ? styles.rowDivider : null,
-                  ]}
-                >
-                  <View style={styles.rowMain}>
-                    <SubscriptionAvatar name={item.name} category={item.category} />
-                    <View style={styles.rowCopy}>
-                      <Text style={[typography.body, styles.rowTitle]}>{item.name}</Text>
-                      <Text style={[typography.secondary, styles.rowMeta]}>
-                        {localizeCategory(item.category, language)}
-                      </Text>
-                    </View>
-                  </View>
+          </View>
+        ) : (
+          monthlySavingsGroups.map((group) => {
+            const isExpanded = expandedMonths[group.key] ?? false;
 
-                  <View style={styles.rowDetails}>
-                    <Text style={[typography.secondary, styles.detailLine]}>
-                      {t("savings.perMonthLabel", {
-                        amount: formatCurrency(item.monthlyCost, currency),
-                      })}
+            return (
+              <Pressable
+                key={group.key}
+                style={[surfaces.panel, styles.monthCard]}
+                onPress={() => toggleMonth(group.key)}
+              >
+                <View style={styles.monthCardHeader}>
+                  <Text style={[typography.body, styles.monthCardTitle]}>{group.label}</Text>
+                  <View style={styles.monthCardMeta}>
+                    <Text style={[typography.body, styles.monthCardAmount]}>
+                      {formatCurrency(group.totalAmount, currency)}
                     </Text>
-                    <Text style={[typography.body, styles.detailValue]}>
-                      {t("savings.savedLabel", {
-                        amount: formatCurrency(item.totalSaved, currency),
-                      })}
-                    </Text>
-                    <Text style={[typography.secondary, styles.detailStatus]}>
-                      {t("savings.statusLabel", {
-                        status: t(`subscription.status_${item.status}`),
-                      })}
-                    </Text>
+                    <Ionicons
+                      name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"}
+                      size={18}
+                      color={colors.textSecondary}
+                    />
                   </View>
                 </View>
-              ))}
-            </View>
-          )}
-        </View>
+
+                {isExpanded ? (
+                  <View style={styles.monthCardList}>
+                    <View style={styles.savedDivider} />
+                    {group.items.map((item, index) => (
+                      <View
+                        key={item.subscriptionId}
+                        style={[
+                          styles.monthCardRow,
+                          index < group.items.length - 1 ? styles.rowDivider : null,
+                        ]}
+                      >
+                        <Text style={[typography.body, styles.monthCardRowTitle]}>
+                          {item.subscriptionName}
+                        </Text>
+                        <Text style={[typography.body, styles.monthCardRowAmount]}>
+                          {formatCurrency(item.amount, currency)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -270,13 +328,45 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       height: 1,
       backgroundColor: colors.border,
     },
+    savedFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    savedFooterText: {
+      flex: 1,
+      color: colors.textSecondary,
+    },
     listCard: {
       gap: spacing.md,
     },
-    list: {
+    monthCard: {
+      gap: spacing.md,
+    },
+    monthCardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    monthCardTitle: {
+      color: colors.textPrimary,
+      textTransform: "capitalize",
+    },
+    monthCardMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    monthCardAmount: {
+      color: colors.textPrimary,
+    },
+    monthCardList: {
       gap: spacing.xs,
     },
-    row: {
+    monthCardRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -287,38 +377,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    rowMain: {
+    monthCardRowTitle: {
       flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.md,
-      minWidth: 0,
-    },
-    rowCopy: {
-      flex: 1,
-      gap: spacing.xxs,
-      minWidth: 0,
-    },
-    rowTitle: {
       color: colors.textPrimary,
     },
-    rowMeta: {
-      color: colors.textSecondary,
-    },
-    rowDetails: {
-      alignItems: "flex-end",
-      gap: spacing.xxs,
-    },
-    detailLine: {
-      color: colors.textSecondary,
-      textAlign: "right",
-    },
-    detailValue: {
+    monthCardRowAmount: {
       color: colors.textPrimary,
-      textAlign: "right",
-    },
-    detailStatus: {
-      color: colors.accent,
       textAlign: "right",
     },
   });

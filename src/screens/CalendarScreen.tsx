@@ -204,6 +204,8 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
             style={[surfaces.subtlePanel, styles.todayButton]}
             onPress={() => {
               const now = new Date();
+              setToday(now);
+              setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
               selectCalendarDate(now);
             }}
           >

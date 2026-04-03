@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,10 +22,14 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
-  const contentOpacity = useRef(new Animated.Value(isLoading ? 0 : 1)).current;
-  const { history } = useSubscriptionsHistory(
+  const { history, isLoading: isHistoryLoading } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
+  const isHomeDataLoading = isLoading || (subscriptions.length > 0 && isHistoryLoading);
+  const [hasResolvedInitialHomeData, setHasResolvedInitialHomeData] = useState(
+    !isHomeDataLoading,
+  );
+  const contentOpacity = useRef(new Animated.Value(hasResolvedInitialHomeData ? 1 : 0)).current;
   const dueSections = useMemo(() => buildHomeDueSections(subscriptions), [subscriptions]);
 
   const monthlySummary = useMemo(() => {
@@ -42,7 +46,18 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   }, [history, language, subscriptions]);
 
   useEffect(() => {
-    if (isLoading) {
+    if (hasResolvedInitialHomeData || isHomeDataLoading) {
+      if (isHomeDataLoading) {
+        contentOpacity.setValue(0);
+      }
+      return;
+    }
+
+    setHasResolvedInitialHomeData(true);
+  }, [contentOpacity, hasResolvedInitialHomeData, isHomeDataLoading]);
+
+  useEffect(() => {
+    if (!hasResolvedInitialHomeData) {
       contentOpacity.setValue(0);
       return;
     }
@@ -52,7 +67,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
       duration: 220,
       useNativeDriver: true,
     }).start();
-  }, [contentOpacity, isLoading]);
+  }, [contentOpacity, hasResolvedInitialHomeData]);
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -68,7 +83,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </Pressable>
         </View>
 
-        {isLoading ? (
+        {!hasResolvedInitialHomeData ? (
           <View style={styles.skeletonLayout}>
             <View style={[surfaces.mainPanel, styles.summaryCard]}>
               <View style={[styles.skeletonBlock, styles.skeletonMonth]} />

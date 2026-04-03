@@ -16,6 +16,7 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
   const [historyBySubscription, setHistoryBySubscription] = useState<
     Record<string, SubscriptionHistoryEvent[]>
   >({});
+  const [loadedSubscriptions, setLoadedSubscriptions] = useState<Record<string, true>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const stableSubscriptionIdsKey = useMemo(
@@ -34,10 +35,12 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
 
     if (!hasUserScope(currentUser?.uid) || stableSubscriptionIds.length === 0) {
       setHistoryBySubscription({});
+      setLoadedSubscriptions({});
       return;
     }
 
     setHistoryBySubscription({});
+    setLoadedSubscriptions({});
     setErrorMessage(null);
 
     const unsubscribers = stableSubscriptionIds.map((subscriptionId) =>
@@ -45,12 +48,20 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
         currentUser.uid,
         subscriptionId,
         (items) => {
+          setLoadedSubscriptions((current) => ({
+            ...current,
+            [subscriptionId]: true,
+          }));
           setHistoryBySubscription((current) => ({
             ...current,
             [subscriptionId]: items.filter((event) => !event.deletedAt),
           }));
         },
         (error) => {
+          setLoadedSubscriptions((current) => ({
+            ...current,
+            [subscriptionId]: true,
+          }));
           logFirestoreError("useSubscriptionsHistory.observe", error, {
             userId: currentUser.uid,
             subscriptionId,
@@ -69,9 +80,14 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
     () => Object.values(historyBySubscription).flat(),
     [historyBySubscription],
   );
+  const isLoading =
+    hasUserScope(currentUser?.uid) &&
+    stableSubscriptionIds.length > 0 &&
+    stableSubscriptionIds.some((subscriptionId) => !loadedSubscriptions[subscriptionId]);
 
   return {
     history,
+    isLoading,
     errorMessage,
   };
 };

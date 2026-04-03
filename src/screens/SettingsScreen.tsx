@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
@@ -84,7 +84,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setTheme,
     setAccentColor,
   } = useAppSettings();
-  const { currentUser, isAnonymous, logout } = useAuth();
+  const {
+    currentUser,
+    isAnonymous,
+    pendingRegistration,
+    resendPendingRegistration,
+    cancelPendingRegistration,
+    logout,
+  } = useAuth();
   const {
     hasSupportColors,
     isPremium,
@@ -99,8 +106,23 @@ export const SettingsScreen = ({ navigation }: Props) => {
   } = usePurchases();
   const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasSupportColors;
+  const hasLinkedEmailAccount = Boolean(!isAnonymous && currentUser?.email);
+  const hasPendingRegistration =
+    Boolean(isAnonymous && pendingRegistration) &&
+    new Date(pendingRegistration?.expiresAt ?? 0).getTime() > Date.now();
+  const pendingRegistrationExpiresLabel = useMemo(() => {
+    if (!pendingRegistration?.expiresAt) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(pendingRegistration.expiresAt));
+  }, [language, pendingRegistration?.expiresAt]);
   const purchaseMessage = useMemo(() => {
     if (!purchaseError) {
       return null;
@@ -163,6 +185,34 @@ export const SettingsScreen = ({ navigation }: Props) => {
     }
   };
 
+  const closeLogoutModal = () => setIsLogoutModalVisible(false);
+
+  const handleResendPendingRegistration = async () => {
+    try {
+      await resendPendingRegistration();
+      Alert.alert(t("settings.pendingStatusTitle"), t("settings.pendingResendQueued"));
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
+  const handleCancelPendingRegistration = async () => {
+    try {
+      await cancelPendingRegistration();
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      closeLogoutModal();
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView
@@ -193,6 +243,41 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 {t("settings.accountSignedIn")}
               </Text>
             </>
+          ) : hasPendingRegistration ? (
+            <>
+              <View style={styles.accountStatusCard}>
+                <View style={styles.accountStatusHeader}>
+                  <View style={styles.accountStatusBadge}>
+                    <Ionicons name="mail-outline" size={16} color={colors.accent} />
+                    <Text style={[typography.meta, styles.accountStatusBadgeText]}>
+                      {t("settings.pendingStatusTitle")}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.accountIdentityRow}>
+                  <Text style={[typography.meta, styles.accountIdentityLabel]}>
+                    {t("auth.email")}
+                  </Text>
+                  <Text style={[typography.body, styles.accountIdentityValue]}>
+                    {pendingRegistration?.pendingEmail}
+                  </Text>
+                </View>
+                <View style={styles.accountIdentityRow}>
+                  <Text style={[typography.meta, styles.accountIdentityLabel]}>
+                    {t("settings.pendingExpiresLabel")}
+                  </Text>
+                  <Text style={[typography.body, styles.accountIdentityValue]}>
+                    {pendingRegistrationExpiresLabel ?? t("common.none")}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[typography.secondary, styles.accountText]}>
+                {t("settings.pendingStatusDescription")}
+              </Text>
+              <Text style={[typography.secondary, styles.pendingBackendHint]}>
+                {t("settings.pendingBackendHint")}
+              </Text>
+            </>
           ) : (
             <>
               <Text style={[typography.secondary, styles.accountText]}>
@@ -221,7 +306,26 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </>
           )}
           <View style={styles.optionRow}>
-            {isAnonymous ? (
+            {hasPendingRegistration ? (
+              <>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
+                  onPress={handleResendPendingRegistration}
+                >
+                  <Text style={[typography.button, styles.actionPrimaryText]}>
+                    {t("settings.pendingResendAction")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
+                  onPress={handleCancelPendingRegistration}
+                >
+                  <Text style={[typography.button, styles.optionText]}>
+                    {t("settings.pendingCancelAction")}
+                  </Text>
+                </Pressable>
+              </>
+            ) : isAnonymous ? (
               <>
                 <Pressable
                   style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
@@ -241,7 +345,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             ) : (
               <Pressable
                 style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
-                onPress={logout}
+                onPress={() => setIsLogoutModalVisible(true)}
               >
                 <Text style={[typography.button, styles.optionText]}>{t("settings.logoutAction")}</Text>
               </Pressable>
@@ -374,6 +478,46 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isLogoutModalVisible}
+        onRequestClose={closeLogoutModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeLogoutModal} />
+          <View style={[surfaces.panel, styles.confirmationSheet]}>
+            <View style={styles.purchaseSheetHeader}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.logoutModalTitle")}</Text>
+              <Pressable onPress={closeLogoutModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.secondary, styles.confirmationText]}>
+              {hasLinkedEmailAccount
+                ? t("settings.logoutModalDescriptionLinked")
+                : t("settings.logoutModalDescription")}
+            </Text>
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[buttons.buttonBase, buttons.secondaryButton, styles.confirmationButton]}
+                onPress={closeLogoutModal}
+              >
+                <Text style={[typography.button, styles.optionText]}>{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                style={[buttons.buttonBase, buttons.primaryButton, styles.confirmationButton]}
+                onPress={handleLogout}
+              >
+                <Text style={[typography.button, styles.purchasePrimaryText]}>
+                  {t("settings.logoutModalConfirm")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="fade"
@@ -636,6 +780,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       lineHeight: 22,
     },
+    pendingBackendHint: {
+      color: colors.textMuted,
+      lineHeight: 20,
+    },
     accountBenefitList: {
       gap: spacing.sm,
     },
@@ -709,6 +857,23 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     premiumLead: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    confirmationSheet: {
+      gap: spacing.lg,
+      width: "100%",
+      maxWidth: 420,
+      alignSelf: "center",
+    },
+    confirmationText: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    confirmationActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    confirmationButton: {
+      flex: 1,
     },
     premiumTierList: {
       gap: spacing.sm,

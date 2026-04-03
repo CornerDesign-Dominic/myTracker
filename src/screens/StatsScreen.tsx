@@ -112,10 +112,16 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
   const { subscriptions, metrics, isLoading } = useSubscriptions();
-  const contentOpacity = useRef(new Animated.Value(isLoading ? 0 : 1)).current;
-  const { history: allHistory } = useSubscriptionsHistory(
+  const { history: allHistory, isLoading: isHistoryLoading } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
+  const isStatsDataLoading = isLoading || (subscriptions.length > 0 && isHistoryLoading);
+  const [hasResolvedInitialStatsData, setHasResolvedInitialStatsData] = useState(
+    !isStatsDataLoading,
+  );
+  const contentOpacity = useRef(
+    new Animated.Value(hasResolvedInitialStatsData ? 1 : 0),
+  ).current;
   const [showAllCategories, setShowAllCategories] = useState(false);
 
   const categoryItems = useMemo(
@@ -243,7 +249,15 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   }, [language, savingsSummary.currentMonthProjected, skippedHistory]);
 
   useEffect(() => {
-    if (isLoading) {
+    if (hasResolvedInitialStatsData || isStatsDataLoading) {
+      return;
+    }
+
+    setHasResolvedInitialStatsData(true);
+  }, [contentOpacity, hasResolvedInitialStatsData, isStatsDataLoading]);
+
+  useEffect(() => {
+    if (!hasResolvedInitialStatsData) {
       contentOpacity.setValue(0);
       return;
     }
@@ -253,7 +267,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       duration: 220,
       useNativeDriver: true,
     }).start();
-  }, [contentOpacity, isLoading]);
+  }, [contentOpacity, hasResolvedInitialStatsData]);
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -262,7 +276,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
         </View>
 
-        {isLoading ? (
+        {!hasResolvedInitialStatsData ? (
           <StatsScreenSkeleton
             surfaces={surfaces}
             styles={styles}

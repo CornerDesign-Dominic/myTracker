@@ -4,7 +4,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { getSubscriptionStatusTone } from "@/components/SubscriptionCard";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -106,15 +105,18 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
         <View style={[surfaces.panel, styles.listCard]}>
           {filteredSubscriptions.length === 0 ? (
             subscriptions.length === 0 ? (
-              <EmptyState
-                title={t("allSubscriptions.emptyTitle")}
-                description={t("allSubscriptions.emptyDescription")}
-              />
+              <Text style={[typography.secondary, styles.emptyInlineText]}>
+                {t("allSubscriptions.emptyInline")}
+              </Text>
             ) : (
-              <EmptyState
-                title={t("allSubscriptions.noSearchResultsTitle")}
-                description={t("allSubscriptions.noSearchResultsDescription")}
-              />
+              <View style={styles.emptyStateWrap}>
+                <Text style={[typography.body, styles.emptyStateTitle]}>
+                  {t("allSubscriptions.noSearchResultsTitle")}
+                </Text>
+                <Text style={[typography.secondary, styles.emptyInlineText]}>
+                  {t("allSubscriptions.noSearchResultsDescription")}
+                </Text>
+              </View>
             )
           ) : (
             <View style={styles.subscriptionList}>
@@ -339,6 +341,20 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     listCard: {
       gap: spacing.xs,
+    },
+    emptyStateWrap: {
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+    },
+    emptyStateTitle: {
+      color: colors.textPrimary,
+      textAlign: "center",
+    },
+    emptyInlineText: {
+      color: colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 22,
+      paddingVertical: spacing.sm,
     },
     subscriptionList: {
       gap: spacing.xs,

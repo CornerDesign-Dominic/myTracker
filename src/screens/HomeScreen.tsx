@@ -47,9 +47,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
 
   useEffect(() => {
     if (hasResolvedInitialHomeData || isHomeDataLoading) {
-      if (isHomeDataLoading) {
-        contentOpacity.setValue(0);
-      }
       return;
     }
 

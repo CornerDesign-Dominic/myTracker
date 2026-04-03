@@ -538,9 +538,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     fabButton: {
       position: "absolute",
       right: spacing.lg,
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 56,
+      height: 56,
+      borderRadius: 999,
       backgroundColor: colors.accentSoft,
       borderWidth: 1,
       borderColor: colors.accent,
@@ -557,8 +557,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     fabButtonText: {
       color: colors.accent,
-      fontSize: 13,
-      lineHeight: 16,
+      fontSize: 12,
+      lineHeight: 14,
       textAlign: "center",
     },
   });

@@ -123,9 +123,25 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountBenefitDevices: "Beim Gerätewechsel einfach weiter nutzen",
       accountBenefitRestore: "Nach Neuinstallation wiederherstellen",
       loggedInBadge: "Eingeloggt",
+      pendingStatusTitle: "Bestätigung ausstehend",
+      pendingStatusDescription:
+        "Die Registrierung wurde vorbereitet. Nach der Mail-Bestätigung kann die Verknüpfung abgeschlossen werden. Bis dahin bleibt dein aktueller App-Stand unverändert.",
+      pendingExpiresLabel: "Gültig bis",
+      pendingResendAction: "Mail erneut senden",
+      pendingCancelAction: "Abbrechen",
+      pendingResendQueued:
+        "Die Anfrage wurde erneut vorgemerkt. Der eigentliche Bestätigungsversand wird mit dem Web-Abschluss verbunden.",
+      pendingBackendHint:
+        "Der Web-Abschluss für den eigentlichen Bestätigungsversand wird als kleiner Backend-Schritt noch ergänzt.",
       loginAction: "Login",
       registerAction: "Registrieren",
       logoutAction: "Abmelden",
+      logoutModalTitle: "Wirklich abmelden?",
+      logoutModalDescription:
+        "Wenn dein Konto nicht mit einer E-Mail-Adresse verknüpft ist, gehen deine gespeicherten Daten beim Abmelden verloren.",
+      logoutModalDescriptionLinked:
+        "Dein Konto ist mit einer E-Mail-Adresse verknüpft. Du kannst dich abmelden und deine Daten später wiederherstellen.",
+      logoutModalConfirm: "Abmelden",
       premiumTitle: "Premium",
       premiumDescription: "Free enthält bis zu 10 Abos. Premium hebt dieses Limit auf und schaltet weitere Akzentfarben frei.",
       premiumCardTitleFree: "Du nutzt aktuell Free",
@@ -180,16 +196,29 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     auth: {
       email: "E-Mail",
       password: "Passwort",
+      passwordRepeat: "Passwort wiederholen",
       loginTitle: "Login",
       loginSubmit: "Einloggen",
+      passwordForgot: "Passwort vergessen?",
+      passwordResetSubmit: "Reset-Link senden",
+      passwordResetSuccess:
+        "Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.",
+      passwordResetError: "Der Reset-Link konnte gerade nicht gesendet werden.",
       loginSwitch: "Noch kein Konto? Registrieren",
       loginError: "Login fehlgeschlagen.",
       registerTitle: "Registrierung",
       registerSubmit: "Konto erstellen",
       registerSwitch: "Bereits ein Konto? Einloggen",
       registerError: "Registrierung fehlgeschlagen.",
+      emailInUseError: "Für diese E-Mail gibt es bereits ein Konto.",
       emailError: "Bitte gib eine gültige E-Mail-Adresse ein.",
       passwordError: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+      passwordRepeatError: "Die Passwörter stimmen nicht überein.",
+      pendingModalTitle: "Bestätigung ausstehend",
+      pendingModalDescription:
+        "Bestätige die Mail innerhalb von 72 Stunden, damit das Konto später mit deiner Mail verbunden werden kann. Vorher findet keine Verbindung statt.",
+      pendingModalBackendHint:
+        "Der eigentliche Web-Abschluss für Versand und finale Verknüpfung wird noch als kleiner Backend-Baustein ergänzt.",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -222,6 +251,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       management: "Verwaltung",
       emptyTitle: "Noch keine Abos vorhanden",
       emptyDescription: "Lege dein erstes Abo oben mit dem + an um eine Übersicht zu erhalten",
+      emptyInline: "Noch keine Abos vorhanden, lege jetzt dein erstes Abo an.",
       noSearchResultsTitle: "Kein Abo gefunden",
       noSearchResultsDescription: "Passe deine Suche an, um ein bestehendes Abo zu finden.",
       amount: "Betrag",
@@ -524,9 +554,25 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountBenefitDevices: "Keep using the app after switching devices",
       accountBenefitRestore: "Restore your data after reinstalling",
       loggedInBadge: "Signed in",
+      pendingStatusTitle: "Confirmation pending",
+      pendingStatusDescription:
+        "The registration has been prepared. Once the email is confirmed, the linking can be completed. Until then, your current app data stays unchanged.",
+      pendingExpiresLabel: "Valid until",
+      pendingResendAction: "Send email again",
+      pendingCancelAction: "Cancel",
+      pendingResendQueued:
+        "The request has been queued again. The actual confirmation delivery will be connected with the web completion step.",
+      pendingBackendHint:
+        "The web completion step for the actual confirmation delivery will be added as a small backend task.",
       loginAction: "Login",
       registerAction: "Register",
       logoutAction: "Log out",
+      logoutModalTitle: "Log out now?",
+      logoutModalDescription:
+        "If your account is not linked to an email address, your saved data will be lost when you log out.",
+      logoutModalDescriptionLinked:
+        "Your account is linked to an email address. You can log out and restore your data later.",
+      logoutModalConfirm: "Log out",
       premiumTitle: "Premium",
       premiumDescription: "Free includes up to 10 subscriptions. Premium removes that limit and unlocks more accent colors.",
       premiumCardTitleFree: "You are currently using Free",
@@ -581,16 +627,29 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     auth: {
       email: "Email",
       password: "Password",
+      passwordRepeat: "Repeat password",
       loginTitle: "Login",
       loginSubmit: "Sign in",
+      passwordForgot: "Forgot password?",
+      passwordResetSubmit: "Send reset link",
+      passwordResetSuccess:
+        "If an account with this email exists, a reset link has been sent.",
+      passwordResetError: "The reset link could not be sent right now.",
       loginSwitch: "No account yet? Register",
       loginError: "Login failed.",
       registerTitle: "Register",
       registerSubmit: "Create account",
       registerSwitch: "Already have an account? Sign in",
       registerError: "Registration failed.",
+      emailInUseError: "An account already exists for this email address.",
       emailError: "Please enter a valid email address.",
       passwordError: "Password must be at least 6 characters.",
+      passwordRepeatError: "The passwords do not match.",
+      pendingModalTitle: "Confirmation pending",
+      pendingModalDescription:
+        "Confirm the email within 72 hours so the account can later be linked to your email. Until then, no linking will happen.",
+      pendingModalBackendHint:
+        "The actual web completion step for delivery and final linking still needs a small backend piece.",
     },
     home: {
       monthPaymentSingular: "payment",
@@ -623,6 +682,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       management: "Management",
       emptyTitle: "No subscriptions yet",
       emptyDescription: "Create your first subscription or adjust the search to see existing entries.",
+      emptyInline: "No subscriptions yet. Create your first subscription now.",
       noSearchResultsTitle: "No subscription found",
       noSearchResultsDescription: "Adjust your search to find an existing subscription.",
       amount: "Amount",

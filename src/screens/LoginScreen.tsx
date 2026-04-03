@@ -25,28 +25,67 @@ export const LoginScreen = ({ navigation }: Props) => {
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
   const styles = getStyles(colors);
-  const { login } = useAuth();
+  const { login, requestPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const handleSubmit = async () => {
-    if (!email.includes("@")) {
+    if (!isValidEmail(email)) {
       setError(t("auth.emailError"));
+      setSuccessMessage(null);
       return;
     }
 
     if (password.length < 6) {
       setError(t("auth.passwordError"));
+      setSuccessMessage(null);
       return;
     }
 
     try {
       setError(null);
+      setSuccessMessage(null);
       await login(email, password);
       navigation.goBack();
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : t("auth.loginError"));
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!isValidEmail(email)) {
+      setError(t("auth.emailError"));
+      setSuccessMessage(null);
+      return;
+    }
+
+    try {
+      setIsResetSubmitting(true);
+      setError(null);
+      await requestPasswordReset(email);
+      setSuccessMessage(t("auth.passwordResetSuccess"));
+    } catch (resetError) {
+      const errorCode =
+        typeof resetError === "object" &&
+        resetError !== null &&
+        "code" in resetError &&
+        typeof (resetError as { code?: unknown }).code === "string"
+          ? (resetError as { code: string }).code
+          : null;
+
+      if (errorCode === "auth/user-not-found") {
+        setSuccessMessage(t("auth.passwordResetSuccess"));
+      } else {
+        setError(t("auth.passwordResetError"));
+        setSuccessMessage(null);
+      }
+    } finally {
+      setIsResetSubmitting(false);
     }
   };
 
@@ -73,7 +112,20 @@ export const LoginScreen = ({ navigation }: Props) => {
             style={[inputs.input, styles.input]}
           />
 
+          <Pressable
+            onPress={handlePasswordReset}
+            disabled={isResetSubmitting}
+            style={styles.resetLinkRow}
+          >
+            <Text style={[typography.secondary, styles.link]}>
+              {isResetSubmitting ? t("auth.passwordResetSubmit") : t("auth.passwordForgot")}
+            </Text>
+          </Pressable>
+
           {error ? <Text style={[typography.secondary, styles.error]}>{error}</Text> : null}
+          {successMessage ? (
+            <Text style={[typography.secondary, styles.success]}>{successMessage}</Text>
+          ) : null}
 
           <Pressable style={[buttons.buttonBase, buttons.primaryButton]} onPress={handleSubmit}>
             <Text style={[typography.button, styles.primaryButtonText]}>{t("auth.loginSubmit")}</Text>
@@ -110,7 +162,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
       textAlign: "center",
     },
+    resetLinkRow: {
+      alignItems: "flex-end",
+      marginTop: -spacing.xs,
+    },
     error: {
       color: colors.danger,
+    },
+    success: {
+      color: colors.accent,
     },
   });

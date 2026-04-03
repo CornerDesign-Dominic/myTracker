@@ -173,6 +173,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactFeedback: "Feedback senden",
       contactBug: "Problem melden",
       contactEmail: "Per E-Mail kontaktieren",
+      contactPrepared: "Wird vorbereitet",
+      contactPreparedDescription: "Diese Kontaktmöglichkeit wird aktuell in der App vorbereitet.",
       legalTitle: "Rechtliches",
     },
     auth: {
@@ -554,6 +556,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactFeedback: "Send feedback",
       contactBug: "Report a problem",
       contactEmail: "Contact by email",
+      contactPrepared: "Coming soon",
+      contactPreparedDescription: "This contact option is currently being prepared in the app.",
       legalTitle: "Legal",
     },
     auth: {

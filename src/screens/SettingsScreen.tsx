@@ -356,29 +356,22 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
         </View>
 
-        <Pressable style={[surfaces.panel, styles.contactCard]} onPress={() => setIsContactModalVisible(true)}>
-          <View style={styles.contactRow}>
-            <View style={styles.contactCopy}>
-              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
-              <Text style={[typography.secondary, styles.contactText]}>{t("settings.contactSubtitle")}</Text>
-            </View>
-            <Ionicons name="chevron-forward-outline" size={18} color={colors.textSecondary} />
-          </View>
-        </Pressable>
-
         <View style={styles.legalSection}>
           <Text style={[typography.meta, styles.legalHeading]}>{t("settings.legalTitle")}</Text>
-          <View style={[surfaces.panel, styles.legalCard]}>
+          <View style={styles.legalList}>
             <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Terms")}>
               <Text style={[typography.secondary, styles.legalLink]}>{t("common.terms")}</Text>
             </Pressable>
-            <Pressable style={[styles.legalRow, styles.legalRowDivider]} onPress={() => navigation.navigate("Privacy")}>
+            <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Privacy")}>
               <Text style={[typography.secondary, styles.legalLink]}>{t("common.privacy")}</Text>
             </Pressable>
             <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Imprint")}>
               <Text style={[typography.secondary, styles.legalLink]}>{t("common.imprint")}</Text>
             </Pressable>
           </View>
+          <Pressable style={styles.legalRow} onPress={() => setIsContactModalVisible(true)}>
+            <Text style={[typography.secondary, styles.legalLink]}>{t("settings.contactTitle")}</Text>
+          </Pressable>
         </View>
       </ScrollView>
 
@@ -541,32 +534,66 @@ export const SettingsScreen = ({ navigation }: Props) => {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsContactModalVisible(false)} />
           <View style={[surfaces.panel, styles.purchaseSheet]}>
-            <View style={styles.purchaseSheetHeader}>
-              <View style={styles.purchaseIconWrap}>
-                <Ionicons name="mail-outline" size={18} color={colors.accent} />
+            <ScrollView
+              style={styles.purchaseScroll}
+              contentContainerStyle={styles.purchaseScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.purchaseSheetHeader}>
+                <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
+                <Pressable onPress={() => setIsContactModalVisible(false)} hitSlop={10}>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
+                </Pressable>
               </View>
-              <Pressable onPress={() => setIsContactModalVisible(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
-            <Text style={[typography.secondary, styles.purchaseDescription]}>
-              {t("settings.contactModalDescription")}
-            </Text>
-            <View style={styles.contactActionList}>
-              <View style={styles.contactActionRow}>
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.textSecondary} />
-                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactFeedback")}</Text>
+              <View style={styles.contactIntroCard}>
+                <View style={styles.contactIntroHeader}>
+                  <View style={styles.purchaseIconWrap}>
+                    <Ionicons name="mail-outline" size={18} color={colors.accent} />
+                  </View>
+                  <Text style={[typography.secondary, styles.contactIntroText]}>
+                    {t("settings.contactModalDescription")}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.contactActionRow}>
-                <Ionicons name="bug-outline" size={16} color={colors.textSecondary} />
-                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactBug")}</Text>
+              <View style={styles.contactActionList}>
+                <View style={styles.contactActionRow}>
+                  <View style={styles.contactActionLead}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.textSecondary} />
+                    <View style={styles.contactActionCopy}>
+                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactFeedback")}</Text>
+                      <Text style={[typography.meta, styles.contactActionMeta]}>
+                        {t("settings.contactPreparedDescription")}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
+                </View>
+                <View style={styles.contactActionRow}>
+                  <View style={styles.contactActionLead}>
+                    <Ionicons name="bug-outline" size={16} color={colors.textSecondary} />
+                    <View style={styles.contactActionCopy}>
+                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactBug")}</Text>
+                      <Text style={[typography.meta, styles.contactActionMeta]}>
+                        {t("settings.contactPreparedDescription")}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
+                </View>
+                <View style={styles.contactActionRow}>
+                  <View style={styles.contactActionLead}>
+                    <Ionicons name="mail-open-outline" size={16} color={colors.textSecondary} />
+                    <View style={styles.contactActionCopy}>
+                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactEmail")}</Text>
+                      <Text style={[typography.meta, styles.contactActionMeta]}>
+                        {t("settings.contactPreparedDescription")}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
+                </View>
               </View>
-              <View style={styles.contactActionRow}>
-                <Ionicons name="mail-open-outline" size={16} color={colors.textSecondary} />
-                <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactEmail")}</Text>
-              </View>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -856,31 +883,32 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textTransform: "uppercase",
       textAlign: "center",
     },
-    contactCard: {
-      gap: spacing.sm,
-    },
-    contactRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
-    },
-    contactCopy: {
-      flex: 1,
-      gap: spacing.xxs,
-    },
-    contactText: {
-      color: colors.textSecondary,
-      lineHeight: 21,
-    },
     contactActionList: {
       gap: spacing.sm,
     },
+    contactIntroCard: {
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+    },
+    contactIntroHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    contactIntroText: {
+      flex: 1,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
     contactActionRow: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
       gap: spacing.sm,
-      minHeight: 40,
+      minHeight: 72,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.sm,
       borderRadius: radius.md,
@@ -888,8 +916,26 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderColor: colors.border,
       backgroundColor: colors.surfaceSoft,
     },
+    contactActionLead: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    contactActionCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
     contactActionText: {
       color: colors.textPrimary,
+    },
+    contactActionMeta: {
+      color: colors.textMuted,
+      lineHeight: 18,
+    },
+    contactPreparedBadge: {
+      color: colors.textSecondary,
+      textTransform: "uppercase",
     },
     legalSection: {
       gap: spacing.sm,
@@ -900,19 +946,20 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textMuted,
       textTransform: "uppercase",
     },
-    legalCard: {
-      gap: 0,
+    legalList: {
+      gap: spacing.sm,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     legalLink: {
       color: colors.textSecondary,
     },
     legalRow: {
-      minHeight: 48,
+      minHeight: 24,
       justifyContent: "center",
-    },
-    legalRowDivider: {
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      alignItems: "center",
     },
     modalBackdrop: {
       flex: 1,

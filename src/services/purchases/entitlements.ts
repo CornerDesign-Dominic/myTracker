@@ -2,7 +2,7 @@ import type { Purchase } from "react-native-iap";
 
 import type { AccentColor } from "@/theme";
 
-import { FREE_ACCENT_COLOR, SUPPORT_COLORS_PRODUCT_ID } from "./constants.ts";
+import { FREE_ACCENT_COLOR, FREE_ACCENT_COLORS, SUPPORT_COLORS_PRODUCT_ID } from "./constants.ts";
 import type { PurchaseEntitlements, PurchaseSnapshot } from "./types.ts";
 
 export const getDefaultEntitlements = (): PurchaseEntitlements => ({
@@ -60,7 +60,7 @@ export const buildSnapshotFromSinglePurchase = (
 export const canUseAccentColor = (
   accentColor: AccentColor,
   hasSupportColors: boolean,
-) => accentColor === FREE_ACCENT_COLOR || hasSupportColors;
+) => FREE_ACCENT_COLORS.includes(accentColor) || hasSupportColors;
 
 export const getSafeAccentColor = (
   accentColor: AccentColor,

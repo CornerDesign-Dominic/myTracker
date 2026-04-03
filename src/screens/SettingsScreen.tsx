@@ -10,7 +10,7 @@ import { usePurchases } from "@/context/PurchaseContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { RootStackParamList } from "@/navigation/types";
-import { FREE_ACCENT_COLOR } from "@/services/purchases/constants";
+import { FREE_ACCENT_COLORS } from "@/services/purchases/constants";
 import { canUseAccentColor } from "@/services/purchases/entitlements";
 import {
   accentColorOptions,
@@ -564,33 +564,31 @@ export const SettingsScreen = ({ navigation }: Props) => {
         />
 
         <View style={[surfaces.panel, styles.groupCard]}>
-          <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
+            <Ionicons name="lock-closed" size={16} color={colors.accent} />
+          </View>
           <View style={styles.accentGrid}>
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
               const accentPreview = getAccentPalette(option, mode);
               const isLocked = !canUseAccentColor(option, hasSupportColors);
-              const isFree = option === FREE_ACCENT_COLOR;
+              const isFree = FREE_ACCENT_COLORS.includes(option);
 
               return (
-                <Pressable
-                  key={option}
-                  style={[
-                    styles.accentOption,
-                    { borderColor: isActive ? colors.accent : colors.border },
-                    isActive ? styles.accentOptionActive : null,
-                    isLocked ? styles.accentOptionLocked : null,
-                  ]}
-                  onPress={() => handleAccentPress(option)}
-                >
-                  {isLocked ? (
-                    <View style={styles.accentOptionLock}>
-                      <Ionicons name="lock-closed" size={12} color={colors.textSecondary} />
-                    </View>
-                  ) : null}
-                  <View
+                  <Pressable
+                    key={option}
                     style={[
-                      styles.accentSwatch,
+                      styles.accentOption,
+                      { borderColor: isActive ? colors.accent : colors.border },
+                      isActive ? styles.accentOptionActive : null,
+                      isLocked ? styles.accentOptionLocked : null,
+                    ]}
+                    onPress={() => handleAccentPress(option)}
+                  >
+                    <View
+                      style={[
+                        styles.accentSwatch,
                       {
                         backgroundColor: accentPreview.accentSoft,
                         borderColor: accentPreview.accent,
@@ -599,30 +597,17 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   >
                     <View style={[styles.accentSwatchInner, { backgroundColor: accentPreview.accent }]} />
                   </View>
-                  <Text
-                    style={[
-                      typography.meta,
-                      styles.accentOptionLabel,
-                      isActive && !isLocked ? styles.optionTextActive : null,
-                      isLocked ? styles.accentOptionLabelLocked : null,
-                    ]}
-                  >
-                    {getAccentLabel(option, t)}
-                  </Text>
-                  <Text
-                    style={[
-                      typography.meta,
-                      styles.accentMetaLabel,
-                      isLocked ? styles.accentOptionLabelLocked : null,
-                    ]}
-                  >
-                    {isFree
-                      ? t("settings.accentFreeBadge")
-                      : isLocked
-                        ? t("settings.accentLockedLabel")
-                        : t("settings.accentPremiumBadge")}
-                  </Text>
-                </Pressable>
+                    {isFree ? (
+                      <View style={styles.accentPremiumIconRow}>
+                        <Ionicons name="leaf-outline" size={12} color={colors.accent} />
+                      </View>
+                    ) : null}
+                    {isLocked ? (
+                      <View style={styles.accentPremiumIconRow}>
+                        <Ionicons name="diamond-outline" size={12} color={colors.accent} />
+                      </View>
+                    ) : null}
+                  </Pressable>
               );
             })}
           </View>
@@ -942,28 +927,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
   );
 };
 
-const getAccentLabel = (option: AccentColor, t: (key: string) => string) =>
-  (
-    {
-      indigo: t("settings.accentIndigo"),
-      slate: t("settings.accentSlate"),
-      graphite: t("settings.accentGraphite"),
-      blue: t("settings.accentBlue"),
-      sage: t("settings.accentSage"),
-      cyan: t("settings.accentCyan"),
-      teal: t("settings.accentTeal"),
-      green: t("settings.accentGreen"),
-      forest: t("settings.accentForest"),
-      sand: t("settings.accentSand"),
-      amber: t("settings.accentAmber"),
-      orange: t("settings.accentOrange"),
-      coral: t("settings.accentCoral"),
-      gold: t("settings.accentGold"),
-      violet: t("settings.accentViolet"),
-      rose: t("settings.accentRose"),
-    } satisfies Record<AccentColor, string>
-  )[option];
-
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     contentWithTabBar: {
@@ -1204,9 +1167,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accentOption: {
       width: "23%",
       minWidth: 0,
-      minHeight: 100,
+      aspectRatio: 1,
+      minHeight: 0,
       paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.xs,
       borderRadius: radius.md,
       borderWidth: 1,
       backgroundColor: colors.surfaceSoft,
@@ -1219,19 +1183,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     accentOptionLocked: {
       opacity: 0.82,
-    },
-    accentOptionLock: {
-      position: "absolute",
-      top: spacing.xs,
-      right: spacing.xs,
-      width: 18,
-      height: 18,
-      borderRadius: radius.pill,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: "center",
-      justifyContent: "center",
     },
     accentSwatch: {
       width: 28,
@@ -1246,22 +1197,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       height: 14,
       borderRadius: radius.pill,
     },
-    accentOptionLabel: {
-      color: colors.textPrimary,
-      textTransform: "capitalize",
-      fontSize: 11,
-      lineHeight: 14,
-      textAlign: "center",
-    },
     accentOptionLabelLocked: {
       color: colors.textSecondary,
     },
-    accentMetaLabel: {
-      color: colors.textSecondary,
-      fontSize: 10,
-      lineHeight: 12,
-      textTransform: "uppercase",
-      textAlign: "center",
+    accentPremiumIconRow: {
+      minHeight: 12,
+      alignItems: "center",
+      justifyContent: "center",
     },
     contactActionList: {
       gap: spacing.sm,

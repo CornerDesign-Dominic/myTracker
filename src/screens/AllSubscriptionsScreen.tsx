@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,10 +11,13 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { AllSubscriptionsTabScreenProps } from "@/navigation/types";
+import { FREE_SUBSCRIPTION_LIMIT } from "@/services/purchases/freemium";
 import {
+  createButtonStyles,
   createInputStyles,
   createScreenLayout,
   createSurfaceStyles,
+  radius,
   spacing,
 } from "@/theme";
 import { localizeCategory } from "@/utils/categories";
@@ -27,11 +30,14 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const insets = useSafeAreaInsets();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
+  const buttons = createButtonStyles(colors);
   const styles = getStyles(colors);
   const inputs = createInputStyles(colors);
   const { currency } = useAppSettings();
-  const { subscriptions } = useSubscriptions();
+  const { subscriptions, canCreateSubscription, isPremium } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLimitModalVisible, setIsLimitModalVisible] = useState(false);
+  const [isPlanInfoModalVisible, setIsPlanInfoModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -58,6 +64,15 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
     [subscriptions],
   );
 
+  const handleCreateSubscription = () => {
+    if (!canCreateSubscription) {
+      setIsLimitModalVisible(true);
+      return;
+    }
+
+    navigation.navigate("SubscriptionForm");
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView
@@ -72,6 +87,18 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
         </View>
 
         <View style={[surfaces.mainPanel, styles.summaryCard]}>
+          {!isPremium ? (
+            <Pressable
+              style={styles.planBadgeButton}
+              onPress={() => setIsPlanInfoModalVisible(true)}
+              hitSlop={8}
+            >
+              <Ionicons name="leaf-outline" size={15} color={colors.accent} />
+              <Text style={[typography.meta, styles.planBadgeCounter]}>
+                {subscriptions.length}/{FREE_SUBSCRIPTION_LIMIT}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.summaryCopy}>
             <Text style={[typography.metric, styles.summaryTitle]}>
               {t("allSubscriptions.totalSubscriptions", { count: subscriptions.length })}
@@ -209,10 +236,91 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
       </ScrollView>
       <Pressable
         style={[styles.fabButton, { bottom: spacing.lg }]}
-        onPress={() => navigation.navigate("SubscriptionForm")}
+        onPress={handleCreateSubscription}
       >
         <Text style={[typography.cardTitle, styles.addButtonText]}>+</Text>
       </Pressable>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isPlanInfoModalVisible}
+        onRequestClose={() => setIsPlanInfoModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setIsPlanInfoModalVisible(false)}
+          />
+          <View style={[surfaces.panel, styles.planInfoModal]}>
+            <View style={styles.planInfoHeader}>
+              <Text style={[typography.cardTitle, styles.limitModalTitle]}>
+                {t("allSubscriptions.freePlanUsageTitle")}
+              </Text>
+              <Pressable onPress={() => setIsPlanInfoModalVisible(false)} hitSlop={10}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.secondary, styles.limitModalDescription]}>
+              {t("allSubscriptions.freePlanUsageMessage", { count: subscriptions.length })}
+            </Text>
+            <Pressable
+              style={[buttons.buttonBase, buttons.primaryButton, styles.planInfoAction]}
+              onPress={() => {
+                setIsPlanInfoModalVisible(false);
+                navigation.navigate("Settings");
+              }}
+            >
+              <Text style={[typography.button, styles.limitModalPrimaryText]}>
+                {t("allSubscriptions.freePlanUsageAction")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isLimitModalVisible}
+        onRequestClose={() => setIsLimitModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setIsLimitModalVisible(false)}
+          />
+          <View style={[surfaces.panel, styles.limitModal]}>
+            <Text style={[typography.cardTitle, styles.limitModalTitle]}>
+              {t("subscription.limitReachedTitle")}
+            </Text>
+            <Text style={[typography.secondary, styles.limitModalDescription]}>
+              {t("subscription.limitReachedMessage")}
+            </Text>
+            <View style={styles.limitModalActions}>
+              <Pressable
+                style={[buttons.buttonBase, buttons.secondaryButton, styles.limitModalButton]}
+                onPress={() => setIsLimitModalVisible(false)}
+              >
+                <Text style={[typography.button, styles.limitModalSecondaryText]}>
+                  {t("common.cancel")}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[buttons.buttonBase, buttons.primaryButton, styles.limitModalButton]}
+                onPress={() => {
+                  setIsLimitModalVisible(false);
+                  navigation.navigate("Settings");
+                }}
+              >
+                <Text style={[typography.button, styles.limitModalPrimaryText]}>
+                  {t("subscription.limitReachedUpgrade")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -237,6 +345,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.lg,
+      position: "relative",
     },
     summaryCopy: {
       gap: spacing.xs,
@@ -254,6 +363,32 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       fontSize: 17,
       lineHeight: 22,
+    },
+    planBadgeButton: {
+      position: "absolute",
+      top: spacing.md,
+      right: spacing.md,
+      minWidth: 54,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 7,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+      alignItems: "center",
+      gap: 2,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      elevation: 3,
+    },
+    planBadgeCounter: {
+      color: colors.accent,
+      fontWeight: "700",
     },
     addButton: {
       width: 56,
@@ -298,6 +433,55 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
         height: 10,
       },
       elevation: 4,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "center",
+      padding: spacing.lg,
+      backgroundColor: "rgba(15, 23, 42, 0.42)",
+    },
+    limitModal: {
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 420,
+      gap: spacing.lg,
+      borderRadius: radius.xl,
+    },
+    planInfoModal: {
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 360,
+      gap: spacing.md,
+      borderRadius: radius.xl,
+    },
+    planInfoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    planInfoAction: {
+      alignSelf: "stretch",
+    },
+    limitModalTitle: {
+      color: colors.textPrimary,
+    },
+    limitModalDescription: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    limitModalActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    limitModalButton: {
+      flex: 1,
+    },
+    limitModalPrimaryText: {
+      color: colors.accentText,
+    },
+    limitModalSecondaryText: {
+      color: colors.accent,
     },
     searchField: {
       flexDirection: "row",

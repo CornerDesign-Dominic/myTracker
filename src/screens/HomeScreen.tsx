@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubscriptionCard } from "@/components/SubscriptionCard";
@@ -22,6 +22,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
+  const contentOpacity = useRef(new Animated.Value(isLoading ? 0 : 1)).current;
   const { history } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
@@ -40,6 +41,19 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
     };
   }, [history, language, subscriptions]);
 
+  useEffect(() => {
+    if (isLoading) {
+      contentOpacity.setValue(0);
+      return;
+    }
+
+    Animated.timing(contentOpacity, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [contentOpacity, isLoading]);
+
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
@@ -54,130 +68,179 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </Pressable>
         </View>
 
-        <View style={[surfaces.mainPanel, styles.summaryCard]}>
-          <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryPrimaryBlock}>
-              <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>
-              <Text style={[typography.metric, styles.summaryAmount]}>
-                {formatCurrency(monthlySummary.totalAmount, currency)}
-              </Text>
-              <Pressable onPress={() => navigation.navigate("MonthlyPreview")}>
-                <Text style={[typography.secondary, styles.summaryLink]}>
-                  {t("home.monthlyPreviewLink")}
+        {isLoading ? (
+          <View style={styles.skeletonLayout}>
+            <View style={[surfaces.mainPanel, styles.summaryCard]}>
+              <View style={[styles.skeletonBlock, styles.skeletonMonth]} />
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryPrimaryBlock}>
+                  <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+                  <View style={[styles.skeletonBlock, styles.skeletonAmount]} />
+                  <View style={[styles.skeletonBlock, styles.skeletonLink]} />
+                </View>
+                <View style={styles.summarySecondaryBlock}>
+                  <View style={styles.summarySecondaryItem}>
+                    <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+                    <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+                  </View>
+                  <View style={styles.summarySecondaryItem}>
+                    <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+                    <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
+              <View style={[styles.skeletonBlock, styles.skeletonMarker]} />
+            </View>
+
+            <View style={styles.list}>
+              {[0, 1, 2].map((item) => (
+                <View key={item} style={[surfaces.panel, styles.skeletonSubscriptionCard]}>
+                  <View style={styles.skeletonSubscriptionTop}>
+                    <View style={styles.skeletonSubscriptionLeft}>
+                      <View style={[styles.skeletonCircle, styles.skeletonAvatar]} />
+                      <View style={styles.skeletonSubscriptionCopy}>
+                        <View style={[styles.skeletonBlock, styles.skeletonTitle]} />
+                        <View style={[styles.skeletonBlock, styles.skeletonSubtitle]} />
+                      </View>
+                    </View>
+                    <View style={[styles.skeletonBlock, styles.skeletonStatus]} />
+                  </View>
+                  <View style={styles.skeletonMetaRow}>
+                    <View style={[styles.skeletonBlock, styles.skeletonMetaItem]} />
+                    <View style={[styles.skeletonBlock, styles.skeletonMetaItem]} />
+                    <View style={[styles.skeletonBlock, styles.skeletonMetaItem]} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <Animated.View style={[styles.loadedContent, { opacity: contentOpacity }]}>
+            <View style={[surfaces.mainPanel, styles.summaryCard]}>
+              <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryPrimaryBlock}>
+                  <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>
+                  <Text style={[typography.metric, styles.summaryAmount]}>
+                    {formatCurrency(monthlySummary.totalAmount, currency)}
+                  </Text>
+                  <Pressable onPress={() => navigation.navigate("MonthlyPreview")}>
+                    <Text style={[typography.secondary, styles.summaryLink]}>
+                      {t("home.monthlyPreviewLink")}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.summarySecondaryBlock}>
+                  <View style={styles.summarySecondaryItem}>
+                    <Text style={[typography.meta, styles.summaryLabel]}>{t("home.due")}</Text>
+                    <Text style={[typography.body, styles.summaryDueValue]}>
+                      {formatCurrency(monthlySummary.dueAmount, currency)}
+                    </Text>
+                  </View>
+                  <View style={styles.summarySecondaryItem}>
+                    <Text style={[typography.meta, styles.summaryLabel]}>{t("home.paid")}</Text>
+                    <Text style={[typography.body, styles.summarySecondaryValue]}>
+                      {formatCurrency(monthlySummary.paidAmount, currency)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
+              <Text style={[typography.meta, styles.monthMarkerText]}>DIESER MONAT</Text>
+            </View>
+
+            {errorMessage ? (
+              <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
+            ) : null}
+
+            <View style={styles.sections}>
+              <View style={styles.section}>
+                {dueSections.currentMonthUpcoming.length === 0 ? (
+                  <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                    <Text style={[typography.secondary, styles.emptySectionText]}>
+                      {t("home.dueFromTodayEmpty")}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.list}>
+                    {dueSections.currentMonthUpcoming.map((subscription) => (
+                      <SubscriptionCard
+                        key={`${subscription.id}:${subscription.homeDueDate}`}
+                        subscription={subscription}
+                        showStatus={false}
+                        actionIconName="chevron-forward-outline"
+                        onPress={() =>
+                          navigation.navigate("SubscriptionDetails", {
+                            subscriptionId: subscription.id,
+                          })
+                        }
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={[surfaces.subtlePanel, styles.monthDividerCard]}>
+                <Text style={[typography.meta, styles.monthDividerText]}>
+                  {t("home.nextMonthSection")}
                 </Text>
+              </View>
+
+              <View style={styles.section}>
+                {dueSections.nextMonthUpcoming.length === 0 ? (
+                  <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                    <Text style={[typography.secondary, styles.emptySectionText]}>
+                      {t("home.nextMonthEmpty")}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.list}>
+                    {dueSections.nextMonthUpcoming.map((subscription) => (
+                      <SubscriptionCard
+                        key={`${subscription.id}:${subscription.homeDueDate}`}
+                        subscription={subscription}
+                        showStatus={false}
+                        actionIconName="chevron-forward-outline"
+                        onPress={() =>
+                          navigation.navigate("SubscriptionDetails", {
+                            subscriptionId: subscription.id,
+                          })
+                        }
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <Pressable
+                style={[surfaces.panel, styles.monthlyPreviewCard]}
+                onPress={() => navigation.navigate("MonthlyPreview")}
+              >
+                <View style={styles.monthlyPreviewHeader}>
+                  <View style={styles.monthlyPreviewCopy}>
+                    <Text style={[typography.cardTitle, styles.monthlyPreviewTitle]}>
+                      {t("home.monthlyPreviewSection")}
+                    </Text>
+                    <Text style={[typography.secondary, styles.monthlyPreviewDescription]}>
+                      {t("home.monthlyPreviewDescription")}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </View>
               </Pressable>
             </View>
-
-            <View style={styles.summarySecondaryBlock}>
-              <View style={styles.summarySecondaryItem}>
-                <Text style={[typography.meta, styles.summaryLabel]}>{t("home.due")}</Text>
-                <Text style={[typography.body, styles.summaryDueValue]}>
-                  {formatCurrency(monthlySummary.dueAmount, currency)}
-                </Text>
-              </View>
-              <View style={styles.summarySecondaryItem}>
-                <Text style={[typography.meta, styles.summaryLabel]}>{t("home.paid")}</Text>
-                <Text style={[typography.body, styles.summarySecondaryValue]}>
-                  {formatCurrency(monthlySummary.paidAmount, currency)}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
-          <Text style={[typography.meta, styles.monthMarkerText]}>DIESER MONAT</Text>
-        </View>
-
-        {errorMessage ? (
-          <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
-        ) : null}
-
-        {isLoading ? (
-          <Text style={[typography.secondary, styles.helperText]}>{t("common.loading")}</Text>
-        ) : null}
-
-        <View style={styles.sections}>
-          <View style={styles.section}>
-            {dueSections.currentMonthUpcoming.length === 0 ? (
-              <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
-                <Text style={[typography.secondary, styles.emptySectionText]}>
-                  {t("home.dueFromTodayEmpty")}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.list}>
-                {dueSections.currentMonthUpcoming.map((subscription) => (
-                  <SubscriptionCard
-                    key={`${subscription.id}:${subscription.homeDueDate}`}
-                    subscription={subscription}
-                    showStatus={false}
-                    actionIconName="chevron-forward-outline"
-                    onPress={() =>
-                      navigation.navigate("SubscriptionDetails", {
-                        subscriptionId: subscription.id,
-                      })
-                    }
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={[surfaces.subtlePanel, styles.monthDividerCard]}>
-            <Text style={[typography.meta, styles.monthDividerText]}>
-              {t("home.nextMonthSection")}
-            </Text>
-          </View>
-
-          <View style={styles.section}>
-            {dueSections.nextMonthUpcoming.length === 0 ? (
-              <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
-                <Text style={[typography.secondary, styles.emptySectionText]}>
-                  {t("home.nextMonthEmpty")}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.list}>
-                {dueSections.nextMonthUpcoming.map((subscription) => (
-                  <SubscriptionCard
-                    key={`${subscription.id}:${subscription.homeDueDate}`}
-                    subscription={subscription}
-                    showStatus={false}
-                    actionIconName="chevron-forward-outline"
-                    onPress={() =>
-                      navigation.navigate("SubscriptionDetails", {
-                        subscriptionId: subscription.id,
-                      })
-                    }
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <Pressable
-            style={[surfaces.panel, styles.monthlyPreviewCard]}
-            onPress={() => navigation.navigate("MonthlyPreview")}
-          >
-            <View style={styles.monthlyPreviewHeader}>
-              <View style={styles.monthlyPreviewCopy}>
-                <Text style={[typography.cardTitle, styles.monthlyPreviewTitle]}>
-                  {t("home.monthlyPreviewSection")}
-                </Text>
-                <Text style={[typography.secondary, styles.monthlyPreviewDescription]}>
-                  {t("home.monthlyPreviewDescription")}
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward-outline"
-                size={18}
-                color={colors.textSecondary}
-              />
-            </View>
-          </Pressable>
-        </View>
+          </Animated.View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -207,6 +270,91 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.sm,
+    },
+    loadedContent: {
+      gap: spacing.lg,
+    },
+    skeletonLayout: {
+      gap: spacing.lg,
+    },
+    skeletonBlock: {
+      borderRadius: 999,
+      backgroundColor: colors.surfaceSoft,
+    },
+    skeletonCircle: {
+      borderRadius: 999,
+      backgroundColor: colors.surfaceSoft,
+    },
+    skeletonMonth: {
+      width: 124,
+      height: 24,
+    },
+    skeletonLabel: {
+      width: 64,
+      height: 12,
+    },
+    skeletonAmount: {
+      width: 160,
+      height: 34,
+      borderRadius: 16,
+    },
+    skeletonLink: {
+      width: 108,
+      height: 16,
+    },
+    skeletonValue: {
+      width: 86,
+      height: 18,
+    },
+    skeletonMarker: {
+      width: 108,
+      height: 14,
+    },
+    skeletonSubscriptionCard: {
+      gap: spacing.md,
+    },
+    skeletonSubscriptionTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    skeletonSubscriptionLeft: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    skeletonAvatar: {
+      width: 44,
+      height: 44,
+    },
+    skeletonSubscriptionCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    skeletonTitle: {
+      width: "58%",
+      height: 16,
+      borderRadius: 10,
+    },
+    skeletonSubtitle: {
+      width: "34%",
+      height: 12,
+      borderRadius: 10,
+    },
+    skeletonStatus: {
+      width: 72,
+      height: 28,
+    },
+    skeletonMetaRow: {
+      flexDirection: "row",
+      gap: spacing.md,
+    },
+    skeletonMetaItem: {
+      flex: 1,
+      height: 18,
+      borderRadius: 10,
     },
     summaryMonth: {
       color: colors.accent,
@@ -318,9 +466,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     contentWithTabBar: {
       minHeight: "100%",
-    },
-    helperText: {
-      color: colors.textSecondary,
     },
     errorText: {
       color: colors.danger,

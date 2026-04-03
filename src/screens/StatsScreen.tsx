@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -111,7 +111,8 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
-  const { subscriptions, metrics } = useSubscriptions();
+  const { subscriptions, metrics, isLoading } = useSubscriptions();
+  const contentOpacity = useRef(new Animated.Value(isLoading ? 0 : 1)).current;
   const { history: allHistory } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
@@ -241,6 +242,19 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     };
   }, [language, savingsSummary.currentMonthProjected, skippedHistory]);
 
+  useEffect(() => {
+    if (isLoading) {
+      contentOpacity.setValue(0);
+      return;
+    }
+
+    Animated.timing(contentOpacity, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [contentOpacity, isLoading]);
+
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
@@ -248,6 +262,13 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           <Text style={[typography.pageTitle, styles.pageTitle]}>{t("stats.title")}</Text>
         </View>
 
+        {isLoading ? (
+          <StatsScreenSkeleton
+            surfaces={surfaces}
+            styles={styles}
+          />
+        ) : (
+          <Animated.View style={[styles.loadedContent, { opacity: contentOpacity }]}>
         <Pressable
           style={[surfaces.mainPanel, styles.summaryCard]}
           onPress={() => navigation.navigate("MonthlyPreview")}
@@ -606,10 +627,74 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
             </View>
           )}
         </View>
+          </Animated.View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const StatsScreenSkeleton = ({
+  surfaces,
+  styles,
+}: {
+  surfaces: ReturnType<typeof createSurfaceStyles>;
+  styles: ReturnType<typeof getStyles>;
+}) => (
+  <View style={styles.skeletonLayout}>
+    <View style={[surfaces.mainPanel, styles.summaryCard]}>
+      <View style={[styles.skeletonBlock, styles.skeletonMonth]} />
+      <View style={styles.homeSummaryRow}>
+        <View style={styles.homeSummaryPrimaryBlock}>
+          <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+          <View style={[styles.skeletonBlock, styles.skeletonAmount]} />
+          <View style={[styles.skeletonBlock, styles.skeletonLink]} />
+        </View>
+        <View style={styles.homeSummarySecondaryBlock}>
+          <View style={styles.homeSummarySecondaryItem}>
+            <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+            <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+          </View>
+          <View style={styles.homeSummarySecondaryItem}>
+            <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+            <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+          </View>
+        </View>
+      </View>
+      <View style={styles.homeSummaryDivider} />
+      <View style={styles.homeSummaryYearRow}>
+        <View style={styles.homeSummaryYearItem}>
+          <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+          <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+        </View>
+        <View style={styles.homeSummaryYearItem}>
+          <View style={[styles.skeletonBlock, styles.skeletonLabel]} />
+          <View style={[styles.skeletonBlock, styles.skeletonValue]} />
+        </View>
+      </View>
+    </View>
+
+    {[0, 1, 2, 3, 4].map((item) => (
+      <View key={item} style={[surfaces.panel, styles.card, styles.skeletonCard]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.skeletonBlock, styles.skeletonCardTitle]} />
+          <View style={[styles.skeletonCircle, styles.skeletonIcon]} />
+        </View>
+        <View style={styles.skeletonCardBody}>
+          {item === 2 ? (
+            <View style={[styles.skeletonBlock, styles.skeletonChartArea]} />
+          ) : (
+            <>
+              <View style={[styles.skeletonBlock, styles.skeletonLineLong]} />
+              <View style={[styles.skeletonBlock, styles.skeletonLineMedium]} />
+              <View style={[styles.skeletonBlock, styles.skeletonLineShort]} />
+            </>
+          )}
+        </View>
+      </View>
+    ))}
+  </View>
+);
 
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
@@ -631,6 +716,76 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.md,
+    },
+    loadedContent: {
+      gap: spacing.lg,
+    },
+    skeletonLayout: {
+      gap: spacing.lg,
+    },
+    skeletonBlock: {
+      borderRadius: 999,
+      backgroundColor: colors.surfaceSoft,
+    },
+    skeletonCircle: {
+      borderRadius: 999,
+      backgroundColor: colors.surfaceSoft,
+    },
+    skeletonMonth: {
+      width: 132,
+      height: 24,
+    },
+    skeletonLabel: {
+      width: 72,
+      height: 12,
+    },
+    skeletonAmount: {
+      width: 170,
+      height: 34,
+      borderRadius: 16,
+    },
+    skeletonLink: {
+      width: 116,
+      height: 16,
+    },
+    skeletonValue: {
+      width: 88,
+      height: 18,
+    },
+    skeletonCard: {
+      gap: spacing.md,
+    },
+    skeletonCardTitle: {
+      width: 148,
+      height: 18,
+      borderRadius: 10,
+    },
+    skeletonIcon: {
+      width: 18,
+      height: 18,
+    },
+    skeletonCardBody: {
+      gap: spacing.md,
+    },
+    skeletonLineLong: {
+      width: "92%",
+      height: 16,
+      borderRadius: 10,
+    },
+    skeletonLineMedium: {
+      width: "74%",
+      height: 16,
+      borderRadius: 10,
+    },
+    skeletonLineShort: {
+      width: "58%",
+      height: 16,
+      borderRadius: 10,
+    },
+    skeletonChartArea: {
+      width: "100%",
+      height: 148,
+      borderRadius: radius.md,
     },
     homeSummaryMonth: {
       color: colors.textSecondary,

@@ -1,7 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useLayoutEffect, useState } from "react";
 
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -16,6 +17,7 @@ import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
+type ConfirmActionType = "cancel" | "delete" | null;
 
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
@@ -25,9 +27,30 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
-  const { subscriptions } = useSubscriptions();
+  const { subscriptions, updateSubscription, archiveSubscription } = useSubscriptions();
   const { history, summary } = useSubscriptionHistory(route.params.subscriptionId);
   const subscription = subscriptions.find((item) => item.id === route.params.subscriptionId);
+  const [isActionsModalVisible, setIsActionsModalVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmActionType>(null);
+  const [isPauseInfoModalVisible, setIsPauseInfoModalVisible] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!subscription) {
+      return;
+    }
+
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          hitSlop={10}
+          onPress={() => setIsActionsModalVisible(true)}
+          style={styles.headerMenuButton}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color={colors.textPrimary} />
+        </Pressable>
+      ),
+    });
+  }, [colors.textPrimary, navigation, styles.headerMenuButton, subscription]);
 
   if (!subscription) {
     return (
@@ -39,11 +62,50 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
 
   const bookedPayments = history.filter((event) => event.type === "payment_booked" && !event.deletedAt);
   const totalAmount = bookedPayments.reduce((sum, event) => sum + (event.amount ?? 0), 0);
+  const isPaused = subscription.status === "paused";
   const firstPaymentDate = [...bookedPayments].sort((left, right) =>
     (left.dueDate ?? left.effectiveDate ?? left.createdAt).localeCompare(
       right.dueDate ?? right.effectiveDate ?? right.createdAt,
     ),
   )[0];
+
+  const closeActionsModal = () => setIsActionsModalVisible(false);
+  const closeConfirmModal = () => setConfirmAction(null);
+  const closePauseInfoModal = () => setIsPauseInfoModalVisible(false);
+
+  const handlePauseSubscription = async () => {
+    closePauseInfoModal();
+    closeActionsModal();
+
+    try {
+      await updateSubscription(subscription.id, { status: isPaused ? "active" : "paused" });
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    closeConfirmModal();
+    closeActionsModal();
+
+    try {
+      await updateSubscription(subscription.id, { status: "cancelled" });
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
+  const handleDeleteSubscription = async () => {
+    closeConfirmModal();
+    closeActionsModal();
+
+    try {
+      await archiveSubscription(subscription.id);
+      navigation.goBack();
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
 
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
@@ -109,12 +171,12 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         </View>
 
         <View style={[surfaces.panel, styles.card]}>
-          {subscription.notes ? (
-            <View style={styles.notesBlock}>
-              <Text style={[typography.meta, styles.infoLabel]}>{t("subscription.notes")}</Text>
-              <Text style={[typography.body, styles.notes]}>{subscription.notes}</Text>
-            </View>
-          ) : null}
+          <View style={styles.notesBlock}>
+            <Text style={[typography.meta, styles.infoLabel]}>{t("subscription.note")}</Text>
+            <Text style={[typography.body, styles.notes]}>
+              {subscription.notes?.trim() || t("common.none")}
+            </Text>
+          </View>
         </View>
 
         <Pressable
@@ -143,6 +205,141 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
       >
         <Ionicons name="pencil-outline" size={22} color={colors.accent} />
       </Pressable>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isActionsModalVisible}
+        onRequestClose={closeActionsModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeActionsModal} />
+          <View style={[surfaces.panel, styles.actionsModal]}>
+            <View style={styles.actionsHeader}>
+              <Text style={[typography.cardTitle, styles.cardTitle]}>{t("subscription.actionsTitle")}</Text>
+              <Pressable onPress={closeActionsModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={styles.actionsRow}
+              onPress={() => {
+                closeActionsModal();
+                setIsPauseInfoModalVisible(true);
+              }}
+            >
+              <Text style={[typography.body, styles.actionsRowText]}>
+                {isPaused ? t("subscription.resumeTitle") : t("subscription.pauseTitle")}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.actionsRow}
+              onPress={() => {
+                closeActionsModal();
+                setConfirmAction("cancel");
+              }}
+            >
+              <Text style={[typography.body, styles.actionsRowText]}>{t("subscription.markCancelled")}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.actionsRow}
+              onPress={() => {
+                closeActionsModal();
+                setConfirmAction("delete");
+              }}
+            >
+              <Text style={[typography.body, styles.actionsDeleteText]}>{t("subscription.deleteAction")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isPauseInfoModalVisible}
+        onRequestClose={closePauseInfoModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closePauseInfoModal} />
+          <View style={[surfaces.panel, styles.actionsModal]}>
+            <View style={styles.actionsHeader}>
+              <Text style={[typography.cardTitle, styles.cardTitle]}>
+                {isPaused ? t("subscription.resumeModalTitle") : t("subscription.pauseModalTitle")}
+              </Text>
+              <Pressable onPress={closePauseInfoModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <Text style={[typography.secondary, styles.confirmMessage]}>
+              {isPaused ? t("subscription.resumeModalMessage") : t("subscription.pauseModalMessage")}
+            </Text>
+
+            <View style={styles.confirmActions}>
+              <Pressable
+                style={[styles.actionsRow, styles.confirmPrimaryRow]}
+                onPress={handlePauseSubscription}
+              >
+                <Text style={[typography.body, styles.confirmPrimaryText]}>
+                  {isPaused ? t("subscription.resumeModalConfirm") : t("subscription.pauseModalConfirm")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={confirmAction !== null}
+        onRequestClose={closeConfirmModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeConfirmModal} />
+          <View style={[surfaces.panel, styles.actionsModal]}>
+            <View style={styles.actionsHeader}>
+              <Text style={[typography.cardTitle, styles.cardTitle]}>
+                {confirmAction === "cancel"
+                  ? t("subscription.confirmCancelTitle")
+                  : t("subscription.confirmDeleteTitle")}
+              </Text>
+              <Pressable onPress={closeConfirmModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <Text style={[typography.secondary, styles.confirmMessage]}>
+              {confirmAction === "cancel"
+                ? t("subscription.confirmCancelMessage")
+                : t("subscription.confirmDeleteMessage")}
+            </Text>
+
+            <View style={styles.confirmActions}>
+              <Pressable style={styles.actionsRow} onPress={closeConfirmModal}>
+                <Text style={[typography.body, styles.actionsRowText]}>{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionsRow, styles.confirmPrimaryRow]}
+                onPress={confirmAction === "cancel" ? handleCancelSubscription : handleDeleteSubscription}
+              >
+                <Text
+                  style={[
+                    typography.body,
+                    confirmAction === "cancel" ? styles.confirmPrimaryText : styles.actionsDeleteText,
+                  ]}
+                >
+                  {confirmAction === "cancel"
+                    ? t("subscription.confirmCancelAction")
+                    : t("subscription.confirmDeleteAction")}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -171,6 +368,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     heroCard: {
       gap: spacing.xs,
+    },
+    headerMenuButton: {
+      width: 32,
+      height: 32,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: -spacing.xs,
     },
     heroHeader: {
       flexDirection: "row",
@@ -284,6 +488,53 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
         height: 10,
       },
       elevation: 4,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "center",
+      backgroundColor: colors.overlay,
+      padding: spacing.lg,
+    },
+    actionsModal: {
+      gap: spacing.sm,
+    },
+    actionsHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    actionsRow: {
+      minHeight: 48,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+      paddingHorizontal: spacing.md,
+      alignItems: "flex-start",
+      justifyContent: "center",
+    },
+    actionsRowText: {
+      color: colors.textPrimary,
+    },
+    actionsDeleteText: {
+      color: colors.danger,
+    },
+    confirmMessage: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    confirmActions: {
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    confirmPrimaryRow: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    confirmPrimaryText: {
+      color: colors.accent,
     },
     emptyContainer: {
       flex: 1,

@@ -145,17 +145,17 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Die Registrierung wurde vorbereitet. Nach der Mail-Bestätigung kann die Verknüpfung abgeschlossen werden. Bis dahin bleibt dein aktueller App-Stand unverändert.",
       pendingConfirmedTitle: "E-Mail bestätigt",
       pendingConfirmedDescription:
-        "Die E-Mail wurde bestätigt. Schließe die Registrierung jetzt mit deinem Passwort ab.",
+        "Lege ein Passwort fest, um dein Konto zu verknüpfen.",
       pendingExpiredDescription:
         "Die gestartete Registrierung ist abgelaufen. Du kannst jederzeit eine neue Registrierung starten.",
       pendingCancelledDescription:
         "Die gestartete Registrierung wurde abgebrochen. Du kannst jederzeit erneut beginnen.",
       pendingFinalizeTitle: "Registrierung abschließen",
       pendingFinalizeDescription:
-        "Lege jetzt dein Passwort fest. Erst danach wird dein Konto wirklich mit deiner E-Mail verknüpft.",
+        "Lege jetzt dein Passwort fest.",
       pendingFinalizeHint:
         "Nach diesem Schritt kannst du dich normal mit E-Mail und Passwort einloggen.",
-      pendingFinalizeAction: "Registrierung abschließen",
+      pendingFinalizeAction: "Speichern",
       pendingFinalizeError:
         "Die Registrierung konnte gerade nicht abgeschlossen werden.",
       pendingFinalizeNotConfirmed:

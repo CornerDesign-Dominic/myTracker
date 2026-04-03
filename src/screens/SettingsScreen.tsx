@@ -375,29 +375,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </>
           ) : hasConfirmedRegistration ? (
             <>
-              <View style={styles.accountStatusCard}>
-                <View style={styles.accountStatusHeader}>
-                  <View style={styles.accountStatusBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
-                    <Text style={[typography.meta, styles.accountStatusBadgeText]}>
-                      {t("settings.pendingConfirmedTitle")}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.accountIdentityRow}>
-                  <Text style={[typography.meta, styles.accountIdentityLabel]}>
-                    {t("auth.email")}
-                  </Text>
-                  <Text style={[typography.body, styles.accountIdentityValue]}>
-                    {pendingRegistration?.pendingEmail}
-                  </Text>
-                </View>
+              <View style={styles.verifiedRow}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
+                <Text style={[typography.meta, styles.verifiedLabel]}>
+                  {t("settings.pendingConfirmedTitle")}
+                </Text>
               </View>
               <Text style={[typography.secondary, styles.accountText]}>
                 {t("settings.pendingConfirmedDescription")}
-              </Text>
-              <Text style={[typography.secondary, styles.pendingBackendHint]}>
-                {t("settings.pendingFinalizeHint")}
               </Text>
             </>
           ) : hasPendingRegistration ? (

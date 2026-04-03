@@ -168,7 +168,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
       const dueDates = new Set<string>();
 
       subscriptions
-        .filter((subscription) => subscription.status !== "cancelled")
+        .filter((subscription) => subscription.status === "active")
         .forEach((subscription) => {
           visibleCalendarMonths.forEach((monthDate) => {
             const dueDate = getRecurringDueDateInputForMonth({

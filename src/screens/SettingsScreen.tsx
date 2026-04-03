@@ -115,6 +115,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [completionPasswordRepeat, setCompletionPasswordRepeat] = useState("");
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [isCompletingRegistration, setIsCompletingRegistration] = useState(false);
+  const [isResendingPendingRegistration, setIsResendingPendingRegistration] = useState(false);
   const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasSupportColors;
   const hasLinkedEmailAccount = Boolean(!isAnonymous && currentUser?.email);
@@ -177,6 +178,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
     }
   }, [hasSupportColors]);
 
+  useEffect(() => {
+    if (pendingRegistrationState !== "pending") {
+      setIsResendingPendingRegistration(false);
+    }
+  }, [pendingRegistrationState]);
+
   const openPremiumModal = () => {
     clearPurchaseError();
     setIsPremiumModalVisible(true);
@@ -222,18 +229,43 @@ export const SettingsScreen = ({ navigation }: Props) => {
       email: pendingRegistration?.pendingEmail ?? null,
       status: pendingRegistration?.status ?? null,
     });
+
+    if (pendingRegistrationState !== "pending") {
+      console.log("[AuthDebug] SettingsScreen:pending:resend:ignored-non-pending", {
+        email: pendingRegistration?.pendingEmail ?? null,
+        state: pendingRegistrationState,
+      });
+      return;
+    }
+
     try {
-      await resendPendingRegistration();
+      setIsResendingPendingRegistration(true);
+      const resendResult = await resendPendingRegistration();
       console.log("[AuthDebug] SettingsScreen:pending:resend:success", {
         email: pendingRegistration?.pendingEmail ?? null,
+        result: resendResult,
       });
-      Alert.alert(t("settings.pendingStatusTitle"), t("settings.pendingResendQueued"));
+
+      if (resendResult === "resent") {
+        Alert.alert(t("settings.pendingStatusTitle"), t("settings.pendingResendQueued"));
+      } else if (resendResult === "confirmed") {
+        Alert.alert(t("settings.pendingConfirmedTitle"), t("settings.pendingConfirmedDescription"));
+      }
     } catch (error) {
       console.log("[AuthDebug] SettingsScreen:pending:resend:error", {
         email: pendingRegistration?.pendingEmail ?? null,
+        code:
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof (error as { code?: unknown }).code === "string"
+            ? (error as { code: string }).code
+            : null,
         message: error instanceof Error ? error.message : String(error),
       });
       Alert.alert(t("common.actionFailed"), t("settings.pendingResendError"));
+    } finally {
+      setIsResendingPendingRegistration(false);
     }
   };
 
@@ -466,6 +498,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 <Pressable
                   style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
                   onPress={handleResendPendingRegistration}
+                  disabled={isResendingPendingRegistration || pendingRegistrationState !== "pending"}
                 >
                   <Text style={[typography.button, styles.actionPrimaryText]}>
                     {t("settings.pendingResendAction")}

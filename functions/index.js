@@ -267,7 +267,55 @@ const registrationResendHandler = async (request, response) => {
     const userSnapshot = await userRef.get();
     const pendingRegistration = userSnapshot.data()?.pendingRegistration;
 
-    if (!pendingRegistration || pendingRegistration.status !== "pending") {
+    if (!pendingRegistration) {
+      jsonError(response, 409, "registration-not-pending", "No pending registration found.");
+      return;
+    }
+
+    if (pendingRegistration.status === "confirmed") {
+      jsonError(
+        response,
+        409,
+        "registration-already-confirmed",
+        "Registration was already confirmed.",
+      );
+      return;
+    }
+
+    if (pendingRegistration.status === "cancelled") {
+      jsonError(
+        response,
+        409,
+        "registration-cancelled",
+        "Registration was already cancelled.",
+      );
+      return;
+    }
+
+    if (
+      pendingRegistration.status === "expired" ||
+      new Date(pendingRegistration.expiresAt).getTime() <= Date.now()
+    ) {
+      await userRef.set(
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            status: "expired",
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      jsonError(
+        response,
+        410,
+        "pending-registration-expired",
+        "Pending registration expired.",
+      );
+      return;
+    }
+
+    if (pendingRegistration.status !== "pending") {
       jsonError(response, 409, "registration-not-pending", "No pending registration found.");
       return;
     }
@@ -320,8 +368,10 @@ const registrationResendHandler = async (request, response) => {
     const status =
       code === "auth/email-already-in-use"
         ? 409
-        : code === "registration-not-pending"
+        : code === "registration-not-pending" || code === "registration-already-confirmed" || code === "registration-cancelled"
           ? 409
+          : code === "pending-registration-expired"
+            ? 410
           : code === "missing-auth-token"
             ? 400
             : code === "registration-requires-anonymous-user"

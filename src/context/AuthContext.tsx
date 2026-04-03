@@ -48,7 +48,7 @@ type AuthContextValue = {
   register: (email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   startPendingRegistration: (email: string) => Promise<void>;
-  resendPendingRegistration: () => Promise<void>;
+  resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
   cancelPendingRegistration: () => Promise<void>;
   completePendingRegistration: (password: string) => Promise<void>;
   signInAnonymous: () => Promise<void>;
@@ -356,6 +356,29 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       throw new Error("No pending registration available.");
     }
 
+    if (pendingRegistration.status !== "pending") {
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:blocked-local`, {
+        uid: userId,
+        email: pendingRegistration.pendingEmail,
+        localStatus: pendingRegistration.status,
+      });
+      return pendingRegistration.status === "confirmed" ? "confirmed" : "blocked";
+    }
+
+    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
+      const expiredRegistration: PendingRegistrationDocument = {
+        ...pendingRegistration,
+        status: "expired",
+      };
+      setPendingRegistration(expiredRegistration);
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:blocked-local-expired`, {
+        uid: userId,
+        email: pendingRegistration.pendingEmail,
+        expiresAt: pendingRegistration.expiresAt,
+      });
+      return "blocked";
+    }
+
     console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:start`, {
       uid: userId,
       email: pendingRegistration.pendingEmail,
@@ -383,10 +406,82 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         email: nextPendingRegistration.pendingEmail,
         expiresAt: nextPendingRegistration.expiresAt,
       });
+      return "resent";
     } catch (error) {
+      const errorCode =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof (error as { code?: unknown }).code === "string"
+          ? (error as { code: string }).code
+          : null;
+      const errorStatus =
+        typeof error === "object" &&
+        error !== null &&
+        "status" in error &&
+        typeof (error as { status?: unknown }).status === "number"
+          ? (error as { status: number }).status
+          : null;
+
+      if (errorCode === "registration-already-confirmed") {
+        const confirmedRegistration: PendingRegistrationDocument = {
+          ...pendingRegistration,
+          status: "confirmed",
+          confirmedAt: new Date().toISOString(),
+        };
+        setPendingRegistration(confirmedRegistration);
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:resolved-confirmed`, {
+          uid: userId,
+          email: pendingRegistration.pendingEmail,
+          backendCode: errorCode,
+          backendStatus: errorStatus,
+        });
+        return "confirmed";
+      }
+
+      if (errorCode === "pending-registration-expired") {
+        const expiredRegistration: PendingRegistrationDocument = {
+          ...pendingRegistration,
+          status: "expired",
+        };
+        setPendingRegistration(expiredRegistration);
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:resolved-expired`, {
+          uid: userId,
+          email: pendingRegistration.pendingEmail,
+          backendCode: errorCode,
+          backendStatus: errorStatus,
+        });
+        return "blocked";
+      }
+
+      if (errorCode === "registration-cancelled") {
+        const cancelledRegistration: PendingRegistrationDocument = {
+          ...pendingRegistration,
+          status: "cancelled",
+          cancelledAt: new Date().toISOString(),
+        };
+        setPendingRegistration(cancelledRegistration);
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:resolved-cancelled`, {
+          uid: userId,
+          email: pendingRegistration.pendingEmail,
+          backendCode: errorCode,
+          backendStatus: errorStatus,
+        });
+        return "blocked";
+      }
+
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:error`, {
         uid: userId,
         email: pendingRegistration.pendingEmail,
+        code: errorCode,
+        status: errorStatus,
+        body:
+          typeof error === "object" &&
+          error !== null &&
+          "body" in error &&
+          typeof (error as { body?: unknown }).body === "string"
+            ? (error as { body: string }).body
+            : null,
         message: error instanceof Error ? error.message : String(error),
       });
       throw error;

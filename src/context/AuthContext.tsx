@@ -5,10 +5,12 @@ import {
   fetchSignInMethodsForEmail,
   linkWithCredential,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
 } from "firebase/auth";
 import {
   PropsWithChildren,
@@ -47,6 +49,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  changePassword: (currentPassword: string, nextPassword: string) => Promise<void>;
   startPendingRegistration: (email: string) => Promise<void>;
   resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
   cancelPendingRegistration: () => Promise<void>;
@@ -263,6 +266,48 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     } catch (error) {
       console.log(`${AUTH_DEBUG_PREFIX} passwordReset:error`, {
         email: trimmedEmail,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
+  const changePassword = async (currentPassword: string, nextPassword: string) => {
+    const auth = ensureAuth();
+    const user = auth.currentUser;
+
+    if (!user || user.isAnonymous || !user.email) {
+      const error = new Error("No linked email account available.");
+      (error as Error & { code?: string }).code = "auth/no-linked-email-account";
+      throw error;
+    }
+
+    console.log(`${AUTH_DEBUG_PREFIX} changePassword:start`, {
+      uid: user.uid,
+      email: user.email,
+      currentPasswordLength: currentPassword.length,
+      nextPasswordLength: nextPassword.length,
+    });
+
+    try {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, nextPassword);
+      console.log(`${AUTH_DEBUG_PREFIX} changePassword:success`, {
+        uid: user.uid,
+        email: user.email,
+      });
+    } catch (error) {
+      console.log(`${AUTH_DEBUG_PREFIX} changePassword:error`, {
+        uid: user.uid,
+        email: user.email,
+        code:
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof (error as { code?: unknown }).code === "string"
+            ? (error as { code: string }).code
+            : null,
         message: error instanceof Error ? error.message : String(error),
       });
       throw error;
@@ -607,6 +652,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       login,
       register,
       requestPasswordReset,
+      changePassword,
       startPendingRegistration,
       resendPendingRegistration,
       cancelPendingRegistration,

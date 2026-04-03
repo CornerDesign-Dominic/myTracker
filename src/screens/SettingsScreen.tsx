@@ -93,7 +93,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     resendPendingRegistration,
     cancelPendingRegistration,
     completePendingRegistration,
-    logout,
   } = useAuth();
   const {
     hasSupportColors,
@@ -109,7 +108,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
   } = usePurchases();
   const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
-  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [isCompleteRegistrationModalVisible, setIsCompleteRegistrationModalVisible] = useState(false);
   const [completionPassword, setCompletionPassword] = useState("");
   const [completionPasswordRepeat, setCompletionPasswordRepeat] = useState("");
@@ -118,7 +116,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [isResendingPendingRegistration, setIsResendingPendingRegistration] = useState(false);
   const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasSupportColors;
-  const hasLinkedEmailAccount = Boolean(!isAnonymous && currentUser?.email);
   const pendingRegistrationState = useMemo(() => {
     if (!isAnonymous || !pendingRegistration) {
       return "idle" as const;
@@ -222,8 +219,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     }
   };
 
-  const closeLogoutModal = () => setIsLogoutModalVisible(false);
-
   const handleResendPendingRegistration = async () => {
     console.log("[AuthDebug] SettingsScreen:pending:resend:tap", {
       email: pendingRegistration?.pendingEmail ?? null,
@@ -284,15 +279,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         email: pendingRegistration?.pendingEmail ?? null,
         message: error instanceof Error ? error.message : String(error),
       });
-      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      closeLogoutModal();
-    } catch {
       Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
     }
   };
@@ -377,19 +363,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
           {!isAnonymous && currentUser?.email ? (
             <>
-              <View style={styles.accountStatusCard}>
-                <View style={styles.accountStatusHeader}>
-                  <View style={styles.accountStatusBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
-                    <Text style={[typography.meta, styles.accountStatusBadgeText]}>
-                      {t("settings.loggedInBadge")}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.accountIdentityRow}>
-                  <Text style={[typography.meta, styles.accountIdentityLabel]}>{t("auth.email")}</Text>
-                  <Text style={[typography.body, styles.accountIdentityValue]}>{currentUser.email}</Text>
-                </View>
+              <View style={styles.verifiedRow}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
+                <Text style={[typography.meta, styles.verifiedLabel]}>
+                  {t("settings.accountVerified")}
+                </Text>
               </View>
               <Text style={[typography.secondary, styles.accountText]}>
                 {t("settings.accountSignedIn")}
@@ -545,11 +523,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   </>
                 ) : (
                   <Pressable
-                    style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
-                    onPress={() => setIsLogoutModalVisible(true)}
+                    style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
+                    onPress={() => navigation.navigate("Account")}
                   >
-                    <Text style={[typography.button, styles.optionText]}>
-                      {t("settings.logoutAction")}
+                    <Text style={[typography.button, styles.actionPrimaryText]}>
+                      {t("settings.accountManageAction")}
                     </Text>
                   </Pressable>
                 )}
@@ -747,46 +725,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
                     {t("settings.pendingFinalizeAction")}
                   </Text>
                 )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="fade"
-        transparent
-        visible={isLogoutModalVisible}
-        onRequestClose={closeLogoutModal}
-      >
-        <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeLogoutModal} />
-          <View style={[surfaces.panel, styles.confirmationSheet]}>
-            <View style={styles.purchaseSheetHeader}>
-              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.logoutModalTitle")}</Text>
-              <Pressable onPress={closeLogoutModal} hitSlop={10}>
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={[typography.secondary, styles.confirmationText]}>
-              {hasLinkedEmailAccount
-                ? t("settings.logoutModalDescriptionLinked")
-                : t("settings.logoutModalDescription")}
-            </Text>
-            <View style={styles.confirmationActions}>
-              <Pressable
-                style={[buttons.buttonBase, buttons.secondaryButton, styles.confirmationButton]}
-                onPress={closeLogoutModal}
-              >
-                <Text style={[typography.button, styles.optionText]}>{t("common.cancel")}</Text>
-              </Pressable>
-              <Pressable
-                style={[buttons.buttonBase, buttons.primaryButton, styles.confirmationButton]}
-                onPress={handleLogout}
-              >
-                <Text style={[typography.button, styles.purchasePrimaryText]}>
-                  {t("settings.logoutModalConfirm")}
-                </Text>
               </Pressable>
             </View>
           </View>
@@ -1053,6 +991,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     accountText: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    verifiedRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    verifiedLabel: {
+      color: colors.accent,
+      textTransform: "uppercase",
     },
     pendingBackendHint: {
       color: colors.textMuted,

@@ -9,6 +9,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { OnboardingScreen } from "@/screens/OnboardingScreen";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
+import { AccountScreen } from "@/screens/AccountScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
 import { BillingFrequencyScreen } from "@/screens/BillingFrequencyScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
@@ -234,6 +235,13 @@ export const AppNavigator = ({
           component={SettingsScreen}
           options={{
             title: t("common.settings"),
+          }}
+        />
+        <Stack.Screen
+          name="Account"
+          component={AccountScreen}
+          options={{
+            title: t("settings.accountManageAction"),
           }}
         />
         <Stack.Screen

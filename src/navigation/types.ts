@@ -15,6 +15,7 @@ export type RootStackParamList = {
   BillingFrequency: undefined;
   MonthlyPreview: undefined;
   Settings: undefined;
+  Account: undefined;
   Terms: undefined;
   Privacy: undefined;
   Imprint: undefined;

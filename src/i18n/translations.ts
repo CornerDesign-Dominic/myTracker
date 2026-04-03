@@ -118,10 +118,27 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountAnonymous:
         "Sichere deine Daten mit einem Konto, damit sie bei einem Gerätewechsel oder nach einer Neuinstallation wieder verfügbar sind.",
       accountSignedIn:
-        "Deine Daten sind mit deinem Konto verknüpft und lassen sich auf anderen Geräten wiederherstellen.",
-      accountBenefitBackup: "Daten sicher mit deinem Konto verknüpfen",
+        "Deine Daten sind mit deinem Konto verknüpft.",
+      accountBenefitBackup: "Daten sicher mit deiner Email verknüpfen",
       accountBenefitDevices: "Beim Gerätewechsel einfach weiter nutzen",
       accountBenefitRestore: "Nach Neuinstallation wiederherstellen",
+      accountVerified: "Verifiziert",
+      accountManageAction: "Mein Konto",
+      accountManageHint:
+        "Hier kannst du dein Passwort verwalten oder dich bei Bedarf von deinem Konto abmelden.",
+      accountChangePasswordTitle: "Passwort geändert ",
+      accountChangePasswordAction: "Passwort ändern",
+      accountChangePasswordModalHint:
+        "Vergib ein neues Passwort.",
+      accountCurrentPasswordLabel: "Aktuelles Passwort",
+      accountNewPasswordLabel: "Neues Passwort",
+      accountNewPasswordRepeatLabel: "Neues Passwort wiederholen",
+      accountCurrentPasswordError: "Bitte gib dein aktuelles Passwort ein.",
+      accountCurrentPasswordWrong: "Das aktuelle Passwort ist nicht korrekt.",
+      accountChangePasswordConfirm: "aktualisieren",
+      accountPasswordChangedSuccess: "",
+      accountChangePasswordError:
+        "Das Passwort konnte gerade nicht geändert werden.",
       loggedInBadge: "Eingeloggt",
       pendingStatusTitle: "Bestätigung ausstehend",
       pendingStatusDescription:
@@ -233,11 +250,11 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       emailError: "Bitte gib eine gültige E-Mail-Adresse ein.",
       passwordError: "Das Passwort muss mindestens 6 Zeichen lang sein.",
       passwordRepeatError: "Die Passwörter stimmen nicht überein.",
-      pendingModalTitle: "Bestätigung ausstehend",
+      pendingModalTitle: "E-Mail bestätigen",
       pendingModalDescription:
-        "Bestätige die Mail innerhalb von 72 Stunden, damit das Konto später mit deiner Mail verbunden werden kann. Vorher findet keine Verbindung statt.",
+        "Wir haben dir eine E-Mail gesendet.\nBestätige sie innerhalb von 72 Stunden um dein Konto zu verknüpfen",
       pendingModalBackendHint:
-        "Die Bestätigungs-Mail wird im Browser/Web verarbeitet, nicht direkt in der App.",
+        "Das Passwort setzt du danach in der App in den Einstellungen.",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -576,6 +593,23 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountBenefitBackup: "Securely link your data to your account",
       accountBenefitDevices: "Keep using the app after switching devices",
       accountBenefitRestore: "Restore your data after reinstalling",
+      accountVerified: "Verified",
+      accountManageAction: "My account",
+      accountManageHint:
+        "Here you can manage your password or sign out of your account when needed.",
+      accountChangePasswordTitle: "Change password",
+      accountChangePasswordAction: "Change password",
+      accountChangePasswordModalHint:
+        "Enter your current password and then choose a new password for your account.",
+      accountCurrentPasswordLabel: "Current password",
+      accountNewPasswordLabel: "New password",
+      accountNewPasswordRepeatLabel: "Repeat new password",
+      accountCurrentPasswordError: "Please enter your current password.",
+      accountCurrentPasswordWrong: "The current password is incorrect.",
+      accountChangePasswordConfirm: "Update password",
+      accountPasswordChangedSuccess: "Your password was changed successfully.",
+      accountChangePasswordError:
+        "The password could not be changed right now.",
       loggedInBadge: "Signed in",
       pendingStatusTitle: "Confirmation pending",
       pendingStatusDescription:

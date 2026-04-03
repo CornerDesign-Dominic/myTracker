@@ -14,11 +14,8 @@ const auth = admin.auth();
 const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
-const CONFIRMATION_BASE_URL =
-  process.env.REGISTRATION_CONFIRMATION_URL ||
+const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const REGISTRATION_MAIL_FROM = process.env.REGISTRATION_MAIL_FROM;
 
 const setCors = (response) => {
   response.set("Access-Control-Allow-Origin", "*");
@@ -74,6 +71,13 @@ const verifyAnonymousCaller = async (request) => {
   return decodedToken;
 };
 
+const getRegistrationConfig = () => ({
+  confirmationBaseUrl:
+    process.env.REGISTRATION_CONFIRMATION_URL || DEFAULT_CONFIRMATION_URL,
+  resendApiKey: process.env.RESEND_API_KEY,
+  registrationMailFrom: process.env.REGISTRATION_MAIL_FROM,
+});
+
 const ensureEmailUnused = async (email) => {
   try {
     await auth.getUserByEmail(email);
@@ -90,7 +94,14 @@ const ensureEmailUnused = async (email) => {
 };
 
 const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
-  if (!RESEND_API_KEY || !REGISTRATION_MAIL_FROM) {
+  const { resendApiKey, registrationMailFrom, confirmationBaseUrl } = getRegistrationConfig();
+
+  if (!resendApiKey || !registrationMailFrom) {
+    logger.error("registration:mail-config-missing", {
+      hasResendApiKey: Boolean(resendApiKey),
+      hasRegistrationMailFrom: Boolean(registrationMailFrom),
+      confirmationBaseUrl,
+    });
     const error = new Error("Mail transport is not configured.");
     error.code = "registration-mail-not-configured";
     throw error;
@@ -99,11 +110,11 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${resendApiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: REGISTRATION_MAIL_FROM,
+      from: registrationMailFrom,
       to: email,
       subject: "Bitte bestätige deine E-Mail",
       html: `
@@ -122,7 +133,11 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
 
   if (!response.ok) {
     const body = await response.text();
-    logger.error("registration:send-email-failed", body);
+    logger.error("registration:send-email-failed", {
+      email,
+      status: response.status,
+      body,
+    });
     const error = new Error("Failed to send confirmation email.");
     error.code = "registration-mail-send-failed";
     throw error;
@@ -168,6 +183,7 @@ const registrationStartHandler = async (request, response) => {
   try {
     const decodedToken = await verifyAnonymousCaller(request);
     const email = String(request.body?.email ?? "").trim().toLowerCase();
+    const { confirmationBaseUrl } = getRegistrationConfig();
 
     if (!validateEmail(email)) {
       jsonError(response, 400, "invalid-email", "Email is invalid.");
@@ -179,7 +195,7 @@ const registrationStartHandler = async (request, response) => {
     const now = new Date();
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = hashToken(token);
-    const confirmationUrl = `${CONFIRMATION_BASE_URL}?token=${encodeURIComponent(token)}`;
+    const confirmationUrl = `${confirmationBaseUrl}?token=${encodeURIComponent(token)}`;
     const pendingRegistration = buildPendingRegistrationState(email, now, "pending");
 
     await db.collection(REGISTRATION_COLLECTION).doc(tokenHash).set({
@@ -214,7 +230,11 @@ const registrationStartHandler = async (request, response) => {
 
     response.status(200).json({ ok: true });
   } catch (error) {
-    logger.error("registrationStart", error);
+    logger.error("registrationStart", {
+      code: error.code || "registration-start-failed",
+      message: error.message || "Registration start failed.",
+      stack: error.stack || null,
+    });
     const code = error.code || "registration-start-failed";
     const status =
       code === "auth/email-already-in-use"
@@ -242,6 +262,7 @@ const registrationResendHandler = async (request, response) => {
 
   try {
     const decodedToken = await verifyAnonymousCaller(request);
+    const { confirmationBaseUrl } = getRegistrationConfig();
     const userRef = db.collection("users").doc(decodedToken.uid);
     const userSnapshot = await userRef.get();
     const pendingRegistration = userSnapshot.data()?.pendingRegistration;
@@ -255,7 +276,7 @@ const registrationResendHandler = async (request, response) => {
     const now = new Date();
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = hashToken(token);
-    const confirmationUrl = `${CONFIRMATION_BASE_URL}?token=${encodeURIComponent(token)}`;
+    const confirmationUrl = `${confirmationBaseUrl}?token=${encodeURIComponent(token)}`;
     const nextPendingRegistration = {
       ...pendingRegistration,
       status: "pending",
@@ -290,7 +311,11 @@ const registrationResendHandler = async (request, response) => {
 
     response.status(200).json({ ok: true });
   } catch (error) {
-    logger.error("registrationResend", error);
+    logger.error("registrationResend", {
+      code: error.code || "registration-resend-failed",
+      message: error.message || "Registration resend failed.",
+      stack: error.stack || null,
+    });
     const code = error.code || "registration-resend-failed";
     const status =
       code === "auth/email-already-in-use"
@@ -449,7 +474,11 @@ const registrationFinalizeHandler = async (request, response) => {
       email: pendingRegistration.pendingEmail,
     });
   } catch (error) {
-    logger.error("registrationFinalize", error);
+    logger.error("registrationFinalize", {
+      code: error.code || "registration-finalize-failed",
+      message: error.message || "Registration finalize failed.",
+      stack: error.stack || null,
+    });
     const code = error.code || "registration-finalize-failed";
     const status =
       code === "missing-auth-token"

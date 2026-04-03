@@ -322,6 +322,27 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:error`, {
         uid: userId,
         email: trimmedEmail,
+        code:
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof (error as { code?: unknown }).code === "string"
+            ? (error as { code: string }).code
+            : null,
+        status:
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          typeof (error as { status?: unknown }).status === "number"
+            ? (error as { status: number }).status
+            : null,
+        body:
+          typeof error === "object" &&
+          error !== null &&
+          "body" in error &&
+          typeof (error as { body?: unknown }).body === "string"
+            ? (error as { body: string }).body
+            : null,
         message: error instanceof Error ? error.message : String(error),
       });
       throw error;

@@ -56,6 +56,20 @@ export const RegisterScreen = ({ navigation }: Props) => {
         typeof (submissionError as { code?: unknown }).code === "string"
           ? (submissionError as { code: string }).code
           : null;
+      const errorStatus =
+        typeof submissionError === "object" &&
+        submissionError !== null &&
+        "status" in submissionError &&
+        typeof (submissionError as { status?: unknown }).status === "number"
+          ? (submissionError as { status: number }).status
+          : null;
+      const errorBody =
+        typeof submissionError === "object" &&
+        submissionError !== null &&
+        "body" in submissionError &&
+        typeof (submissionError as { body?: unknown }).body === "string"
+          ? (submissionError as { body: string }).body
+          : null;
 
       if (errorCode === "auth/email-already-in-use") {
         console.log("[AuthDebug] RegisterScreen:submit:email-in-use", { email: email.trim() });
@@ -66,9 +80,11 @@ export const RegisterScreen = ({ navigation }: Props) => {
       console.log("[AuthDebug] RegisterScreen:submit:error", {
         email: email.trim(),
         code: errorCode,
+        status: errorStatus,
+        body: errorBody,
         message: submissionError instanceof Error ? submissionError.message : String(submissionError),
       });
-      setError(t("auth.registerError"));
+      setError(errorCode ? `${t("auth.registerError")} (${errorCode})` : t("auth.registerError"));
     }
   };
 

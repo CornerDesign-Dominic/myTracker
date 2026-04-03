@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -16,6 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionHistory">;
 
 export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { currency } = useAppSettings();
   const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
@@ -27,25 +28,14 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={[layout.content, styles.content]}>
-        <Pressable
-          style={[surfaces.panel, styles.actionCard]}
-          onPress={() =>
-            navigation.navigate("AddPayment", {
-              subscriptionId: route.params.subscriptionId,
-            })
-          }
-        >
-          <View style={styles.historyCopy}>
-            <Text style={[typography.body, styles.historyTitle]}>
-              {t("history.addPaymentTitle")}
-            </Text>
-            <Text style={[typography.secondary, styles.historySubtitle]}>
-              {t("history.addPaymentDescription")}
-            </Text>
-          </View>
-          <Text style={[typography.body, styles.historyArrow]}>›</Text>
-        </Pressable>
+      <ScrollView
+        contentContainerStyle={[
+          layout.content,
+          styles.content,
+          { paddingBottom: insets.bottom + spacing.xxl + 76 },
+        ]}
+      >
+        <Text style={[typography.secondary, styles.historyIntro]}>{t("history.pageHint")}</Text>
 
         <View style={[surfaces.panel, styles.listCard]}>
           {isLoading ? (
@@ -69,7 +59,16 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
                     ]}
                   >
                     <View style={styles.historyCopy}>
-                      <Text style={[typography.body, styles.historyTitle]}>{entry.title}</Text>
+                      <View style={styles.historyTitleRow}>
+                        <Text style={[typography.body, styles.historyTitle]}>{entry.title}</Text>
+                        {entry.canEdit ? (
+                          <Ionicons
+                            name="pencil-outline"
+                            size={14}
+                            color={colors.textSecondary}
+                          />
+                        ) : null}
+                      </View>
                       {entry.subtitle ? (
                         <Text style={[typography.secondary, styles.historySubtitle]}>
                           {entry.subtitle}
@@ -77,13 +76,6 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
                       ) : null}
                     </View>
                     <View style={styles.historyMetaBlock}>
-                      {entry.canEdit ? (
-                        <Ionicons
-                          name="pencil-outline"
-                          size={16}
-                          color={colors.textSecondary}
-                        />
-                      ) : null}
                       {entry.amountLabel ? (
                         <Text style={[typography.body, styles.historyAmount]}>
                           {entry.amountLabel}
@@ -116,6 +108,16 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
           )}
         </View>
       </ScrollView>
+      <Pressable
+        style={[styles.fabButton, { bottom: Math.max(spacing.lg, insets.bottom + spacing.sm) }]}
+        onPress={() =>
+          navigation.navigate("AddPayment", {
+            subscriptionId: route.params.subscriptionId,
+          })
+        }
+      >
+        <Ionicons name="add" size={24} color={colors.accent} />
+      </Pressable>
     </SafeAreaView>
   );
 };
@@ -125,11 +127,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     content: {
       minHeight: "100%",
     },
-    actionCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
+    historyIntro: {
+      color: colors.textSecondary,
+      lineHeight: 22,
     },
     listCard: {
       gap: spacing.md,
@@ -152,16 +152,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flex: 1,
       gap: spacing.xxs,
     },
+    historyTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
     historyTitle: {
+      flexShrink: 1,
       color: colors.textPrimary,
     },
     historySubtitle: {
       color: colors.textSecondary,
-    },
-    historyArrow: {
-      color: colors.textSecondary,
-      fontSize: 22,
-      lineHeight: 22,
     },
     historyMetaBlock: {
       alignItems: "flex-end",
@@ -180,5 +181,25 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     errorText: {
       color: colors.danger,
+    },
+    fabButton: {
+      position: "absolute",
+      right: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 999,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 4,
     },
   });

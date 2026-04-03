@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -25,6 +25,7 @@ import { formatDate } from "@/utils/date";
 export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreenProps) => {
   const { colors, typography, isDark } = useAppTheme();
   const { language, t } = useI18n();
+  const insets = useSafeAreaInsets();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
@@ -60,15 +61,15 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
+      <ScrollView
+        contentContainerStyle={[
+          layout.content,
+          styles.contentWithTabBar,
+          { paddingBottom: insets.bottom + spacing.xxl + 76 },
+        ]}
+      >
         <View style={styles.titleRow}>
           <Text style={[typography.pageTitle, styles.pageTitle]}>{t("allSubscriptions.title")}</Text>
-          <Pressable
-            style={[surfaces.subtlePanel, styles.addButton]}
-            onPress={() => navigation.navigate("SubscriptionForm")}
-          >
-            <Text style={[typography.cardTitle, styles.addButtonText]}>+</Text>
-          </Pressable>
         </View>
 
         <View style={[surfaces.mainPanel, styles.summaryCard]}>
@@ -204,6 +205,12 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           )}
         </View>
       </ScrollView>
+      <Pressable
+        style={[styles.fabButton, { bottom: spacing.lg }]}
+        onPress={() => navigation.navigate("SubscriptionForm")}
+      >
+        <Text style={[typography.cardTitle, styles.addButtonText]}>+</Text>
+      </Pressable>
     </SafeAreaView>
   );
 };
@@ -219,7 +226,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "flex-start",
       gap: 16,
       minHeight: 40,
     },
@@ -247,8 +254,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 22,
     },
     addButton: {
-      width: 40,
-      height: 40,
+      width: 56,
+      height: 56,
       borderRadius: 999,
       backgroundColor: colors.accentSoft,
       borderWidth: 1,
@@ -256,10 +263,39 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "center",
       padding: 0,
-      marginRight: -spacing.xxs,
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 4,
     },
     addButtonText: {
       color: colors.accent,
+      fontSize: 24,
+      lineHeight: 28,
+    },
+    fabButton: {
+      position: "absolute",
+      right: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 999,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 4,
     },
     searchField: {
       flexDirection: "row",

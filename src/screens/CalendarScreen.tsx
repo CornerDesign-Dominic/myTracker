@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -85,6 +85,8 @@ const getDisplayDate = (date: Date, language: "de" | "en") =>
 const getShortDisplayDate = (date: Date) =>
   `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.`;
 
+const getTodayFabLabel = (date: Date) => `${date.getDate()}.${date.getMonth() + 1}.`;
+
 const getWeekdayLabels = (language: "de" | "en") => {
   const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
     weekday: "short",
@@ -96,6 +98,7 @@ const getWeekdayLabels = (language: "de" | "en") => {
 
 export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const { colors, typography, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { language, t } = useI18n();
   const { currency } = useAppSettings();
   const layout = createScreenLayout(colors);
@@ -138,6 +141,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const selectedDateKey = formatLocalDateInput(selectedDate);
   const selectedDayLabel = getDisplayDate(selectedDate, language);
   const selectedShortDayLabel = getShortDisplayDate(selectedDate);
+  const todayFabLabel = getTodayFabLabel(today);
   const dueSubscriptions = useMemo(
     () =>
       subscriptions.filter(
@@ -197,20 +201,15 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={[layout.content, styles.contentWithTabBar]}>
+      <ScrollView
+        contentContainerStyle={[
+          layout.content,
+          styles.contentWithTabBar,
+          { paddingBottom: insets.bottom + spacing.xxl + 76 },
+        ]}
+      >
         <View style={styles.titleRow}>
           <Text style={[typography.pageTitle, styles.pageTitle]}>{t("calendar.title")}</Text>
-          <Pressable
-            style={[surfaces.subtlePanel, styles.todayButton]}
-            onPress={() => {
-              const now = new Date();
-              setToday(now);
-              setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-              selectCalendarDate(now);
-            }}
-          >
-            <Text style={[typography.meta, styles.todayButtonText]}>{t("calendar.today")}</Text>
-          </Pressable>
         </View>
 
         <View style={[surfaces.mainPanel, styles.calendarCard]}>
@@ -345,6 +344,17 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
           </View>
         )}
       </ScrollView>
+      <Pressable
+        style={[styles.fabButton, { bottom: spacing.lg }]}
+        onPress={() => {
+          const now = new Date();
+          setToday(now);
+          setVisibleMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+          selectCalendarDate(now);
+        }}
+      >
+        <Text style={[typography.button, styles.fabButtonText]}>{todayFabLabel}</Text>
+      </Pressable>
     </SafeAreaView>
   );
 };
@@ -366,25 +376,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     titleRow: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
+      justifyContent: "flex-start",
       gap: 16,
       minHeight: 40,
-    },
-    todayButton: {
-      minHeight: 40,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 0,
-      borderRadius: radius.pill,
-      backgroundColor: colors.accentSoft,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      alignItems: "center",
-      justifyContent: "center",
-      marginRight: -spacing.xxs,
-    },
-    todayButtonText: {
-      color: colors.accent,
-      textTransform: "uppercase",
     },
     headerRow: {
       flexDirection: "row",
@@ -540,5 +534,31 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     dueMeta: {
       color: colors.textSecondary,
+    },
+    fabButton: {
+      position: "absolute",
+      right: spacing.lg,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 4,
+    },
+    fabButtonText: {
+      color: colors.accent,
+      fontSize: 13,
+      lineHeight: 16,
+      textAlign: "center",
     },
   });

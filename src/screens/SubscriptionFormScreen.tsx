@@ -976,11 +976,6 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
             onPress={() => setIsLimitModalVisible(false)}
           />
           <View style={[surfaces.panel, styles.limitModal]}>
-            <View style={styles.limitModalHeader}>
-              <View style={styles.limitModalIconWrap}>
-                <Ionicons name="diamond-outline" size={18} color={colors.accent} />
-              </View>
-            </View>
             <Text style={[typography.cardTitle, styles.limitModalTitle]}>
               {t("subscription.limitReachedTitle")}
             </Text>
@@ -1204,17 +1199,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     limitModal: {
       gap: spacing.md,
       paddingBottom: spacing.lg,
-    },
-    limitModalHeader: {
-      alignItems: "flex-start",
-    },
-    limitModalIconWrap: {
-      width: 38,
-      height: 38,
-      borderRadius: radius.pill,
-      backgroundColor: colors.accentSoft,
-      alignItems: "center",
-      justifyContent: "center",
     },
     limitModalTitle: {
       color: colors.textPrimary,

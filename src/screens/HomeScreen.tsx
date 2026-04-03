@@ -86,6 +86,10 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </View>
         </View>
 
+        <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
+          <Text style={[typography.meta, styles.monthMarkerText]}>DIESER MONAT</Text>
+        </View>
+
         {errorMessage ? (
           <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
         ) : null}
@@ -266,6 +270,18 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
     },
     monthDividerText: {
+      color: colors.accent,
+      textTransform: "uppercase",
+    },
+    monthMarkerCard: {
+      minHeight: 40,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+      justifyContent: "center",
+    },
+    monthMarkerText: {
       color: colors.accent,
       textTransform: "uppercase",
     },

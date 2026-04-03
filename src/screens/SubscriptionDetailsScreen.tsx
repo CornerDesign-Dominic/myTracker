@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { getSubscriptionStatusTone } from "@/components/SubscriptionCard";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
@@ -21,6 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionDetails">;
 
 export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { currency } = useAppSettings();
   const { language, t } = useI18n();
   const styles = getStyles(colors);
@@ -63,7 +65,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={layout.content}>
+      <ScrollView
+        contentContainerStyle={[layout.content, { paddingBottom: insets.bottom + spacing.xxl + 76 }]}
+      >
         <View style={[surfaces.panel, styles.heroCard]}>
           <View style={styles.heroMain}>
             <SubscriptionAvatar name={subscription.name} category={subscription.category} size={52} />
@@ -129,13 +133,14 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
           </Pressable>
         ) : null}
 
-        <Pressable
-          style={[buttons.buttonBase, buttons.secondaryButton, styles.editButton]}
-          onPress={() => navigation.navigate("SubscriptionForm", { subscriptionId: subscription.id })}
-        >
-          <Text style={[typography.button, styles.editButtonText]}>{t("subscription.editAction")}</Text>
-        </Pressable>
       </ScrollView>
+
+      <Pressable
+        style={[styles.fabButton, { bottom: Math.max(spacing.lg, insets.bottom + spacing.sm) }]}
+        onPress={() => navigation.navigate("SubscriptionForm", { subscriptionId: subscription.id })}
+      >
+        <Ionicons name="pencil-outline" size={22} color={colors.accent} />
+      </Pressable>
 
       <EditorSheet
         visible={isPauseSheetVisible}
@@ -290,9 +295,25 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     pauseButtonText: {
       color: colors.textPrimary,
     },
-    editButton: {},
-    editButtonText: {
-      color: colors.textPrimary,
+    fabButton: {
+      position: "absolute",
+      right: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 999,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: colors.shadow,
+      shadowOpacity: 1,
+      shadowRadius: 18,
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      elevation: 4,
     },
     emptyContainer: {
       flex: 1,

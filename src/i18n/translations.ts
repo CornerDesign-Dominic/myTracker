@@ -293,6 +293,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     history: {
       addPaymentTitle: "Zahlung hinzufügen",
       addPaymentDescription: "Vergangene oder aktuelle Zahlung manuell hinzufügen",
+      pageHint: "Hier kannst du Zahlungen bearbeiten, entfernen oder vergangene Einträge hinzufügen.",
       loading: "Historie wird geladen...",
       emptyTitle: "Noch keine Historie vorhanden",
       emptyDescription: "Sobald Ereignisse entstehen, erscheinen sie hier chronologisch.",
@@ -676,6 +677,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     history: {
       addPaymentTitle: "Add payment",
       addPaymentDescription: "Add a past or current payment manually",
+      pageHint: "Here you can edit payments, remove them or add past entries.",
       loading: "Loading history...",
       emptyTitle: "No history yet",
       emptyDescription: "Events will appear here in chronological order as soon as they exist.",

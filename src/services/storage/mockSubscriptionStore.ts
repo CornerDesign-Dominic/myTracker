@@ -249,12 +249,20 @@ export class MockSubscriptionStore {
 
     const nextHistory = [...currentHistory];
     missingEvents.forEach((event) => {
-      nextHistory.push({
+      const nextEvent = {
         ...event,
         id: event.id ?? `${event.type}_${Date.now()}`,
         subscriptionId: subscription.id,
         createdAt: new Date().toISOString(),
-      });
+      };
+      const existingIndex = nextHistory.findIndex((item) => item.id === nextEvent.id);
+
+      if (existingIndex >= 0) {
+        nextHistory.splice(existingIndex, 1, nextEvent);
+        return;
+      }
+
+      nextHistory.push(nextEvent);
     });
     this.history.set(subscription.id, sortHistoryNewestFirst(nextHistory));
     this.emitHistory(subscription.id);

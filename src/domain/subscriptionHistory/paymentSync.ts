@@ -4,7 +4,7 @@ import type {
   SubscriptionHistoryEvent,
 } from "../../types/subscriptionHistory.ts";
 import { getRecurringAnchorDay, shiftRecurringDate } from "../../utils/recurringDates.ts";
-import { createPaymentEventId, hasActivePaymentEventForDueDate } from "./paymentEvents.ts";
+import { createSyncPaymentEventId, hasActivePaymentEventForDueDate } from "./paymentEvents.ts";
 import { parseCalendarDate } from "./schedule.ts";
 
 type SyncAnchor = {
@@ -279,7 +279,7 @@ export const getMissingPaymentHistoryEvents = (
 
     return [
       {
-        id: createPaymentEventId("sync_payment"),
+        id: createSyncPaymentEventId(dueDate),
         subscriptionId: subscription.id,
         type: eventType,
         occurredAt: dueDate,

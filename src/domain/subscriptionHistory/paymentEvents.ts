@@ -27,6 +27,8 @@ export const isPaymentHistoryEvent = (
 export const createPaymentEventId = (prefix = "payment") =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+export const createSyncPaymentEventId = (dueDate: string) => `sync_payment_${dueDate}`;
+
 export const hasActivePaymentEventForDueDate = (
   history: SubscriptionHistoryEvent[],
   dueDate: string,

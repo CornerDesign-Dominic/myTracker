@@ -61,6 +61,7 @@ test("creates an event once the due date day is reached", () => {
   assert.equal(result.length, 1);
   assert.equal(result[0]?.type, "payment_booked");
   assert.equal(result[0]?.dueDate, "2026-03-29");
+  assert.equal(result[0]?.id, "sync_payment_2026-03-29");
 });
 
 test("creates no payments when next due date is before subscription createdAt day", () => {
@@ -109,6 +110,7 @@ test("creates payment_skipped_inactive for today's due date while inactive", () 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.type, "payment_skipped_inactive");
   assert.equal(result[0]?.dueDate, "2026-03-28");
+  assert.equal(result[0]?.id, "sync_payment_2026-03-28");
 });
 
 test("creates no skipped payment for a future due date while inactive", () => {

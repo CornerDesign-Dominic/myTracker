@@ -490,7 +490,7 @@ export const syncFirestoreSubscriptionHistory = async (
 
     missingEvents.forEach((event) => {
       const eventId = event.id ?? `${event.type}_${event.dueDate ?? Date.now()}`;
-      batch.set(historyDoc(userId, subscription.id, eventId), toHistoryPayload(event), { merge: true });
+      batch.set(historyDoc(userId, subscription.id, eventId), toHistoryPayload(event));
     });
 
     await batch.commit();

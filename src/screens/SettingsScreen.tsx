@@ -833,7 +833,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   <View style={styles.premiumFeatureList}>
                     <View style={styles.premiumFeatureRow}>
                       <Ionicons name="albums-outline" size={16} color={colors.accent} />
-                      <Text style={[typography.secondary, styles.premiumFeatureText]}>
+                      <Text style={[typography.secondary, styles.premiumFeatureText, styles.premiumFeatureTextStrong]}>
                         {t("settings.premiumItemSubscriptionsPremium")}
                       </Text>
                     </View>
@@ -1175,6 +1175,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     premiumFeatureText: {
       flex: 1,
       color: colors.textPrimary,
+    },
+    premiumFeatureTextStrong: {
+      fontWeight: "700",
     },
     premiumModalInfo: {
       gap: spacing.sm,

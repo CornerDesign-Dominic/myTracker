@@ -126,13 +126,32 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingStatusTitle: "Bestätigung ausstehend",
       pendingStatusDescription:
         "Die Registrierung wurde vorbereitet. Nach der Mail-Bestätigung kann die Verknüpfung abgeschlossen werden. Bis dahin bleibt dein aktueller App-Stand unverändert.",
+      pendingConfirmedTitle: "E-Mail bestätigt",
+      pendingConfirmedDescription:
+        "Die E-Mail wurde bestätigt. Schließe die Registrierung jetzt mit deinem Passwort ab.",
+      pendingExpiredDescription:
+        "Die gestartete Registrierung ist abgelaufen. Du kannst jederzeit eine neue Registrierung starten.",
+      pendingCancelledDescription:
+        "Die gestartete Registrierung wurde abgebrochen. Du kannst jederzeit erneut beginnen.",
+      pendingFinalizeTitle: "Registrierung abschließen",
+      pendingFinalizeDescription:
+        "Lege jetzt dein Passwort fest. Erst danach wird dein Konto wirklich mit deiner E-Mail verknüpft.",
+      pendingFinalizeHint:
+        "Nach diesem Schritt kannst du dich normal mit E-Mail und Passwort einloggen.",
+      pendingFinalizeAction: "Registrierung abschließen",
+      pendingFinalizeError:
+        "Die Registrierung konnte gerade nicht abgeschlossen werden.",
+      pendingFinalizeNotConfirmed:
+        "Die E-Mail-Bestätigung ist noch nicht abgeschlossen.",
       pendingExpiresLabel: "Gültig bis",
       pendingResendAction: "Mail erneut senden",
       pendingCancelAction: "Abbrechen",
       pendingResendQueued:
-        "Die Anfrage wurde erneut vorgemerkt. Der eigentliche Bestätigungsversand wird mit dem Web-Abschluss verbunden.",
+        "Eine neue Bestätigungs-Mail wurde angestoßen.",
+      pendingResendError:
+        "Die Bestätigungs-Mail konnte gerade nicht erneut gesendet werden.",
       pendingBackendHint:
-        "Der Web-Abschluss für den eigentlichen Bestätigungsversand wird als kleiner Backend-Schritt noch ergänzt.",
+        "Bis zur Bestätigung bleibt dein aktueller Nutzer anonym und unverknüpft.",
       loginAction: "Login",
       registerAction: "Registrieren",
       logoutAction: "Abmelden",
@@ -156,7 +175,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumViewBenefits: "Vorteile ansehen",
       premiumModalTitle: "Mehr mit Premium",
       premiumModalDescription:
-        "Mit Premium hebst du das Limit von 10 Abos auf und unterstützt die Weiterentwicklung der App.",
+        "Verwalte alle deine Abos ohne Limit.",
       premiumFreeCardTitle: "FREE",
       premiumItemSubscriptionsFree: "Abo Limit bei 10",
       premiumItemSubscriptionsPremium: "Unbegrenzte Abos",
@@ -167,7 +186,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumItemStats: "Statistik",
       premiumItemAccents: "Akzentfarben als Dankeschön",
       premiumItemSupport: "Unterstützung der App",
-      premiumUpgrade: "Upgraden",
+      premiumUpgrade: "Premium freischalten",
       premiumOneTimePrice: "Einmalig {{price}}",
       premiumOneTimePriceLoading: "Einmalig Preis wird geladen",
       accentFreeBadge: "Gratis",
@@ -218,7 +237,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingModalDescription:
         "Bestätige die Mail innerhalb von 72 Stunden, damit das Konto später mit deiner Mail verbunden werden kann. Vorher findet keine Verbindung statt.",
       pendingModalBackendHint:
-        "Der eigentliche Web-Abschluss für Versand und finale Verknüpfung wird noch als kleiner Backend-Baustein ergänzt.",
+        "Die Bestätigungs-Mail wird im Browser/Web verarbeitet, nicht direkt in der App.",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -557,13 +576,31 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingStatusTitle: "Confirmation pending",
       pendingStatusDescription:
         "The registration has been prepared. Once the email is confirmed, the linking can be completed. Until then, your current app data stays unchanged.",
+      pendingConfirmedTitle: "Email confirmed",
+      pendingConfirmedDescription:
+        "Your email has been confirmed. Finish the registration now by setting your password.",
+      pendingExpiredDescription:
+        "The started registration has expired. You can start a new registration at any time.",
+      pendingCancelledDescription:
+        "The started registration was cancelled. You can begin again at any time.",
+      pendingFinalizeTitle: "Complete registration",
+      pendingFinalizeDescription:
+        "Set your password now. Only after this step will your account actually be linked to your email.",
+      pendingFinalizeHint:
+        "After this step you can sign in normally with email and password.",
+      pendingFinalizeAction: "Complete registration",
+      pendingFinalizeError:
+        "The registration could not be completed right now.",
+      pendingFinalizeNotConfirmed:
+        "The email confirmation has not been completed yet.",
       pendingExpiresLabel: "Valid until",
       pendingResendAction: "Send email again",
       pendingCancelAction: "Cancel",
       pendingResendQueued:
-        "The request has been queued again. The actual confirmation delivery will be connected with the web completion step.",
+        "A new confirmation email has been triggered.",
+      pendingResendError: "The confirmation email could not be sent again right now.",
       pendingBackendHint:
-        "The web completion step for the actual confirmation delivery will be added as a small backend task.",
+        "Until confirmation, your current user stays anonymous and unlinked.",
       loginAction: "Login",
       registerAction: "Register",
       logoutAction: "Log out",
@@ -649,7 +686,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingModalDescription:
         "Confirm the email within 72 hours so the account can later be linked to your email. Until then, no linking will happen.",
       pendingModalBackendHint:
-        "The actual web completion step for delivery and final linking still needs a small backend piece.",
+        "The confirmation email is handled in the browser/web, not directly inside the app.",
     },
     home: {
       monthPaymentSingular: "payment",

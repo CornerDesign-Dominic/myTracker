@@ -25,11 +25,13 @@ export type UserStatsMirrorDocument = {
 };
 
 export type PendingRegistrationDocument = {
-  status: "pending";
+  status: "pending" | "confirmed" | "cancelled" | "expired";
   pendingEmail: string;
   startedAt: string;
   expiresAt: string;
   lastRequestedAt: string;
+  confirmedAt?: string;
+  cancelledAt?: string;
 };
 
 export type UserDocument = {
@@ -59,7 +61,7 @@ const mapPendingRegistration = (value: unknown): PendingRegistrationDocument | n
   const entry = value as Record<string, unknown>;
 
   if (
-    entry.status !== "pending" ||
+    !["pending", "confirmed", "cancelled", "expired"].includes(String(entry.status)) ||
     typeof entry.pendingEmail !== "string" ||
     typeof entry.startedAt !== "string" ||
     typeof entry.expiresAt !== "string" ||
@@ -69,11 +71,13 @@ const mapPendingRegistration = (value: unknown): PendingRegistrationDocument | n
   }
 
   return {
-    status: "pending",
+    status: entry.status as PendingRegistrationDocument["status"],
     pendingEmail: entry.pendingEmail,
     startedAt: entry.startedAt,
     expiresAt: entry.expiresAt,
     lastRequestedAt: entry.lastRequestedAt,
+    confirmedAt: typeof entry.confirmedAt === "string" ? entry.confirmedAt : undefined,
+    cancelledAt: typeof entry.cancelledAt === "string" ? entry.cancelledAt : undefined,
   };
 };
 

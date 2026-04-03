@@ -29,32 +29,24 @@ export const RegisterScreen = ({ navigation }: Props) => {
   const styles = getStyles(colors);
   const { startPendingRegistration } = useAuth();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPendingModalVisible, setIsPendingModalVisible] = useState(false);
 
   const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const handleSubmit = async () => {
+    console.log("[AuthDebug] RegisterScreen:submit", { email: email.trim() });
+
     if (!isValidEmail(email)) {
+      console.log("[AuthDebug] RegisterScreen:submit:invalid-email", { email: email.trim() });
       setError(t("auth.emailError"));
-      return;
-    }
-
-    if (password.length < 6) {
-      setError(t("auth.passwordError"));
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError(t("auth.passwordRepeatError"));
       return;
     }
 
     try {
       setError(null);
       await startPendingRegistration(email);
+      console.log("[AuthDebug] RegisterScreen:submit:success", { email: email.trim() });
       setIsPendingModalVisible(true);
     } catch (submissionError) {
       const errorCode =
@@ -66,10 +58,16 @@ export const RegisterScreen = ({ navigation }: Props) => {
           : null;
 
       if (errorCode === "auth/email-already-in-use") {
+        console.log("[AuthDebug] RegisterScreen:submit:email-in-use", { email: email.trim() });
         setError(t("auth.emailInUseError"));
         return;
       }
 
+      console.log("[AuthDebug] RegisterScreen:submit:error", {
+        email: email.trim(),
+        code: errorCode,
+        message: submissionError instanceof Error ? submissionError.message : String(submissionError),
+      });
       setError(t("auth.registerError"));
     }
   };
@@ -88,23 +86,6 @@ export const RegisterScreen = ({ navigation }: Props) => {
             keyboardType="email-address"
             style={[inputs.input, styles.input]}
           />
-
-          <Text style={[typography.meta, styles.label]}>{t("auth.password")}</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={[inputs.input, styles.input]}
-          />
-
-          <Text style={[typography.meta, styles.label]}>{t("auth.passwordRepeat")}</Text>
-          <TextInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            style={[inputs.input, styles.input]}
-          />
-
           {error ? <Text style={[typography.secondary, styles.error]}>{error}</Text> : null}
 
           <Pressable style={[buttons.buttonBase, buttons.primaryButton]} onPress={handleSubmit}>

@@ -33,7 +33,7 @@ export const buildSubscriptionMetrics = (
   language: CategoryLanguage = "de",
 ): SubscriptionMetrics => {
   const activeSubscriptions = subscriptions.filter(
-    (subscription) => subscription.status !== "cancelled",
+    (subscription) => subscription.status === "active",
   );
 
   const monthlyTotal = activeSubscriptions.reduce(

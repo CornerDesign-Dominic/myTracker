@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +15,7 @@ import { canUseAccentColor } from "@/services/purchases/entitlements";
 import {
   accentColorOptions,
   createButtonStyles,
+  createInputStyles,
   createScreenLayout,
   createSurfaceStyles,
   getAccentPalette,
@@ -69,11 +70,12 @@ const OptionGroup = <T extends string>({
 
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors, typography, mode } = useAppTheme();
-  const { t } = useI18n();
+  const { language: uiLanguage, t } = useI18n();
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
+  const inputs = createInputStyles(colors);
   const {
     language,
     currency,
@@ -90,6 +92,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
     pendingRegistration,
     resendPendingRegistration,
     cancelPendingRegistration,
+    completePendingRegistration,
     logout,
   } = useAuth();
   const {
@@ -107,22 +110,49 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isCompleteRegistrationModalVisible, setIsCompleteRegistrationModalVisible] = useState(false);
+  const [completionPassword, setCompletionPassword] = useState("");
+  const [completionPasswordRepeat, setCompletionPasswordRepeat] = useState("");
+  const [completionError, setCompletionError] = useState<string | null>(null);
+  const [isCompletingRegistration, setIsCompletingRegistration] = useState(false);
   const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasSupportColors;
   const hasLinkedEmailAccount = Boolean(!isAnonymous && currentUser?.email);
-  const hasPendingRegistration =
-    Boolean(isAnonymous && pendingRegistration) &&
-    new Date(pendingRegistration?.expiresAt ?? 0).getTime() > Date.now();
+  const pendingRegistrationState = useMemo(() => {
+    if (!isAnonymous || !pendingRegistration) {
+      return "idle" as const;
+    }
+
+    if (pendingRegistration.status === "confirmed") {
+      return "confirmed" as const;
+    }
+
+    if (pendingRegistration.status === "cancelled") {
+      return "cancelled" as const;
+    }
+
+    if (pendingRegistration.status === "expired") {
+      return "expired" as const;
+    }
+
+    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
+      return "expired" as const;
+    }
+
+    return "pending" as const;
+  }, [isAnonymous, pendingRegistration]);
+  const hasPendingRegistration = pendingRegistrationState === "pending";
+  const hasConfirmedRegistration = pendingRegistrationState === "confirmed";
   const pendingRegistrationExpiresLabel = useMemo(() => {
     if (!pendingRegistration?.expiresAt) {
       return null;
     }
 
-    return new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
+    return new Intl.DateTimeFormat(uiLanguage === "de" ? "de-DE" : "en-US", {
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(pendingRegistration.expiresAt));
-  }, [language, pendingRegistration?.expiresAt]);
+  }, [pendingRegistration?.expiresAt, uiLanguage]);
   const purchaseMessage = useMemo(() => {
     if (!purchaseError) {
       return null;
@@ -188,18 +218,40 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const closeLogoutModal = () => setIsLogoutModalVisible(false);
 
   const handleResendPendingRegistration = async () => {
+    console.log("[AuthDebug] SettingsScreen:pending:resend:tap", {
+      email: pendingRegistration?.pendingEmail ?? null,
+      status: pendingRegistration?.status ?? null,
+    });
     try {
       await resendPendingRegistration();
+      console.log("[AuthDebug] SettingsScreen:pending:resend:success", {
+        email: pendingRegistration?.pendingEmail ?? null,
+      });
       Alert.alert(t("settings.pendingStatusTitle"), t("settings.pendingResendQueued"));
-    } catch {
-      Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    } catch (error) {
+      console.log("[AuthDebug] SettingsScreen:pending:resend:error", {
+        email: pendingRegistration?.pendingEmail ?? null,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      Alert.alert(t("common.actionFailed"), t("settings.pendingResendError"));
     }
   };
 
   const handleCancelPendingRegistration = async () => {
+    console.log("[AuthDebug] SettingsScreen:pending:cancel:tap", {
+      email: pendingRegistration?.pendingEmail ?? null,
+      status: pendingRegistration?.status ?? null,
+    });
     try {
       await cancelPendingRegistration();
-    } catch {
+      console.log("[AuthDebug] SettingsScreen:pending:cancel:success", {
+        email: pendingRegistration?.pendingEmail ?? null,
+      });
+    } catch (error) {
+      console.log("[AuthDebug] SettingsScreen:pending:cancel:error", {
+        email: pendingRegistration?.pendingEmail ?? null,
+        message: error instanceof Error ? error.message : String(error),
+      });
       Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
     }
   };
@@ -210,6 +262,74 @@ export const SettingsScreen = ({ navigation }: Props) => {
       closeLogoutModal();
     } catch {
       Alert.alert(t("common.actionFailed"), t("common.actionFailed"));
+    }
+  };
+
+  const closeCompleteRegistrationModal = () => {
+    if (isCompletingRegistration) {
+      return;
+    }
+
+    setIsCompleteRegistrationModalVisible(false);
+    setCompletionPassword("");
+    setCompletionPasswordRepeat("");
+    setCompletionError(null);
+  };
+
+  const handleCompleteRegistration = async () => {
+    console.log("[AuthDebug] SettingsScreen:pending:complete:tap", {
+      email: pendingRegistration?.pendingEmail ?? null,
+      status: pendingRegistration?.status ?? null,
+      passwordLength: completionPassword.length,
+      repeatLength: completionPasswordRepeat.length,
+    });
+
+    if (completionPassword.length < 6) {
+      console.log("[AuthDebug] SettingsScreen:pending:complete:invalid-password-length", {
+        passwordLength: completionPassword.length,
+      });
+      setCompletionError(t("auth.passwordError"));
+      return;
+    }
+
+    if (completionPassword !== completionPasswordRepeat) {
+      console.log("[AuthDebug] SettingsScreen:pending:complete:password-mismatch");
+      setCompletionError(t("auth.passwordRepeatError"));
+      return;
+    }
+
+    try {
+      setIsCompletingRegistration(true);
+      setCompletionError(null);
+      await completePendingRegistration(completionPassword);
+      console.log("[AuthDebug] SettingsScreen:pending:complete:success", {
+        email: pendingRegistration?.pendingEmail ?? null,
+      });
+      closeCompleteRegistrationModal();
+    } catch (error) {
+      console.log("[AuthDebug] SettingsScreen:pending:complete:error", {
+        email: pendingRegistration?.pendingEmail ?? null,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      const errorCode =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof (error as { code?: unknown }).code === "string"
+          ? (error as { code: string }).code
+          : null;
+
+      if (errorCode === "auth/email-already-in-use") {
+        setCompletionError(t("auth.emailInUseError"));
+      } else if (errorCode === "pending-registration-not-confirmed") {
+        setCompletionError(t("settings.pendingFinalizeNotConfirmed"));
+      } else if (errorCode === "pending-registration-expired") {
+        setCompletionError(t("settings.pendingExpiredDescription"));
+      } else {
+        setCompletionError(t("settings.pendingFinalizeError"));
+      }
+    } finally {
+      setIsCompletingRegistration(false);
     }
   };
 
@@ -241,6 +361,33 @@ export const SettingsScreen = ({ navigation }: Props) => {
               </View>
               <Text style={[typography.secondary, styles.accountText]}>
                 {t("settings.accountSignedIn")}
+              </Text>
+            </>
+          ) : hasConfirmedRegistration ? (
+            <>
+              <View style={styles.accountStatusCard}>
+                <View style={styles.accountStatusHeader}>
+                  <View style={styles.accountStatusBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+                    <Text style={[typography.meta, styles.accountStatusBadgeText]}>
+                      {t("settings.pendingConfirmedTitle")}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.accountIdentityRow}>
+                  <Text style={[typography.meta, styles.accountIdentityLabel]}>
+                    {t("auth.email")}
+                  </Text>
+                  <Text style={[typography.body, styles.accountIdentityValue]}>
+                    {pendingRegistration?.pendingEmail}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[typography.secondary, styles.accountText]}>
+                {t("settings.pendingConfirmedDescription")}
+              </Text>
+              <Text style={[typography.secondary, styles.pendingBackendHint]}>
+                {t("settings.pendingFinalizeHint")}
               </Text>
             </>
           ) : hasPendingRegistration ? (
@@ -278,6 +425,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 {t("settings.pendingBackendHint")}
               </Text>
             </>
+          ) : pendingRegistrationState === "expired" ? (
+            <Text style={[typography.secondary, styles.accountText]}>
+              {t("settings.pendingExpiredDescription")}
+            </Text>
+          ) : pendingRegistrationState === "cancelled" ? (
+            <Text style={[typography.secondary, styles.accountText]}>
+              {t("settings.pendingCancelledDescription")}
+            </Text>
           ) : (
             <>
               <Text style={[typography.secondary, styles.accountText]}>
@@ -325,30 +480,47 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   </Text>
                 </Pressable>
               </>
-            ) : isAnonymous ? (
-              <>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
-                  onPress={() => navigation.navigate("Register")}
-                >
-                  <Text style={[typography.button, styles.actionPrimaryText]}>
-                    {t("settings.registerAction")}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
-                  onPress={() => navigation.navigate("Login")}
-                >
-                  <Text style={[typography.button, styles.optionText]}>{t("settings.loginAction")}</Text>
-                </Pressable>
-              </>
-            ) : (
+            ) : hasConfirmedRegistration ? (
               <Pressable
-                style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
-                onPress={() => setIsLogoutModalVisible(true)}
+                style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
+                onPress={() => setIsCompleteRegistrationModalVisible(true)}
               >
-                <Text style={[typography.button, styles.optionText]}>{t("settings.logoutAction")}</Text>
+                <Text style={[typography.button, styles.actionPrimaryText]}>
+                  {t("settings.pendingFinalizeAction")}
+                </Text>
               </Pressable>
+            ) : (
+              <>
+                {isAnonymous ? (
+                  <>
+                    <Pressable
+                      style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
+                      onPress={() => navigation.navigate("Register")}
+                    >
+                      <Text style={[typography.button, styles.actionPrimaryText]}>
+                        {t("settings.registerAction")}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
+                      onPress={() => navigation.navigate("Login")}
+                    >
+                      <Text style={[typography.button, styles.optionText]}>
+                        {t("settings.loginAction")}
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable
+                    style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButtonSingle]}
+                    onPress={() => setIsLogoutModalVisible(true)}
+                  >
+                    <Text style={[typography.button, styles.optionText]}>
+                      {t("settings.logoutAction")}
+                    </Text>
+                  </Pressable>
+                )}
+              </>
             )}
           </View>
         </View>
@@ -478,6 +650,75 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isCompleteRegistrationModalVisible}
+        onRequestClose={closeCompleteRegistrationModal}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeCompleteRegistrationModal} />
+          <View style={[surfaces.panel, styles.confirmationSheet]}>
+            <View style={styles.purchaseSheetHeader}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>
+                {t("settings.pendingFinalizeTitle")}
+              </Text>
+              <Pressable onPress={closeCompleteRegistrationModal} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[typography.secondary, styles.confirmationText]}>
+              {t("settings.pendingFinalizeDescription")}
+            </Text>
+            <View style={styles.completionForm}>
+              <Text style={[typography.meta, styles.accountIdentityLabel]}>{t("auth.password")}</Text>
+              <TextInput
+                value={completionPassword}
+                onChangeText={setCompletionPassword}
+                secureTextEntry
+                style={[inputs.input, styles.completionInput]}
+              />
+            </View>
+            <View style={styles.completionForm}>
+              <Text style={[typography.meta, styles.accountIdentityLabel]}>
+                {t("auth.passwordRepeat")}
+              </Text>
+              <TextInput
+                value={completionPasswordRepeat}
+                onChangeText={setCompletionPasswordRepeat}
+                secureTextEntry
+                style={[inputs.input, styles.completionInput]}
+              />
+            </View>
+            {completionError ? (
+              <Text style={[typography.secondary, styles.purchaseErrorText]}>{completionError}</Text>
+            ) : null}
+            <View style={styles.confirmationActions}>
+              <Pressable
+                style={[buttons.buttonBase, buttons.secondaryButton, styles.confirmationButton]}
+                onPress={closeCompleteRegistrationModal}
+                disabled={isCompletingRegistration}
+              >
+                <Text style={[typography.button, styles.optionText]}>{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                style={[buttons.buttonBase, buttons.primaryButton, styles.confirmationButton]}
+                onPress={handleCompleteRegistration}
+                disabled={isCompletingRegistration}
+              >
+                {isCompletingRegistration ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Text style={[typography.button, styles.purchasePrimaryText]}>
+                    {t("settings.pendingFinalizeAction")}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="fade"
@@ -874,6 +1115,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     confirmationButton: {
       flex: 1,
+    },
+    completionForm: {
+      gap: spacing.xs,
+    },
+    completionInput: {
+      color: colors.textPrimary,
     },
     premiumTierList: {
       gap: spacing.sm,

@@ -327,7 +327,7 @@ export const getAverageMonthlyCost = (subscriptions: Subscription[]) =>
 
 export const getBillingStructure = (subscriptions: Subscription[]) => {
   const activeSubscriptions = subscriptions.filter(
-    (subscription) => subscription.status !== "cancelled",
+    (subscription) => subscription.status === "active",
   );
 
   return (["monthly", "quarterly", "yearly"] as const).map((cycle) => {
@@ -348,7 +348,7 @@ export const getSubscriptionsByBillingCycle = (
   subscriptions.filter(
     (subscription) =>
       subscription.billingCycle === cycle &&
-      subscription.status !== "cancelled" &&
+      subscription.status === "active" &&
       !subscription.archivedAt,
   );
 

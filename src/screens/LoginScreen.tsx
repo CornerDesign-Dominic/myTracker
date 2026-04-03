@@ -35,13 +35,23 @@ export const LoginScreen = ({ navigation }: Props) => {
   const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const handleSubmit = async () => {
+    console.log("[AuthDebug] LoginScreen:submit", {
+      email: email.trim(),
+      passwordLength: password.length,
+    });
+
     if (!isValidEmail(email)) {
+      console.log("[AuthDebug] LoginScreen:submit:invalid-email", { email: email.trim() });
       setError(t("auth.emailError"));
       setSuccessMessage(null);
       return;
     }
 
     if (password.length < 6) {
+      console.log("[AuthDebug] LoginScreen:submit:invalid-password-length", {
+        email: email.trim(),
+        passwordLength: password.length,
+      });
       setError(t("auth.passwordError"));
       setSuccessMessage(null);
       return;
@@ -51,14 +61,22 @@ export const LoginScreen = ({ navigation }: Props) => {
       setError(null);
       setSuccessMessage(null);
       await login(email, password);
+      console.log("[AuthDebug] LoginScreen:submit:success", { email: email.trim() });
       navigation.goBack();
     } catch (submissionError) {
+      console.log("[AuthDebug] LoginScreen:submit:error", {
+        email: email.trim(),
+        message: submissionError instanceof Error ? submissionError.message : String(submissionError),
+      });
       setError(submissionError instanceof Error ? submissionError.message : t("auth.loginError"));
     }
   };
 
   const handlePasswordReset = async () => {
+    console.log("[AuthDebug] LoginScreen:passwordReset:submit", { email: email.trim() });
+
     if (!isValidEmail(email)) {
+      console.log("[AuthDebug] LoginScreen:passwordReset:invalid-email", { email: email.trim() });
       setError(t("auth.emailError"));
       setSuccessMessage(null);
       return;
@@ -68,6 +86,7 @@ export const LoginScreen = ({ navigation }: Props) => {
       setIsResetSubmitting(true);
       setError(null);
       await requestPasswordReset(email);
+      console.log("[AuthDebug] LoginScreen:passwordReset:success", { email: email.trim() });
       setSuccessMessage(t("auth.passwordResetSuccess"));
     } catch (resetError) {
       const errorCode =
@@ -79,8 +98,16 @@ export const LoginScreen = ({ navigation }: Props) => {
           : null;
 
       if (errorCode === "auth/user-not-found") {
+        console.log("[AuthDebug] LoginScreen:passwordReset:user-not-found-generic-success", {
+          email: email.trim(),
+        });
         setSuccessMessage(t("auth.passwordResetSuccess"));
       } else {
+        console.log("[AuthDebug] LoginScreen:passwordReset:error", {
+          email: email.trim(),
+          code: errorCode,
+          message: resetError instanceof Error ? resetError.message : String(resetError),
+        });
         setError(t("auth.passwordResetError"));
         setSuccessMessage(null);
       }

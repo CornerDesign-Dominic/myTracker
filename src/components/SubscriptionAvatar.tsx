@@ -20,16 +20,17 @@ export const SubscriptionAvatar = ({
   const { colors } = useAppTheme();
   const styles = getStyles(colors, size);
   const visual = resolveSubscriptionVisual(name, category);
+  const innerSize = Math.round(size * 0.88);
 
   return (
     <View style={styles.container}>
       <View style={styles.innerFrame}>
         {visual.type === "brand" ? (
-          <BrandLogo brand={visual.key} size={size} />
+          <BrandLogo brand={visual.key} size={innerSize} />
         ) : (
           <Ionicons
             name={visual.iconName as never}
-            size={Math.round(size * 0.44)}
+            size={Math.round(innerSize * 0.62)}
             color={colors.textSecondary}
           />
         )}
@@ -43,7 +44,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], size: numbe
     container: {
       width: size,
       height: size,
-      borderRadius: Math.max(radius.md, Math.round(size * 0.34)),
+      borderRadius: Math.max(radius.md, Math.round(size * 0.32)),
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.surface,
@@ -60,12 +61,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], size: numbe
       flexShrink: 0,
     },
     innerFrame: {
-      width: Math.round(size * 0.78),
-      height: Math.round(size * 0.78),
-      borderRadius: Math.round(size * 0.24),
+      width: Math.round(size * 0.88),
+      height: Math.round(size * 0.88),
+      borderRadius: Math.round(size * 0.28),
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: colors.surfaceSoft,
+      backgroundColor: colors.surface,
       overflow: "hidden",
     },
   });

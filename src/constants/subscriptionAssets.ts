@@ -3,44 +3,64 @@ export type BrandVisualKey =
   | "amazonMusic"
   | "amazonPrime"
   | "appleMusic"
+  | "appleFitnessPlus"
   | "appleOne"
   | "appleTvPlus"
   | "audible"
+  | "blinkist"
   | "canva"
   | "chatgpt"
   | "claude"
   | "crunchyroll"
   | "cursor"
   | "dazn"
+  | "deezer"
   | "disneyPlus"
   | "dropbox"
   | "duolingo"
+  | "ebayPlus"
+  | "evernote"
   | "expressvpn"
   | "figma"
+  | "freeletics"
   | "gemini"
+  | "googleDrive"
   | "github"
   | "googleOne"
   | "hulu"
   | "icloud"
   | "linkedin"
   | "max"
+  | "masterclass"
   | "microsoft365"
   | "midjourney"
+  | "n26"
   | "netflix"
+  | "nintendoSwitchOnline"
   | "nordvpn"
   | "notion"
+  | "oneDrive"
+  | "ottoUp"
   | "paramountPlus"
   | "patreon"
+  | "paypal"
   | "peacock"
   | "perplexity"
   | "playstationPlus"
   | "proton"
+  | "revolut"
+  | "skillshare"
+  | "sky"
   | "slack"
+  | "soundcloud"
   | "spotify"
   | "tiktok"
   | "twitch"
+  | "udemy"
+  | "urbanSportsClub"
   | "xboxGamePass"
   | "youtube"
+  | "zalandoPlus"
   | "zoom";
 
 export type CategoryVisualKey =
@@ -114,6 +134,18 @@ const matchesPattern = (value: NormalizedValue, pattern: string) => {
     return false;
   }
 
+  const isShortSingleToken =
+    !normalizedPattern.normalized.includes(" ") && normalizedPattern.compact.length <= 4;
+
+  if (isShortSingleToken) {
+    return (
+      value.normalized === normalizedPattern.normalized ||
+      value.normalized.startsWith(`${normalizedPattern.normalized} `) ||
+      value.normalized.endsWith(` ${normalizedPattern.normalized}`) ||
+      value.normalized.includes(` ${normalizedPattern.normalized} `)
+    );
+  }
+
   return (
     value.normalized.includes(normalizedPattern.normalized) ||
     value.compact.includes(normalizedPattern.compact)
@@ -140,6 +172,10 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["apple one", "appleone"],
   },
   {
+    key: "appleFitnessPlus",
+    aliases: ["apple fitness plus", "apple fitness+", "applefitnessplus"],
+  },
+  {
     key: "appleTvPlus",
     aliases: ["apple tv plus", "apple tv+", "appletvplus", "apple tv"],
   },
@@ -154,6 +190,10 @@ const brandMatchers: BrandMatcher[] = [
   {
     key: "dazn",
     aliases: ["dazn"],
+  },
+  {
+    key: "sky",
+    aliases: ["wow sky", "wow by sky", "wow tv", "wow", "sky ticket", "sky"],
   },
   {
     key: "hulu",
@@ -188,6 +228,10 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["spotify", "spotify premium", "spotify family"],
   },
   {
+    key: "deezer",
+    aliases: ["deezer", "deezer premium", "deezer family"],
+  },
+  {
     key: "amazonMusic",
     aliases: ["amazon music", "amazonmusic", "prime music"],
   },
@@ -200,8 +244,16 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["audible"],
   },
   {
+    key: "soundcloud",
+    aliases: ["soundcloud", "sound cloud", "soundcloud go", "sound cloud go"],
+  },
+  {
     key: "icloud",
     aliases: ["icloud", "i cloud", "icloud plus", "icloud+"],
+  },
+  {
+    key: "googleDrive",
+    aliases: ["google drive", "googledrive", "g drive", "gdrive"],
   },
   {
     key: "dropbox",
@@ -210,6 +262,10 @@ const brandMatchers: BrandMatcher[] = [
   {
     key: "googleOne",
     aliases: ["google one", "googleone"],
+  },
+  {
+    key: "oneDrive",
+    aliases: ["onedrive", "one drive", "microsoft onedrive"],
   },
   {
     key: "microsoft365",
@@ -225,6 +281,10 @@ const brandMatchers: BrandMatcher[] = [
   {
     key: "notion",
     aliases: ["notion", "notion ai"],
+  },
+  {
+    key: "evernote",
+    aliases: ["evernote", "ever note"],
   },
   {
     key: "github",
@@ -296,6 +356,10 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["duolingo", "duolingo plus", "duolingo max"],
   },
   {
+    key: "blinkist",
+    aliases: ["blinkist"],
+  },
+  {
     key: "expressvpn",
     aliases: ["expressvpn", "express vpn"],
   },
@@ -325,6 +389,30 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["linkedin", "linked in", "linkedin premium", "linkedin learning"],
   },
   {
+    key: "paypal",
+    aliases: ["paypal", "pay pal"],
+  },
+  {
+    key: "revolut",
+    aliases: ["revolut"],
+  },
+  {
+    key: "n26",
+    aliases: ["n26"],
+  },
+  {
+    key: "ebayPlus",
+    aliases: ["ebay plus", "ebay+", "ebayplus"],
+  },
+  {
+    key: "ottoUp",
+    aliases: ["otto up", "ottoup"],
+  },
+  {
+    key: "zalandoPlus",
+    aliases: ["zalando plus", "zalando+", "zalandoplus"],
+  },
+  {
     key: "slack",
     aliases: ["slack"],
   },
@@ -343,6 +431,40 @@ const brandMatchers: BrandMatcher[] = [
   {
     key: "cursor",
     aliases: ["cursor ai", "cursor editor", "cursor.sh", "cursor pro", "cursor"],
+  },
+  {
+    key: "freeletics",
+    aliases: ["freeletics"],
+  },
+  {
+    key: "urbanSportsClub",
+    aliases: [
+      "urban sports club",
+      "urbansportsclub",
+      "usc fitness",
+      "usc membership",
+    ],
+  },
+  {
+    key: "udemy",
+    aliases: ["udemy"],
+  },
+  {
+    key: "masterclass",
+    aliases: ["masterclass", "master class"],
+  },
+  {
+    key: "skillshare",
+    aliases: ["skillshare", "skill share"],
+  },
+  {
+    key: "nintendoSwitchOnline",
+    aliases: [
+      "nintendo switch online",
+      "nintendoswitchonline",
+      "switch online",
+      "nso",
+    ],
   },
 ];
 

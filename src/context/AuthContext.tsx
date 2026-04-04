@@ -322,7 +322,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
 
     const auth = ensureAuth();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const previousPendingRegistration = pendingRegistration;
     console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:start`, {
       uid: userId,
       email: trimmedEmail,
@@ -340,30 +341,36 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       throw error;
     }
 
+    const now = new Date();
+    const optimisticPendingEntry: PendingRegistrationDocument = {
+      status: "pending",
+      pendingEmail: trimmedEmail,
+      startedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + PENDING_REGISTRATION_WINDOW_MS).toISOString(),
+      lastRequestedAt: now.toISOString(),
+    };
+
+    setPendingRegistration(optimisticPendingEntry);
+    console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:start:optimistic-local-state`, {
+      uid: userId,
+      email: trimmedEmail,
+      previousStatus: previousPendingRegistration?.status ?? null,
+      nextStatus: optimisticPendingEntry.status,
+    });
+
     try {
       const idToken = await currentUser.getIdToken();
       await startPendingRegistrationRequest({
         idToken,
         email: trimmedEmail,
       });
-
-      const now = new Date();
-      const pendingEntry: PendingRegistrationDocument = {
-        status: "pending",
-        pendingEmail: trimmedEmail,
-        startedAt: now.toISOString(),
-        expiresAt: new Date(now.getTime() + PENDING_REGISTRATION_WINDOW_MS).toISOString(),
-        lastRequestedAt: now.toISOString(),
-      };
-
-      await updateUserPendingRegistration(userId, pendingEntry);
-      setPendingRegistration(pendingEntry);
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:success`, {
         uid: userId,
         email: trimmedEmail,
-        expiresAt: pendingEntry.expiresAt,
+        expiresAt: optimisticPendingEntry.expiresAt,
       });
     } catch (error) {
+      setPendingRegistration(previousPendingRegistration);
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:error`, {
         uid: userId,
         email: trimmedEmail,
@@ -444,7 +451,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         cancelledAt: undefined,
       };
 
-      await updateUserPendingRegistration(userId, nextPendingRegistration);
       setPendingRegistration(nextPendingRegistration);
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:success`, {
         uid: userId,

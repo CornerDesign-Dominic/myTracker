@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
@@ -31,6 +31,7 @@ export const RegisterScreen = ({ navigation }: Props) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPendingModalVisible, setIsPendingModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
@@ -45,6 +46,7 @@ export const RegisterScreen = ({ navigation }: Props) => {
 
     try {
       setError(null);
+      setIsSubmitting(true);
       await startPendingRegistration(email);
       console.log("[AuthDebug] RegisterScreen:submit:success", { email: email.trim() });
       setIsPendingModalVisible(true);
@@ -85,6 +87,8 @@ export const RegisterScreen = ({ navigation }: Props) => {
         message: submissionError instanceof Error ? submissionError.message : String(submissionError),
       });
       setError(errorCode ? `${t("auth.registerError")} (${errorCode})` : t("auth.registerError"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -101,14 +105,27 @@ export const RegisterScreen = ({ navigation }: Props) => {
             autoCapitalize="none"
             keyboardType="email-address"
             style={[inputs.input, styles.input]}
+            editable={!isSubmitting}
           />
           {error ? <Text style={[typography.secondary, styles.error]}>{error}</Text> : null}
 
-          <Pressable style={[buttons.buttonBase, buttons.primaryButton]} onPress={handleSubmit}>
-            <Text style={[typography.button, styles.primaryButtonText]}>{t("auth.registerSubmit")}</Text>
+          <Pressable
+            style={[
+              buttons.buttonBase,
+              buttons.primaryButton,
+              isSubmitting ? styles.primaryButtonDisabled : null,
+            ]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Text style={[typography.button, styles.primaryButtonText]}>{t("auth.registerSubmit")}</Text>
+            )}
           </Pressable>
 
-          <Pressable onPress={() => navigation.replace("Login")}>
+          <Pressable onPress={() => navigation.replace("Login")} disabled={isSubmitting}>
             <Text style={[typography.secondary, styles.link]}>{t("auth.registerSwitch")}</Text>
           </Pressable>
         </View>
@@ -168,6 +185,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     primaryButtonText: {
       color: colors.accent,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.72,
     },
     link: {
       color: colors.accent,

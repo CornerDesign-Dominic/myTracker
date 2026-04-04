@@ -41,6 +41,27 @@ export type HomeDueSections = {
   nextMonthUpcoming: HomeDueSectionEntry[];
 };
 
+const hasStartedByDate = (
+  subscription: Subscription,
+  history: SubscriptionHistoryEvent[],
+  todayKey: string,
+) => {
+  if (subscription.archivedAt || subscription.status !== "active") {
+    return false;
+  }
+
+  if (subscription.nextPaymentDate <= todayKey) {
+    return true;
+  }
+
+  return history.some(
+    (event) =>
+      event.subscriptionId === subscription.id &&
+      !event.deletedAt &&
+      (event.type === "payment_booked" || event.type === "payment_skipped_inactive"),
+  );
+};
+
 const toMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
@@ -244,6 +265,18 @@ export const buildHomeDueSections = (
     }),
     nextMonthUpcoming: getProjectedHomeDueEntriesForMonth(subscriptions, nextMonth),
   };
+};
+
+export const getStartedSubscriptionsForStatistics = (
+  subscriptions: Subscription[],
+  history: SubscriptionHistoryEvent[],
+  now = new Date(),
+) => {
+  const todayKey = formatLocalDateInput(now);
+
+  return subscriptions.filter((subscription) =>
+    hasStartedByDate(subscription, history, todayKey),
+  );
 };
 
 export const getProjectedSubscriptionYearlyCost = (

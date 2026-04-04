@@ -17,12 +17,14 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { StatsTabScreenProps } from "@/navigation/types";
 import {
   buildHomeMonthlySummary,
+  getStartedSubscriptionsForStatistics,
   getBillingStructure,
   getTopExpensiveSubscriptions,
 } from "@/domain/subscriptions/statistics";
 import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
+import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 import { parseLocalDateInput } from "@/utils/date";
@@ -111,7 +113,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
-  const { subscriptions, metrics, isLoading } = useSubscriptions();
+  const { subscriptions, isLoading } = useSubscriptions();
   const { history: allHistory, isLoading: isHistoryLoading } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
   );
@@ -124,15 +126,29 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   ).current;
   const [showAllCategories, setShowAllCategories] = useState(false);
 
-  const categoryItems = useMemo(
-    () => (showAllCategories ? metrics.byCategory : metrics.byCategory.slice(0, 3)),
-    [metrics.byCategory, showAllCategories],
+  const statisticsSubscriptions = useMemo(
+    () => getStartedSubscriptionsForStatistics(subscriptions, allHistory, new Date()),
+    [allHistory, subscriptions],
   );
-  const maxCategoryValue = categoryItems[0]?.monthlyTotal ?? 1;
-  const billingStructure = useMemo(() => getBillingStructure(subscriptions), [subscriptions]);
+  const statisticsMetrics = useMemo(
+    () => buildSubscriptionMetrics(statisticsSubscriptions, language),
+    [language, statisticsSubscriptions],
+  );
+  const displayedCategoryItems = useMemo(
+    () =>
+      showAllCategories
+        ? statisticsMetrics.byCategory
+        : statisticsMetrics.byCategory.slice(0, 3),
+    [showAllCategories, statisticsMetrics.byCategory],
+  );
+  const maxCategoryValue = displayedCategoryItems[0]?.monthlyTotal ?? 1;
+  const billingStructure = useMemo(
+    () => getBillingStructure(statisticsSubscriptions),
+    [statisticsSubscriptions],
+  );
   const topSubscriptions = useMemo(
-    () => getTopExpensiveSubscriptions(subscriptions, 5),
-    [subscriptions],
+    () => getTopExpensiveSubscriptions(statisticsSubscriptions, 5),
+    [statisticsSubscriptions],
   );
   const skippedHistory = useMemo(
     () =>
@@ -453,13 +469,13 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
             />
           </View>
 
-          {metrics.byCategory.length === 0 ? (
+          {statisticsMetrics.byCategory.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
               {t("stats.noSubscriptionsAvailable")}
             </Text>
           ) : (
             <View style={styles.chartList}>
-              {categoryItems.map((item) => (
+              {displayedCategoryItems.map((item) => (
                 <View key={item.category} style={styles.chartItem}>
                   <View style={styles.chartHeader}>
                     <Text style={[typography.body, styles.chartLabel]}>

@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
 
-import { BrandLogo } from "@/components/subscription-visuals/BrandLogo";
-import { resolveSubscriptionVisual } from "@/constants/subscriptionAssets";
-import { useAppTheme } from "@/hooks/useAppTheme";
-import { radius } from "@/theme";
+import { BrandLogo } from "./subscription-visuals/BrandLogo";
+import { resolveSubscriptionVisual } from "../constants/subscriptionAssets";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { radius } from "../theme";
 
 type SubscriptionAvatarProps = {
   name: string;

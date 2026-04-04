@@ -25,6 +25,7 @@ import { logFirestoreError } from "@/utils/firestoreDebug";
 type LanguageOption = AppLanguage;
 type CurrencyOption = "EUR" | "Dollar";
 type ThemeOption = "Dark" | "Light";
+type WeekStartOption = "monday" | "sunday";
 
 const STORAGE_KEY = "tracker.app-settings";
 const FALLBACK_LANGUAGE: LanguageOption = "de";
@@ -68,11 +69,13 @@ interface AppSettingsContextValue {
   language: LanguageOption;
   currency: CurrencyOption;
   theme: ThemeOption;
+  weekStart: WeekStartOption;
   accentColor: AccentColor;
   isHydrated: boolean;
   setLanguage: (value: LanguageOption) => void;
   setCurrency: (value: CurrencyOption) => void;
   setTheme: (value: ThemeOption) => void;
+  setWeekStart: (value: WeekStartOption) => void;
   setAccentColor: (value: AccentColor) => void;
 }
 
@@ -84,6 +87,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const [language, setLanguageState] = useState<LanguageOption>(() => getSystemLanguage());
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
   const [theme, setThemeState] = useState<ThemeOption>(() => getSystemTheme());
+  const [weekStart, setWeekStartState] = useState<WeekStartOption>("monday");
   const [accentColor, setAccentColorState] = useState<AccentColor>(FREE_ACCENT_COLOR);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -100,6 +104,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
           language: LanguageOption | "DE" | "EN";
           currency: CurrencyOption;
           theme: ThemeOption;
+          weekStart: WeekStartOption;
           accentColor: AccentColor;
         }>;
 
@@ -115,6 +120,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
 
         if (parsedSettings.theme) {
           setThemeState(parsedSettings.theme);
+        }
+
+        if (parsedSettings.weekStart) {
+          setWeekStartState(parsedSettings.weekStart);
         }
 
         if (parsedSettings.accentColor) {
@@ -151,7 +160,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
 
     let isActive = true;
 
-    const defaults = { language, currency, theme };
+    const defaults = { language, currency, theme, weekStart };
 
     const syncInitialSettings = async () => {
       console.log("[Settings] ensureSettingsDocument:start", {
@@ -190,6 +199,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         if (settings.theme) {
           setThemeState(settings.theme);
         }
+
+        if (settings.weekStart) {
+          setWeekStartState(settings.weekStart);
+        }
       },
       (error) => {
         logFirestoreError("Settings.subscribeToUserSettings", error, {
@@ -215,12 +228,13 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         language,
         currency,
         theme,
+        weekStart,
         accentColor,
       }),
     ).catch(() => {
       // Ignore persistence errors and keep the in-memory app state usable.
     });
-  }, [accentColor, currency, isHydrated, language, theme]);
+  }, [accentColor, currency, isHydrated, language, theme, weekStart]);
 
   const setLanguage = (value: LanguageOption) => {
     setLanguageState(value);
@@ -258,6 +272,18 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
+  const setWeekStart = (value: WeekStartOption) => {
+    setWeekStartState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { weekStart: value }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.weekStart", error, {
+          userId: currentUser.uid,
+          weekStart: value,
+        });
+      });
+    }
+  };
+
   const setAccentColor = (value: AccentColor) => {
     if (!canUseAccentColor(value, hasSupportColors)) {
       return;
@@ -271,14 +297,16 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       language,
       currency,
       theme,
+      weekStart,
       accentColor,
       isHydrated,
       setLanguage,
       setCurrency,
       setTheme,
+      setWeekStart,
       setAccentColor,
     }),
-    [accentColor, currency, isHydrated, language, theme],
+    [accentColor, currency, isHydrated, language, theme, weekStart],
   );
 
   return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;

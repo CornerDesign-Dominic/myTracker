@@ -1,34 +1,50 @@
 export type BrandVisualKey =
-  | "netflix"
-  | "spotify"
-  | "amazonPrime"
-  | "disneyPlus"
-  | "youtubePremium"
-  | "appleMusic"
-  | "icloud"
   | "adobeCreativeCloud"
-  | "dropbox"
-  | "notion"
+  | "amazonMusic"
+  | "amazonPrime"
+  | "appleMusic"
+  | "audible"
   | "canva"
   | "chatgpt"
-  | "microsoft365"
+  | "claude"
+  | "disneyPlus"
+  | "dropbox"
+  | "duolingo"
+  | "figma"
+  | "github"
   | "googleOne"
+  | "hulu"
+  | "icloud"
+  | "max"
+  | "microsoft365"
+  | "midjourney"
+  | "netflix"
+  | "nordvpn"
+  | "notion"
+  | "paramountPlus"
+  | "patreon"
+  | "peacock"
+  | "perplexity"
   | "playstationPlus"
-  | "xboxGamePass";
+  | "proton"
+  | "spotify"
+  | "twitch"
+  | "xboxGamePass"
+  | "youtube";
 
 export type CategoryVisualKey =
-  | "entertainment"
-  | "software"
-  | "fitness"
-  | "music"
-  | "video"
-  | "productivity"
   | "cloud"
-  | "finance"
-  | "shopping"
+  | "default"
   | "education"
+  | "entertainment"
+  | "finance"
+  | "fitness"
   | "gaming"
-  | "default";
+  | "music"
+  | "productivity"
+  | "shopping"
+  | "software"
+  | "video";
 
 export type SubscriptionVisualMatch =
   | {
@@ -46,101 +62,291 @@ export type SubscriptionVisualMatch =
       iconName: string;
     };
 
-const normalizeValue = (value: string) =>
-  value
+type BrandMatcher = {
+  key: BrandVisualKey;
+  aliases: string[];
+};
+
+type CategoryMatcher = {
+  key: CategoryVisualKey;
+  iconName: string;
+  patterns: string[];
+};
+
+type NormalizedValue = {
+  compact: string;
+  normalized: string;
+};
+
+const normalizeValue = (value: string): NormalizedValue => {
+  const normalized = value
     .trim()
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9+]+/g, " ")
-    .replace(/\s+/g, " ");
+    .replace(/&/g, " and ")
+    .replace(/\+/g, " plus ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-const brandMatchers: Array<{
-  key: BrandVisualKey;
-  patterns: string[];
-}> = [
+  return {
+    normalized,
+    compact: normalized.replace(/\s+/g, ""),
+  };
+};
+
+const matchesPattern = (value: NormalizedValue, pattern: string) => {
+  const normalizedPattern = normalizeValue(pattern);
+
+  if (!normalizedPattern.normalized) {
+    return false;
+  }
+
+  return (
+    value.normalized.includes(normalizedPattern.normalized) ||
+    value.compact.includes(normalizedPattern.compact)
+  );
+};
+
+const brandMatchers: BrandMatcher[] = [
   {
-    key: "youtubePremium",
-    patterns: ["youtube premium", "youtubepremium"],
-  },
-  {
-    key: "appleMusic",
-    patterns: ["apple music", "applemusic"],
-  },
-  {
-    key: "adobeCreativeCloud",
-    patterns: ["adobe creative cloud", "creative cloud", "adobe cc"],
+    key: "netflix",
+    aliases: ["netflix"],
   },
   {
     key: "amazonPrime",
-    patterns: ["amazon prime video", "prime video", "amazon prime", "prime membership"],
+    aliases: [
+      "amazon prime",
+      "amazon prime video",
+      "prime video",
+      "prime membership",
+      "prime abo",
+    ],
   },
   {
     key: "disneyPlus",
-    patterns: ["disney+", "disney plus", "disneyplus"],
+    aliases: ["disney plus", "disney+"],
   },
   {
-    key: "googleOne",
-    patterns: ["google one", "googleone"],
+    key: "hulu",
+    aliases: ["hulu"],
   },
   {
-    key: "microsoft365",
-    patterns: ["microsoft 365", "office 365", "m365"],
+    key: "max",
+    aliases: ["hbo max", "hbomax", "max streaming", "max abo", "max subscription"],
   },
   {
-    key: "playstationPlus",
-    patterns: ["playstation plus", "ps plus", "ps+", "playstationplus"],
+    key: "paramountPlus",
+    aliases: ["paramount plus", "paramount+"],
   },
   {
-    key: "xboxGamePass",
-    patterns: ["xbox game pass", "game pass", "xboxgamepass"],
+    key: "peacock",
+    aliases: ["peacock", "peacock premium"],
   },
   {
-    key: "chatgpt",
-    patterns: ["chatgpt", "chat gpt"],
-  },
-  {
-    key: "netflix",
-    patterns: ["netflix"],
+    key: "youtube",
+    aliases: [
+      "youtube",
+      "youtube premium",
+      "youtube music",
+      "youtube family",
+      "youtube membership",
+      "yt premium",
+      "yt music",
+    ],
   },
   {
     key: "spotify",
-    patterns: ["spotify"],
+    aliases: ["spotify", "spotify premium", "spotify family"],
+  },
+  {
+    key: "amazonMusic",
+    aliases: ["amazon music", "amazonmusic", "prime music"],
+  },
+  {
+    key: "appleMusic",
+    aliases: ["apple music", "applemusic"],
+  },
+  {
+    key: "audible",
+    aliases: ["audible"],
   },
   {
     key: "icloud",
-    patterns: ["icloud", "i cloud"],
+    aliases: ["icloud", "i cloud", "icloud plus", "icloud+"],
   },
   {
     key: "dropbox",
-    patterns: ["dropbox"],
+    aliases: ["dropbox", "drop box"],
+  },
+  {
+    key: "googleOne",
+    aliases: ["google one", "googleone"],
+  },
+  {
+    key: "microsoft365",
+    aliases: [
+      "microsoft 365",
+      "microsoft365",
+      "office 365",
+      "office365",
+      "m365",
+      "ms 365",
+    ],
   },
   {
     key: "notion",
-    patterns: ["notion"],
+    aliases: ["notion", "notion ai"],
+  },
+  {
+    key: "github",
+    aliases: [
+      "github",
+      "git hub",
+      "github copilot",
+      "git hub copilot",
+    ],
+  },
+  {
+    key: "figma",
+    aliases: ["figma"],
+  },
+  {
+    key: "adobeCreativeCloud",
+    aliases: [
+      "adobe creative cloud",
+      "creative cloud",
+      "adobe cc",
+      "adobe",
+    ],
   },
   {
     key: "canva",
-    patterns: ["canva"],
+    aliases: ["canva", "canva pro"],
+  },
+  {
+    key: "chatgpt",
+    aliases: ["chatgpt", "chat gpt", "chatgpt plus", "openai", "open ai"],
+  },
+  {
+    key: "claude",
+    aliases: ["claude", "claude pro"],
+  },
+  {
+    key: "midjourney",
+    aliases: ["midjourney", "mid journey"],
+  },
+  {
+    key: "perplexity",
+    aliases: ["perplexity", "perplexity pro"],
+  },
+  {
+    key: "nordvpn",
+    aliases: ["nordvpn", "nord vpn"],
+  },
+  {
+    key: "proton",
+    aliases: [
+      "proton",
+      "proton vpn",
+      "protonvpn",
+      "proton mail",
+      "protonmail",
+      "proton unlimited",
+    ],
+  },
+  {
+    key: "twitch",
+    aliases: ["twitch", "twitch turbo", "twitch sub", "twitch subscription"],
+  },
+  {
+    key: "patreon",
+    aliases: ["patreon"],
+  },
+  {
+    key: "duolingo",
+    aliases: ["duolingo", "duolingo plus", "duolingo max"],
+  },
+  {
+    key: "playstationPlus",
+    aliases: [
+      "playstation plus",
+      "playstationplus",
+      "ps plus",
+      "ps+",
+      "psplus",
+    ],
+  },
+  {
+    key: "xboxGamePass",
+    aliases: [
+      "xbox game pass",
+      "xboxgamepass",
+      "game pass",
+      "gamepass",
+      "pc game pass",
+      "xbox live gold",
+    ],
   },
 ];
 
-const categoryMatchers: Array<{
-  key: CategoryVisualKey;
-  patterns: string[];
-  iconName: string;
-}> = [
-  { key: "entertainment", patterns: ["entertainment", "unterhaltung"], iconName: "sparkles-outline" },
-  { key: "software", patterns: ["software"], iconName: "laptop-outline" },
-  { key: "fitness", patterns: ["fitness", "health", "sport"], iconName: "fitness-outline" },
-  { key: "music", patterns: ["music", "musik", "audio"], iconName: "musical-notes-outline" },
-  { key: "video", patterns: ["video", "streaming"], iconName: "film-outline" },
-  { key: "productivity", patterns: ["productivity", "produktivitat", "work"], iconName: "grid-outline" },
-  { key: "cloud", patterns: ["cloud", "storage", "speicher"], iconName: "cloud-outline" },
-  { key: "finance", patterns: ["finance", "finanzen", "bank"], iconName: "card-outline" },
-  { key: "shopping", patterns: ["shopping", "shop"], iconName: "bag-handle-outline" },
-  { key: "education", patterns: ["education", "bildung", "learning"], iconName: "school-outline" },
-  { key: "gaming", patterns: ["gaming", "games", "spiele"], iconName: "game-controller-outline" },
+const categoryMatchers: CategoryMatcher[] = [
+  {
+    key: "video",
+    patterns: ["streaming", "video", "film", "tv", "serien", "movies"],
+    iconName: "film-outline",
+  },
+  {
+    key: "entertainment",
+    patterns: ["entertainment", "unterhaltung"],
+    iconName: "sparkles-outline",
+  },
+  {
+    key: "music",
+    patterns: ["music", "musik", "audio", "podcast", "hörbuch", "audiobook"],
+    iconName: "musical-notes-outline",
+  },
+  {
+    key: "cloud",
+    patterns: ["cloud", "storage", "speicher", "backup", "drive"],
+    iconName: "cloud-outline",
+  },
+  {
+    key: "productivity",
+    patterns: ["productivity", "produktivitat", "arbeit", "work", "office"],
+    iconName: "grid-outline",
+  },
+  {
+    key: "software",
+    patterns: ["software", "app", "tools", "tool", "developer", "development"],
+    iconName: "laptop-outline",
+  },
+  {
+    key: "gaming",
+    patterns: ["gaming", "games", "spiele", "konsole", "console"],
+    iconName: "game-controller-outline",
+  },
+  {
+    key: "education",
+    patterns: ["education", "bildung", "learning", "lernen", "language"],
+    iconName: "school-outline",
+  },
+  {
+    key: "fitness",
+    patterns: ["fitness", "health", "gesundheit", "sport", "wellness", "meditation"],
+    iconName: "fitness-outline",
+  },
+  {
+    key: "finance",
+    patterns: ["finance", "finanzen", "bank", "banking", "wallet"],
+    iconName: "card-outline",
+  },
+  {
+    key: "shopping",
+    patterns: ["shopping", "shop", "retail", "ecommerce", "delivery"],
+    iconName: "bag-handle-outline",
+  },
 ];
 
 export const resolveSubscriptionVisual = (
@@ -151,7 +357,7 @@ export const resolveSubscriptionVisual = (
   const normalizedCategory = normalizeValue(subscriptionCategory ?? "");
 
   const brandMatch = brandMatchers.find((brand) =>
-    brand.patterns.some((pattern) => normalizedName.includes(pattern)),
+    brand.aliases.some((alias) => matchesPattern(normalizedName, alias)),
   );
 
   if (brandMatch) {
@@ -162,7 +368,7 @@ export const resolveSubscriptionVisual = (
   }
 
   const categoryMatch = categoryMatchers.find((category) =>
-    category.patterns.some((pattern) => normalizedCategory.includes(pattern)),
+    category.patterns.some((pattern) => matchesPattern(normalizedCategory, pattern)),
   );
 
   if (categoryMatch) {

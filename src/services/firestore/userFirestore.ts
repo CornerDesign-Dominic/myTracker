@@ -14,6 +14,7 @@ export type UserSettingsDocument = {
   language: "de" | "en";
   currency: "EUR" | "Dollar";
   theme: "Dark" | "Light";
+  weekStart?: "monday" | "sunday";
   createdAt?: unknown;
   updatedAt?: unknown;
 };

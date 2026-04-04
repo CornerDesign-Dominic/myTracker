@@ -80,10 +80,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
     language,
     currency,
     theme,
+    weekStart,
     accentColor,
     setLanguage,
     setCurrency,
     setTheme,
+    setWeekStart,
     setAccentColor,
   } = useAppSettings();
   const {
@@ -561,6 +563,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
           options={["Dark", "Light"] as const}
           formatLabel={(option) => (option === "Dark" ? t("settings.themeDark") : t("settings.themeLight"))}
           onChange={setTheme}
+        />
+        <OptionGroup
+          title={t("settings.weekStart")}
+          value={weekStart}
+          options={["monday", "sunday"] as const}
+          formatLabel={(option) =>
+            option === "monday" ? t("settings.weekStartMonday") : t("settings.weekStartSunday")
+          }
+          onChange={setWeekStart}
         />
 
         <View style={[surfaces.panel, styles.groupCard]}>

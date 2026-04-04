@@ -31,13 +31,14 @@ const getMonthLabel = (date: Date, language: "de" | "en") =>
     year: "numeric",
   }).format(date);
 
-const getCalendarDays = (date: Date) => {
+const getCalendarDays = (date: Date, weekStart: "monday" | "sunday") => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const previousMonthLastDay = new Date(year, month, 0);
-  const leadingEmptyDays = (firstDay.getDay() + 6) % 7;
+  const leadingEmptyDays =
+    weekStart === "monday" ? (firstDay.getDay() + 6) % 7 : firstDay.getDay();
   const daysInMonth = lastDay.getDate();
   const trailingDays = (7 - ((leadingEmptyDays + daysInMonth) % 7)) % 7;
 
@@ -87,20 +88,23 @@ const getShortDisplayDate = (date: Date) =>
 
 const getTodayFabLabel = (date: Date) => `${date.getDate()}.${date.getMonth() + 1}.`;
 
-const getWeekdayLabels = (language: "de" | "en") => {
+const getWeekdayLabels = (language: "de" | "en", weekStart: "monday" | "sunday") => {
   const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
     weekday: "short",
   });
-  const monday = new Date(Date.UTC(2024, 0, 1));
+  const firstDay =
+    weekStart === "monday" ? new Date(Date.UTC(2024, 0, 1)) : new Date(Date.UTC(2024, 0, 7));
 
-  return Array.from({ length: 7 }, (_, index) => formatter.format(new Date(monday.getTime() + index * 86400000)));
+  return Array.from({ length: 7 }, (_, index) =>
+    formatter.format(new Date(firstDay.getTime() + index * 86400000)),
+  );
 };
 
 export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const { colors, typography, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { language, t } = useI18n();
-  const { currency } = useAppSettings();
+  const { currency, weekStart } = useAppSettings();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
@@ -121,8 +125,8 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   );
 
   const monthLabel = useMemo(() => getMonthLabel(visibleMonth, language), [language, visibleMonth]);
-  const weekdayLabels = useMemo(() => getWeekdayLabels(language), [language]);
-  const calendarDays = useMemo(() => getCalendarDays(visibleMonth), [visibleMonth]);
+  const weekdayLabels = useMemo(() => getWeekdayLabels(language, weekStart), [language, weekStart]);
+  const calendarDays = useMemo(() => getCalendarDays(visibleMonth, weekStart), [visibleMonth, weekStart]);
   const visibleCalendarMonths = useMemo(() => {
     const months = new Map<string, Date>();
 

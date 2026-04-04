@@ -106,7 +106,7 @@ export const getRecurringDueDateForMonth = ({
   const monthDifference = getMonthDifference(parsedAnchorDate, parsedTargetMonth);
   const billingMonths = BILLING_MONTHS[billingCycle];
 
-  if (monthDifference % billingMonths !== 0) {
+  if (monthDifference < 0 || monthDifference % billingMonths !== 0) {
     return null;
   }
 

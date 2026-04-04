@@ -157,3 +157,15 @@ test("multiple subscriptions can resolve to the same calendar day", () => {
   assert.equal(firstDueDate, "2026-04-30");
   assert.equal(secondDueDate, "2026-04-30");
 });
+
+test("visible month does not project a due date before the first future anchor month", () => {
+  assert.equal(
+    getRecurringDueDateInputForMonth({
+      anchorDate: "2026-05-04",
+      billingCycle: "monthly",
+      targetMonth: "2026-04-01",
+      startsOn: "2026-04-04T00:00:00.000Z",
+    }),
+    null,
+  );
+});

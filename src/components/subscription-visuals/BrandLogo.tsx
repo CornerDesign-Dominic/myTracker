@@ -441,18 +441,88 @@ const AppleMusicLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const AppleFitnessPlusLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#B94CFF">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.7 }]}>F+</Text>
+    <View
+      style={[
+        styles.appleRing,
+        {
+          width: scale.frame * 0.58,
+          height: scale.frame * 0.58,
+          borderRadius: scale.frame,
+          borderWidth: Math.max(2, scale.stroke * 0.9),
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.plusVertical,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.34,
+          borderRadius: scale.frame * 0.05,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.plusHorizontal,
+        {
+          width: scale.frame * 0.34,
+          height: scale.frame * 0.1,
+          borderRadius: scale.frame * 0.05,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
 const AppleOneLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#111111">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.64, top: scale.frame * 0.28 }]}>
-      Apple
-    </Text>
-    <Text style={[styles.submark, { color: "#FFFFFF", fontSize: scale.smallText * 1.15, bottom: scale.frame * 0.16 }]}>
-      One
-    </Text>
+    <View
+      style={[
+        styles.appleBody,
+        {
+          width: scale.frame * 0.34,
+          height: scale.frame * 0.38,
+          borderRadius: scale.frame * 0.16,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.appleLeaf,
+        {
+          width: scale.frame * 0.12,
+          height: scale.frame * 0.08,
+          borderRadius: scale.frame * 0.04,
+          left: scale.frame * 0.54,
+          top: scale.frame * 0.18,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.appleBite,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.1,
+          borderRadius: scale.frame,
+          left: scale.frame * 0.56,
+          top: scale.frame * 0.34,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.appleRing,
+        {
+          width: scale.frame * 0.72,
+          height: scale.frame * 0.72,
+          borderRadius: scale.frame,
+          borderWidth: Math.max(2, scale.stroke * 0.78),
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -498,7 +568,20 @@ const AudibleLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const BlinkistLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#2C66F5">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.72 }]}>B</Text>
+    {[0, 1, 2, 3].map((index) => (
+      <View
+        key={index}
+        style={[
+          styles.blinkistRay,
+          {
+            width: scale.frame * 0.12,
+            height: scale.frame * (0.18 + index * 0.06),
+            left: scale.frame * (0.2 + index * 0.13),
+            top: scale.frame * (0.52 - index * 0.04),
+          },
+        ]}
+      />
+    ))}
   </LogoFrame>
 );
 
@@ -760,7 +843,30 @@ const EbayPlusLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const EvernoteLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#00A82D">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.7 }]}>E</Text>
+    <View
+      style={[
+        styles.evernoteHead,
+        {
+          width: scale.frame * 0.5,
+          height: scale.frame * 0.42,
+          borderRadius: scale.frame * 0.12,
+          left: scale.frame * 0.22,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.evernoteFold,
+        {
+          width: scale.frame * 0.18,
+          height: scale.frame * 0.14,
+          borderRadius: scale.frame * 0.04,
+          left: scale.frame * 0.48,
+          top: scale.frame * 0.44,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -839,7 +945,30 @@ const GeminiLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const FreeleticsLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#111111">
-    <Text style={[styles.wordmark, { color: "#F97316", fontSize: scale.text * 0.68 }]}>F</Text>
+    <View
+      style={[
+        styles.freeleticsChevron,
+        {
+          borderLeftWidth: scale.frame * 0.16,
+          borderRightWidth: scale.frame * 0.16,
+          borderBottomWidth: scale.frame * 0.28,
+          left: scale.frame * 0.18,
+          top: scale.frame * 0.26,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.freeleticsChevron,
+        {
+          borderLeftWidth: scale.frame * 0.12,
+          borderRightWidth: scale.frame * 0.12,
+          borderBottomWidth: scale.frame * 0.2,
+          left: scale.frame * 0.42,
+          top: scale.frame * 0.38,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -942,7 +1071,21 @@ const MaxLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const MasterclassLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#111111">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.42 }]}>MC</Text>
+    <View
+      style={[
+        styles.masterclassArc,
+        {
+          width: scale.frame * 0.62,
+          height: scale.frame * 0.62,
+          borderRadius: scale.frame,
+          borderWidth: Math.max(2, scale.stroke * 0.9),
+          top: scale.frame * 0.2,
+        },
+      ]}
+    />
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.46, letterSpacing: 0.8, top: scale.frame * 0.5 }]}>
+      MASTERCLASS
+    </Text>
   </LogoFrame>
 );
 
@@ -954,7 +1097,52 @@ const MidjourneyLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const N26Logo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#2FE0C5">
-    <Text style={[styles.wordmark, { color: "#111111", fontSize: scale.text * 0.78 }]}>N26</Text>
+    <View
+      style={[
+        styles.n26Stroke,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.38,
+          left: scale.frame * 0.24,
+          top: scale.frame * 0.3,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.n26Diagonal,
+        {
+          width: scale.frame * 0.12,
+          height: scale.frame * 0.42,
+          left: scale.frame * 0.36,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.n26Stroke,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.38,
+          left: scale.frame * 0.5,
+          top: scale.frame * 0.3,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.n26Loop,
+        {
+          width: scale.frame * 0.2,
+          height: scale.frame * 0.2,
+          borderRadius: scale.frame,
+          left: scale.frame * 0.54,
+          top: scale.frame * 0.42,
+          borderWidth: Math.max(2, scale.stroke * 0.88),
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -1324,15 +1512,38 @@ const ProtonLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const RevolutLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#111111">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.84 }]}>R</Text>
+    <View
+      style={[
+        styles.revolutStem,
+        {
+          width: scale.frame * 0.12,
+          height: scale.frame * 0.46,
+          borderRadius: scale.frame * 0.06,
+          left: scale.frame * 0.24,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.revolutBowl,
+        {
+          width: scale.frame * 0.34,
+          height: scale.frame * 0.18,
+          borderRadius: scale.frame * 0.12,
+          left: scale.frame * 0.3,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
     <View
       style={[
         styles.revolutCut,
         {
-          width: scale.frame * 0.22,
-          height: scale.frame * 0.08,
-          right: scale.frame * 0.2,
-          top: scale.frame * 0.36,
+          width: scale.frame * 0.28,
+          height: scale.frame * 0.09,
+          right: scale.frame * 0.18,
+          top: scale.frame * 0.38,
         },
       ]}
     />
@@ -1346,8 +1557,20 @@ const SkillshareLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 );
 
 const SkyLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
-  <LogoFrame scale={scale} backgroundColor="#0D1B6B">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.62 }]}>sky</Text>
+  <LogoFrame scale={scale} backgroundColor="#0A0F4F">
+    <View
+      style={[
+        styles.skyGlow,
+        {
+          width: scale.frame * 0.86,
+          height: scale.frame * 0.56,
+          borderRadius: scale.frame * 0.28,
+        },
+      ]}
+    />
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.64, fontStyle: "italic", top: scale.frame * 0.29 }]}>
+      sky
+    </Text>
   </LogoFrame>
 );
 
@@ -1536,7 +1759,30 @@ const TwitchLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
 
 const UdemyLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#A435F0">
-    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.6 }]}>u</Text>
+    <View
+      style={[
+        styles.udemyChevron,
+        {
+          borderLeftWidth: scale.frame * 0.18,
+          borderRightWidth: scale.frame * 0.18,
+          borderBottomWidth: scale.frame * 0.26,
+          left: scale.frame * 0.22,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.udemyStem,
+        {
+          width: scale.frame * 0.12,
+          height: scale.frame * 0.28,
+          borderRadius: scale.frame * 0.06,
+          left: scale.frame * 0.44,
+          top: scale.frame * 0.46,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -1755,6 +2001,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     backgroundColor: "#FFFFFF",
   },
+  appleBody: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  appleLeaf: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+    transform: [{ rotate: "-28deg" }],
+  },
+  appleBite: {
+    position: "absolute",
+    backgroundColor: "#111111",
+  },
+  appleRing: {
+    position: "absolute",
+    borderColor: "rgba(255,255,255,0.92)",
+  },
+  blinkistRay: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+  },
   crunchyCircle: {
     position: "absolute",
     backgroundColor: "#FFFFFF",
@@ -1795,6 +2063,23 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
   },
+  evernoteHead: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  evernoteFold: {
+    position: "absolute",
+    backgroundColor: "#00A82D",
+    transform: [{ rotate: "8deg" }],
+  },
+  freeleticsChevron: {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "#F97316",
+  },
   gitHubHead: {
     position: "absolute",
     backgroundColor: "#FFFFFF",
@@ -1820,9 +2105,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     transform: [{ rotate: "45deg" }],
   },
+  masterclassArc: {
+    position: "absolute",
+    borderColor: "#FFFFFF",
+    borderTopColor: "transparent",
+  },
   microsoftTile: {
     position: "absolute",
     borderRadius: 3,
+  },
+  n26Diagonal: {
+    position: "absolute",
+    backgroundColor: "#111111",
+    transform: [{ rotate: "-28deg" }],
+  },
+  n26Loop: {
+    position: "absolute",
+    borderColor: "#111111",
+  },
+  n26Stroke: {
+    position: "absolute",
+    backgroundColor: "#111111",
+    borderRadius: 999,
   },
   nordMountainLeft: {
     position: "absolute",
@@ -1884,6 +2188,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#111111",
     transform: [{ rotate: "-20deg" }],
   },
+  revolutBowl: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  revolutStem: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  skyGlow: {
+    position: "absolute",
+    backgroundColor: "#E91E63",
+    opacity: 0.52,
+  },
   slackBar: {
     position: "absolute",
   },
@@ -1897,6 +2214,18 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
   switchDot: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  udemyChevron: {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "#FFFFFF",
+  },
+  udemyStem: {
     position: "absolute",
     backgroundColor: "#FFFFFF",
   },

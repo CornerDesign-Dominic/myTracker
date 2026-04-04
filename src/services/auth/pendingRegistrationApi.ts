@@ -132,6 +132,29 @@ export const resendPendingRegistrationRequest = async (params: {
   }
 };
 
+export const cancelPendingRegistrationRequest = async (params: {
+  idToken: string;
+}) => {
+  const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationCancel`, {
+    method: "POST",
+    headers: buildHeaders(params.idToken),
+  });
+
+  if (!response.ok) {
+    const errorDetails = await parseErrorResponse(response);
+    const code = errorDetails.code ?? "pending-registration-cancel-failed";
+    console.log("[AuthDebug] pendingRegistrationApi:cancel:error-response", {
+      url: `${REGISTRATION_API_BASE_URL}/registrationCancel`,
+      status: errorDetails.status,
+      code,
+      message: errorDetails.message,
+      contentType: errorDetails.contentType,
+      body: errorDetails.body,
+    });
+    throw createApiError(code, errorDetails);
+  }
+};
+
 export const finalizePendingRegistrationRequest = async (params: {
   idToken: string;
 }) => {

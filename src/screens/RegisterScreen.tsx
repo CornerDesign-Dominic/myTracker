@@ -73,7 +73,12 @@ export const RegisterScreen = ({ navigation }: Props) => {
           ? (submissionError as { body: string }).body
           : null;
 
-      if (errorCode === "auth/email-already-in-use") {
+      if (
+        errorCode === "auth/email-already-in-use" ||
+        errorCode === "registration-email-reserved" ||
+        errorCode === "registration-already-pending" ||
+        errorCode === "registration-already-confirmed"
+      ) {
         console.log("[AuthDebug] RegisterScreen:submit:email-in-use", { email: email.trim() });
         setError(t("auth.emailInUseError"));
         return;

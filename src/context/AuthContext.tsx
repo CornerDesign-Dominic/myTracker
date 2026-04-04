@@ -23,6 +23,7 @@ import {
 
 import { firebaseAuth, hasRequiredFirebaseConfig } from "@/firebase/config";
 import {
+  cancelPendingRegistrationRequest,
   finalizePendingRegistrationRequest,
   resendPendingRegistrationRequest,
   startPendingRegistrationRequest,
@@ -561,7 +562,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       : null;
 
     try {
-      await updateUserPendingRegistration(userId, cancelledRegistration);
+      const idToken = await currentUser.getIdToken();
+      await cancelPendingRegistrationRequest({ idToken });
       setPendingRegistration(cancelledRegistration);
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:cancel:success`, {
         uid: userId,

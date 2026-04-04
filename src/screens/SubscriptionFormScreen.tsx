@@ -445,9 +445,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     }
 
     if (requiresNextPaymentConfirmation) {
-      return language === "de"
-        ? "Bitte bestätige nach dem Intervallwechsel die neue Fälligkeit."
-        : "Please confirm the new due date after changing the billing cycle.";
+      return t("subscription.confirmBillingCycleChange");
     }
 
     if (
@@ -957,9 +955,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
         {requiresNextPaymentConfirmation ? (
           <Text style={[typography.secondary, styles.inlineHint]}>
-            {language === "de"
-              ? "Bitte die nächste Fälligkeit für das neue Intervall bestätigen."
-              : "Please confirm the next due date for the new billing cycle."}
+            {t("subscription.confirmNextDueDate")}
           </Text>
         ) : null}
       </EditorSheet>

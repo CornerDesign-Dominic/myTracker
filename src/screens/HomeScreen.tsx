@@ -164,7 +164,9 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             </View>
 
             <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
-              <Text style={[typography.meta, styles.monthMarkerText]}>DIESER MONAT</Text>
+              <Text style={[typography.meta, styles.monthMarkerText]}>
+                {t("home.currentMonthMarker")}
+              </Text>
             </View>
 
             {errorMessage ? (

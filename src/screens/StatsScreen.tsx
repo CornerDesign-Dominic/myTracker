@@ -177,14 +177,14 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       previousYear: String(now.getFullYear() - 1),
       currentMonth: monthFormatter.format(now),
       previousMonth: monthFormatter.format(previousMonth),
-      currentMonthProjection:
-        language === "de"
-          ? `${monthFormatter.format(now)} Soll`
-          : `${monthFormatter.format(now)} projected`,
-      currentYearProjection:
-        language === "de" ? `${now.getFullYear()} Soll` : `${now.getFullYear()} projected`,
+      currentMonthProjection: t("stats.currentMonthProjectedShort", {
+        month: monthFormatter.format(now),
+      }),
+      currentYearProjection: t("stats.currentYearProjectedShort", {
+        year: String(now.getFullYear()),
+      }),
     };
-  }, [language]);
+  }, [language, t]);
   const homeStyleSummary = useMemo(() => {
     const now = new Date();
     const summary = buildHomeMonthlySummary(subscriptions, allHistory, now);

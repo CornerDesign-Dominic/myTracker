@@ -690,12 +690,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
               >
                 {isCompletingRegistration ? (
                   <ActivityIndicator size="small" color={colors.accent} />
-                ) : (
-                  <Text style={[typography.button, styles.purchasePrimaryText]}>
-                    {t("settings.pendingFinalizeAction")}
-                  </Text>
-                )}
-              </Pressable>
+                  ) : (
+                    <Text style={[typography.button, styles.purchasePrimaryText]}>
+                      {t("settings.pendingFinalizeSubmit")}
+                    </Text>
+                  )}
+                </Pressable>
             </View>
           </View>
         </View>
@@ -1131,7 +1131,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minWidth: 132,
     },
     actionButtonSingle: {
-      minWidth: 132,
+      minWidth: 176,
     },
     optionButton: {
       minWidth: 92,

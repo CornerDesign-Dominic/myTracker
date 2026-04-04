@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import type { BrandVisualKey } from "../../constants/subscriptionAssets";
+import type { BrandVisualKey } from "@/constants/subscriptionAssets";
 
 type BrandLogoProps = {
   brand: BrandVisualKey;
@@ -31,6 +31,10 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
       return <AmazonPrimeLogo scale={scale} />;
     case "appleMusic":
       return <AppleMusicLogo scale={scale} />;
+    case "appleOne":
+      return <AppleOneLogo scale={scale} />;
+    case "appleTvPlus":
+      return <AppleTvPlusLogo scale={scale} />;
     case "audible":
       return <AudibleLogo scale={scale} />;
     case "canva":
@@ -39,14 +43,24 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
       return <ChatGptLogo scale={scale} />;
     case "claude":
       return <ClaudeLogo scale={scale} />;
+    case "crunchyroll":
+      return <CrunchyrollLogo scale={scale} />;
+    case "cursor":
+      return <CursorLogo scale={scale} />;
+    case "dazn":
+      return <DaznLogo scale={scale} />;
     case "disneyPlus":
       return <DisneyPlusLogo scale={scale} />;
     case "dropbox":
       return <DropboxLogo scale={scale} />;
     case "duolingo":
       return <DuolingoLogo scale={scale} />;
+    case "expressvpn":
+      return <ExpressVpnLogo scale={scale} />;
     case "figma":
       return <FigmaLogo scale={scale} />;
+    case "gemini":
+      return <GeminiLogo scale={scale} />;
     case "github":
       return <GitHubLogo scale={scale} />;
     case "googleOne":
@@ -55,6 +69,8 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
       return <HuluLogo scale={scale} />;
     case "icloud":
       return <ICloudLogo scale={scale} />;
+    case "linkedin":
+      return <LinkedInLogo scale={scale} />;
     case "max":
       return <MaxLogo scale={scale} />;
     case "microsoft365":
@@ -81,12 +97,18 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
       return <PlayStationPlusLogo scale={scale} />;
     case "proton":
       return <ProtonLogo scale={scale} />;
+    case "slack":
+      return <SlackLogo scale={scale} />;
+    case "tiktok":
+      return <TikTokLogo scale={scale} />;
     case "twitch":
       return <TwitchLogo scale={scale} />;
     case "xboxGamePass":
       return <XboxGamePassLogo scale={scale} />;
     case "youtube":
       return <YouTubeLogo scale={scale} />;
+    case "zoom":
+      return <ZoomLogo scale={scale} />;
   }
 };
 
@@ -353,6 +375,23 @@ const AppleMusicLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   </LogoFrame>
 );
 
+const AppleOneLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#111111">
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.64, top: scale.frame * 0.28 }]}>
+      Apple
+    </Text>
+    <Text style={[styles.submark, { color: "#FFFFFF", fontSize: scale.smallText * 1.15, bottom: scale.frame * 0.16 }]}>
+      One
+    </Text>
+  </LogoFrame>
+);
+
+const AppleTvPlusLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#111111">
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.6 }]}>tv+</Text>
+  </LogoFrame>
+);
+
 const AudibleLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#F7991C">
     <View style={styles.fillCenter}>
@@ -380,6 +419,90 @@ const AudibleLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
           },
         ]}
       />
+    </View>
+  </LogoFrame>
+);
+
+const CrunchyrollLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#F47521">
+    <View
+      style={[
+        styles.crunchyCircle,
+        {
+          width: scale.frame * 0.56,
+          height: scale.frame * 0.56,
+          borderRadius: scale.frame,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.crunchyCutout,
+        {
+          width: scale.frame * 0.22,
+          height: scale.frame * 0.22,
+          borderRadius: scale.frame,
+          left: scale.frame * 0.44,
+          top: scale.frame * 0.34,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.crunchySmile,
+        {
+          width: scale.frame * 0.32,
+          height: scale.frame * 0.14,
+          borderBottomWidth: Math.max(2, scale.stroke * 0.75),
+          left: scale.frame * 0.24,
+          top: scale.frame * 0.44,
+        },
+      ]}
+    />
+  </LogoFrame>
+);
+
+const CursorLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#111111">
+    <View
+      style={[
+        styles.cursorDiamond,
+        {
+          width: scale.frame * 0.26,
+          height: scale.frame * 0.26,
+          left: scale.frame * 0.24,
+          top: scale.frame * 0.24,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.cursorDiamond,
+        {
+          width: scale.frame * 0.22,
+          height: scale.frame * 0.22,
+          left: scale.frame * 0.48,
+          top: scale.frame * 0.46,
+        },
+      ]}
+    />
+  </LogoFrame>
+);
+
+const DaznLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#111111">
+    <View
+      style={[
+        styles.daznFrame,
+        {
+          width: scale.frame * 0.64,
+          height: scale.frame * 0.64,
+          borderWidth: Math.max(2, scale.stroke * 0.8),
+          borderRadius: scale.frame * 0.06,
+        },
+      ]}
+    >
+      <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.42 }]}>DAZN</Text>
     </View>
   </LogoFrame>
 );
@@ -433,6 +556,12 @@ const ICloudLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
         },
       ]}
     />
+  </LogoFrame>
+);
+
+const LinkedInLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#0A66C2">
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.72 }]}>in</Text>
   </LogoFrame>
 );
 
@@ -512,6 +641,12 @@ const DuolingoLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   </LogoFrame>
 );
 
+const ExpressVpnLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#DA3940">
+    <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.66 }]}>EV</Text>
+  </LogoFrame>
+);
+
 const FigmaLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#FFFFFF" borderColor="rgba(15,23,42,0.08)">
     <View style={styles.fillCenter}>
@@ -538,6 +673,44 @@ const FigmaLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
         />
       ))}
     </View>
+  </LogoFrame>
+);
+
+const GeminiLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#0F172A">
+    <View
+      style={[
+        styles.geminiDiamond,
+        {
+          width: scale.frame * 0.18,
+          height: scale.frame * 0.18,
+          left: scale.frame * 0.41,
+          top: scale.frame * 0.16,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.geminiDiamond,
+        {
+          width: scale.frame * 0.14,
+          height: scale.frame * 0.14,
+          left: scale.frame * 0.24,
+          top: scale.frame * 0.36,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.geminiDiamond,
+        {
+          width: scale.frame * 0.14,
+          height: scale.frame * 0.14,
+          left: scale.frame * 0.58,
+          top: scale.frame * 0.42,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -802,9 +975,134 @@ const ClaudeLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   </LogoFrame>
 );
 
+const SlackLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#FFFFFF" borderColor="rgba(15,23,42,0.08)">
+    {[
+      { color: "#36C5F0", left: 0.3, top: 0.2, width: 0.12, height: 0.3 },
+      { color: "#2EB67D", left: 0.48, top: 0.2, width: 0.12, height: 0.3 },
+      { color: "#E01E5A", left: 0.2, top: 0.48, width: 0.3, height: 0.12 },
+      { color: "#ECB22E", left: 0.5, top: 0.48, width: 0.3, height: 0.12 },
+    ].map((part, index) => (
+      <View
+        key={index}
+        style={[
+          styles.slackBar,
+          {
+            left: scale.frame * part.left,
+            top: scale.frame * part.top,
+            width: scale.frame * part.width,
+            height: scale.frame * part.height,
+            borderRadius: scale.frame * 0.08,
+            backgroundColor: part.color,
+          },
+        ]}
+      />
+    ))}
+  </LogoFrame>
+);
+
+const TikTokLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#0A0A0A">
+    <View
+      style={[
+        styles.tiktokStem,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.34,
+          borderRadius: scale.frame * 0.05,
+          left: scale.frame * 0.48,
+          top: scale.frame * 0.2,
+          backgroundColor: "#25F4EE",
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.tiktokStem,
+        {
+          width: scale.frame * 0.1,
+          height: scale.frame * 0.34,
+          borderRadius: scale.frame * 0.05,
+          left: scale.frame * 0.52,
+          top: scale.frame * 0.18,
+          backgroundColor: "#FE2C55",
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.tiktokBeam,
+        {
+          width: scale.frame * 0.22,
+          height: scale.frame * 0.08,
+          borderRadius: scale.frame * 0.04,
+          left: scale.frame * 0.42,
+          top: scale.frame * 0.2,
+          backgroundColor: "#FFFFFF",
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.tiktokNote,
+        {
+          width: scale.frame * 0.18,
+          height: scale.frame * 0.18,
+          borderRadius: scale.frame,
+          left: scale.frame * 0.28,
+          top: scale.frame * 0.48,
+          backgroundColor: "#25F4EE",
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.tiktokNote,
+        {
+          width: scale.frame * 0.18,
+          height: scale.frame * 0.18,
+          borderRadius: scale.frame,
+          left: scale.frame * 0.32,
+          top: scale.frame * 0.46,
+          backgroundColor: "#FE2C55",
+        },
+      ]}
+    />
+  </LogoFrame>
+);
+
 const TwitchLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
   <LogoFrame scale={scale} backgroundColor="#9146FF">
     <Text style={[styles.wordmark, { color: "#FFFFFF", fontSize: scale.text * 0.62 }]}>TW</Text>
+  </LogoFrame>
+);
+
+const ZoomLogo = ({ scale }: { scale: ReturnType<typeof getScale> }) => (
+  <LogoFrame scale={scale} backgroundColor="#2D8CFF">
+    <View
+      style={[
+        styles.zoomCamera,
+        {
+          width: scale.frame * 0.42,
+          height: scale.frame * 0.28,
+          borderRadius: scale.frame * 0.08,
+          left: scale.frame * 0.2,
+          top: scale.frame * 0.36,
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.zoomLens,
+        {
+          borderLeftWidth: scale.frame * 0.12,
+          borderTopWidth: scale.frame * 0.08,
+          borderBottomWidth: scale.frame * 0.08,
+          left: scale.frame * 0.56,
+          top: scale.frame * 0.42,
+        },
+      ]}
+    />
   </LogoFrame>
 );
 
@@ -979,6 +1277,33 @@ const styles = StyleSheet.create({
     position: "absolute",
     backgroundColor: "#FFFFFF",
   },
+  crunchyCircle: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  crunchyCutout: {
+    position: "absolute",
+    backgroundColor: "#F47521",
+  },
+  crunchySmile: {
+    position: "absolute",
+    borderColor: "#F47521",
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 999,
+    borderBottomRightRadius: 999,
+  },
+  cursorDiamond: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+    transform: [{ rotate: "45deg" }],
+  },
+  daznFrame: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderColor: "#FFFFFF",
+  },
   chatgptLoop: {
     position: "absolute",
     borderColor: "#FFFFFF",
@@ -986,6 +1311,11 @@ const styles = StyleSheet.create({
   chatgptCenter: {
     position: "absolute",
     backgroundColor: "#FFFFFF",
+  },
+  geminiDiamond: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+    transform: [{ rotate: "45deg" }],
   },
   microsoftTile: {
     position: "absolute",
@@ -1043,6 +1373,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.3,
   },
+  slackBar: {
+    position: "absolute",
+  },
+  tiktokStem: {
+    position: "absolute",
+  },
+  tiktokBeam: {
+    position: "absolute",
+  },
+  tiktokNote: {
+    position: "absolute",
+  },
   xboxCircle: {
     position: "absolute",
     backgroundColor: "#FFFFFF",
@@ -1050,5 +1392,17 @@ const styles = StyleSheet.create({
   xboxStroke: {
     position: "absolute",
     backgroundColor: "#107C10",
+  },
+  zoomCamera: {
+    position: "absolute",
+    backgroundColor: "#FFFFFF",
+  },
+  zoomLens: {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    borderLeftColor: "#FFFFFF",
+    borderTopColor: "transparent",
+    borderBottomColor: "transparent",
   },
 });

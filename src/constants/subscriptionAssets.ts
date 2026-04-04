@@ -3,18 +3,26 @@ export type BrandVisualKey =
   | "amazonMusic"
   | "amazonPrime"
   | "appleMusic"
+  | "appleOne"
+  | "appleTvPlus"
   | "audible"
   | "canva"
   | "chatgpt"
   | "claude"
+  | "crunchyroll"
+  | "cursor"
+  | "dazn"
   | "disneyPlus"
   | "dropbox"
   | "duolingo"
+  | "expressvpn"
   | "figma"
+  | "gemini"
   | "github"
   | "googleOne"
   | "hulu"
   | "icloud"
+  | "linkedin"
   | "max"
   | "microsoft365"
   | "midjourney"
@@ -27,10 +35,13 @@ export type BrandVisualKey =
   | "perplexity"
   | "playstationPlus"
   | "proton"
+  | "slack"
   | "spotify"
+  | "tiktok"
   | "twitch"
   | "xboxGamePass"
-  | "youtube";
+  | "youtube"
+  | "zoom";
 
 export type CategoryVisualKey =
   | "cloud"
@@ -125,8 +136,24 @@ const brandMatchers: BrandMatcher[] = [
     ],
   },
   {
+    key: "appleOne",
+    aliases: ["apple one", "appleone"],
+  },
+  {
+    key: "appleTvPlus",
+    aliases: ["apple tv plus", "apple tv+", "appletvplus", "apple tv"],
+  },
+  {
     key: "disneyPlus",
     aliases: ["disney plus", "disney+"],
+  },
+  {
+    key: "crunchyroll",
+    aliases: ["crunchyroll", "crunchy roll"],
+  },
+  {
+    key: "dazn",
+    aliases: ["dazn"],
   },
   {
     key: "hulu",
@@ -269,6 +296,10 @@ const brandMatchers: BrandMatcher[] = [
     aliases: ["duolingo", "duolingo plus", "duolingo max"],
   },
   {
+    key: "expressvpn",
+    aliases: ["expressvpn", "express vpn"],
+  },
+  {
     key: "playstationPlus",
     aliases: [
       "playstation plus",
@@ -288,6 +319,30 @@ const brandMatchers: BrandMatcher[] = [
       "pc game pass",
       "xbox live gold",
     ],
+  },
+  {
+    key: "linkedin",
+    aliases: ["linkedin", "linked in", "linkedin premium", "linkedin learning"],
+  },
+  {
+    key: "slack",
+    aliases: ["slack"],
+  },
+  {
+    key: "tiktok",
+    aliases: ["tiktok", "tik tok", "tiktok live", "tiktok shop"],
+  },
+  {
+    key: "zoom",
+    aliases: ["zoom", "zoom pro", "zoom workplace"],
+  },
+  {
+    key: "gemini",
+    aliases: ["google gemini", "gemini advanced", "gemini ai", "gemini"],
+  },
+  {
+    key: "cursor",
+    aliases: ["cursor ai", "cursor editor", "cursor.sh", "cursor pro", "cursor"],
   },
 ];
 

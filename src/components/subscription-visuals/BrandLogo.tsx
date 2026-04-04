@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 import type { BrandVisualKey } from "@/constants/subscriptionAssets";
+import { brandSvgAssets } from "@/components/subscription-visuals/brandSvgAssets";
 
 type BrandLogoProps = {
   brand: BrandVisualKey;
@@ -43,6 +45,11 @@ const getScale = (size: number, brand: BrandVisualKey) => {
 
 export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
   const scale = getScale(size, brand);
+  const svgAsset = brandSvgAssets[brand];
+
+  if (svgAsset) {
+    return <SvgAssetLogo asset={svgAsset} scale={scale} />;
+  }
 
   switch (brand) {
     case "adobeCreativeCloud":
@@ -172,6 +179,26 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
     case "zoom":
       return <ZoomLogo scale={scale} />;
   }
+};
+
+const SvgAssetLogo = ({
+  asset,
+  scale,
+}: {
+  asset: NonNullable<(typeof brandSvgAssets)[BrandVisualKey]>;
+  scale: ReturnType<typeof getScale>;
+}) => {
+  const iconSize = scale.frame * (asset.scale ?? 0.8);
+
+  return (
+    <LogoFrame
+      scale={scale}
+      backgroundColor={asset.backgroundColor ?? "transparent"}
+      borderColor={asset.borderColor}
+    >
+      <SvgXml xml={asset.xml} width={iconSize} height={iconSize} color={asset.color} />
+    </LogoFrame>
+  );
 };
 
 const LogoFrame = ({

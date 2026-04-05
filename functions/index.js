@@ -16,6 +16,7 @@ const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
 const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only";
+const PUBLIC_HTTP_OPTIONS = { region: REGION, invoker: "public" };
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
 const DEFAULT_APP_CONFIRM_DEEP_LINK_URL = "octovault://confirm-email";
@@ -1337,9 +1338,9 @@ const registrationFinalizeHandler = async (request, response) => {
   }
 };
 
-exports.registrationStart = onRequest({ region: REGION }, registrationStartHandler);
-exports.registrationResend = onRequest({ region: REGION }, registrationResendHandler);
-exports.registrationCancel = onRequest({ region: REGION }, registrationCancelHandler);
-exports.registrationConfirm = onRequest({ region: REGION }, registrationConfirmHandler);
-exports.registrationConfirmApp = onRequest({ region: REGION }, registrationConfirmAppHandler);
-exports.registrationFinalize = onRequest({ region: REGION }, registrationFinalizeHandler);
+exports.registrationStart = onRequest(PUBLIC_HTTP_OPTIONS, registrationStartHandler);
+exports.registrationResend = onRequest(PUBLIC_HTTP_OPTIONS, registrationResendHandler);
+exports.registrationCancel = onRequest(PUBLIC_HTTP_OPTIONS, registrationCancelHandler);
+exports.registrationConfirm = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmHandler);
+exports.registrationConfirmApp = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmAppHandler);
+exports.registrationFinalize = onRequest(PUBLIC_HTTP_OPTIONS, registrationFinalizeHandler);

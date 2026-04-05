@@ -189,15 +189,8 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
                       <StatusCard
                         icon="checkmark-outline"
                         title={t("onboarding.startFreeTitle")}
+                        description={t("onboarding.startPremiumTitle")}
                         plain
-                        compact
-                        showDivider
-                      />
-                      <StatusCard
-                        icon="diamond-outline"
-                        title={t("onboarding.startPremiumTitle")}
-                        plain
-                        compact
                       />
                     </View>
                   </>

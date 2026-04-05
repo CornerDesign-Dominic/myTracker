@@ -89,7 +89,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       startTitle: "Starte jetzt",
       startDescription: "Lege dein erstes Abo an und behalte alles im Blick.",
       startFreeTitle: "Kein laufendes Abo",
-      startPremiumTitle: "Premium einmalig freischalten",
+      startPremiumTitle: "Optional Premium einmalig freischalten",
       startCta: "Starten",
     },
     settings: {

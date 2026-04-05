@@ -169,7 +169,7 @@ export const AppNavigator = ({
                   return;
                 }
 
-                navigation.replace("Tabs");
+                navigation.replace("Tabs", { screen: "AllSubscriptions" });
               }}
             />
           )}

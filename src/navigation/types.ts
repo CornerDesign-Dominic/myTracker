@@ -1,10 +1,10 @@
-import { CompositeScreenProps } from "@react-navigation/native";
+import { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<RootTabParamList> | undefined;
   Login: undefined;
   Register: undefined;
   ResetPasswordLink: { oobCode?: string | null; mode?: string | null } | undefined;

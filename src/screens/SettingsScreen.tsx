@@ -645,7 +645,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <View style={styles.legalSection}>
-          <Text style={[typography.meta, styles.legalHeading]}>{t("settings.legalTitle")}</Text>
           <View style={styles.legalList}>
             <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Terms")}>
               <Text style={[typography.secondary, styles.legalLink]}>{t("common.terms")}</Text>

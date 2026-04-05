@@ -93,7 +93,7 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
 
   const handleContinue = async () => {
     if (isLastSlide) {
-      await onComplete("subscription-form");
+      await onComplete("tabs");
       return;
     }
 

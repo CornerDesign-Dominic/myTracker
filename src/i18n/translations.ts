@@ -68,7 +68,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
     },
     onboarding: {
       welcomeTitle: "OctoVault\nAlle Abos im Griff ",
-      welcomeDescription: "Sieh, was du wirklich zahlst – und was du sparen kannst.",
+      welcomeDescription: "Behalte deine Kosten im Blick",
       howItWorksTitle: "Deine Abos im Griff",
       howItWorksAddTitle: "Alle Abos an einem Ort",
       howItWorksAddDescription: "Sieh deine Abos klar und übersichtlich.",

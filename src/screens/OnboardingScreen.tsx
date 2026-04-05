@@ -130,13 +130,12 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
             <View style={styles.slideContent}>
-                <View style={styles.visualWrap}>
-                  <View style={styles.visualOrb} />
-                  <View style={styles.visualSurface}>
-                    {item.key === "welcome" ? (
-                      <Image source={octoVaultLogo} style={styles.welcomeLogo} resizeMode="contain" />
-                    ) : (
-                      <Ionicons name={item.icon} size={42} color={colors.accent} />
+              <View style={styles.visualWrap}>
+                <View style={styles.visualSurface}>
+                  {item.key === "welcome" ? (
+                    <Image source={octoVaultLogo} style={styles.welcomeLogo} resizeMode="contain" />
+                  ) : (
+                      <Ionicons name={item.icon} size={42} color="#111111" />
                     )}
                   </View>
                 </View>
@@ -349,7 +348,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       height: 112,
       borderRadius: 32,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.accent,
       backgroundColor: colors.surface,
       alignItems: "center",
       justifyContent: "center",
@@ -374,6 +373,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "center",
       lineHeight: 24,
       maxWidth: 320,
+      marginTop: spacing.xs,
     },
     startHighlights: {
       width: "100%",

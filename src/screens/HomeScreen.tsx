@@ -4,6 +4,7 @@ import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-n
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubscriptionCard } from "@/components/SubscriptionCard";
+import { useAuth } from "@/context/AuthContext";
 import { buildHomeDueSections, buildHomeMonthlySummary } from "@/domain/subscriptions/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -21,6 +22,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
+  const { isAnonymous, pendingRegistration } = useAuth();
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
   const { history, isLoading: isHistoryLoading } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
@@ -31,6 +33,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   );
   const contentOpacity = useRef(new Animated.Value(hasResolvedInitialHomeData ? 1 : 0)).current;
   const dueSections = useMemo(() => buildHomeDueSections(subscriptions), [subscriptions]);
+  const showPasswordPendingNotice = isAnonymous && pendingRegistration?.status === "confirmed";
 
   const monthlySummary = useMemo(() => {
     const now = new Date();
@@ -131,6 +134,29 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </View>
         ) : (
           <Animated.View style={[styles.loadedContent, { opacity: contentOpacity }]}>
+            {showPasswordPendingNotice ? (
+              <Pressable
+                style={[surfaces.subtlePanel, styles.passwordPendingCard]}
+                onPress={() => navigation.navigate("Settings")}
+              >
+                <View style={styles.passwordPendingHeader}>
+                  <View style={styles.passwordPendingCopy}>
+                    <Text style={[typography.meta, styles.passwordPendingTitle]}>
+                      {t("home.passwordPendingTitle")}
+                    </Text>
+                    <Text style={[typography.secondary, styles.passwordPendingDescription]}>
+                      {t("home.passwordPendingDescription")}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </Pressable>
+            ) : null}
+
             <View style={[surfaces.mainPanel, styles.summaryCard]}>
               <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
               <View style={styles.summaryRow}>
@@ -446,6 +472,29 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     monthMarkerText: {
       color: colors.accent,
       textTransform: "uppercase",
+    },
+    passwordPendingCard: {
+      minHeight: 56,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      justifyContent: "center",
+    },
+    passwordPendingHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    passwordPendingCopy: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    passwordPendingTitle: {
+      color: colors.textPrimary,
+      textTransform: "uppercase",
+    },
+    passwordPendingDescription: {
+      color: colors.textSecondary,
     },
     emptySectionRow: {
       paddingVertical: spacing.md,

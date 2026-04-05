@@ -148,7 +148,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Die Registrierung wurde vorbereitet. Öffne den Link aus der E-Mail auf diesem Gerät. In OctoVault bestätigst du dann die E-Mail und legst direkt dein Passwort fest.",
       pendingConfirmedTitle: "E-Mail bestätigt",
       pendingConfirmedDescription:
-        "Die E-Mail wurde bereits bestätigt. Lege jetzt noch dein Passwort fest, um die Verknüpfung abzuschließen.",
+        "Deine E-Mail ist bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.",
+      pendingConfirmedEmailLabel: "Bestätigte E-Mail",
+      pendingConfirmedHint:
+        "Solange noch kein Passwort hinterlegt ist, kannst du dein Konto auf neuen Geräten noch nicht vollständig verwenden.",
       pendingExpiredDescription:
         "Die gestartete Registrierung ist abgelaufen. Du kannst jederzeit eine neue Registrierung starten.",
       pendingCancelledDescription:
@@ -305,6 +308,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       total: "Gesamt",
       due: "Ausstehend",
       paid: "Bezahlt",
+      passwordPendingTitle: "Passwort noch ausstehend",
+      passwordPendingDescription:
+        "Deine E-Mail ist bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.",
+      passwordPendingAction: "In Einstellungen fortfahren",
     },
     allSubscriptions: {
       title: "Abonnements",
@@ -653,7 +660,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "The registration has been prepared. Open the link from the email on this device. Inside OctoVault you will confirm the email and set your password right away.",
       pendingConfirmedTitle: "Email confirmed",
       pendingConfirmedDescription:
-        "The email has already been confirmed. Set your password now to finish linking your account.",
+        "Your email is confirmed. Set your password now so your account is fully usable.",
+      pendingConfirmedEmailLabel: "Confirmed email",
+      pendingConfirmedHint:
+        "As long as no password has been set yet, your account is not fully usable on new devices.",
       pendingExpiredDescription:
         "The started registration has expired. You can start a new registration at any time.",
       pendingCancelledDescription:
@@ -809,6 +819,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       total: "Total",
       due: "Due",
       paid: "Paid",
+      passwordPendingTitle: "Password still missing",
+      passwordPendingDescription:
+        "Your email is confirmed. Set your password now so your account is fully usable.",
+      passwordPendingAction: "Continue in Settings",
     },
     allSubscriptions: {
       title: "Subscriptions",

@@ -1,8 +1,9 @@
-const crypto = require("node:crypto");
+﻿const crypto = require("node:crypto");
 
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -13,6 +14,7 @@ const auth = admin.auth();
 
 const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
+const PASSWORD_REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
 const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only";
@@ -51,6 +53,8 @@ const buildPendingRegistrationState = (email, now, status = "pending") => ({
   startedAt: now.toISOString(),
   expiresAt: new Date(now.getTime() + TOKEN_TTL_MS).toISOString(),
   lastRequestedAt: now.toISOString(),
+  reminderCount: 0,
+  reminderLastSentAt: null,
 });
 
 const buildReservationState = ({
@@ -201,17 +205,17 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
     body: JSON.stringify({
       from: registrationMailFrom,
       to: email,
-      subject: "Bitte best\u00e4tige deine E-Mail",
+      subject: "Best\u00e4tige deine E-Mail f\u00fcr OctoVault",
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-          <p>Bitte best\u00e4tige deine E-Mail innerhalb von 72 Stunden.</p>
+          <p>Deine Registrierung wurde vorbereitet. Best\u00e4tige jetzt deine E-Mail innerhalb von 72 Stunden.</p>
           <p style="margin:24px 0">
             <a href="${confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
               OctoVault \u00f6ffnen
             </a>
           </p>
-          <p>Der Link \u00f6ffnet OctoVault. Erst in der App best\u00e4tigst du die E-Mail und vergibst dein Passwort.</p>
-          <p style="margin-top:16px;font-size:13px;color:#6b7280">Falls der Button nicht reagiert, \u00f6ffne dieselbe Mail auf dem Ger\u00e4t im Browser und tippe den Link dort erneut an.</p>
+          <p>Auf dem Handy bringt dich der Button direkt in die App. Wenn du die Mail am Computer ge\u00f6ffnet hast, kannst du deine E-Mail zuerst im Browser best\u00e4tigen und danach in der App dein Passwort festlegen.</p>
+          <p style="margin-top:16px;font-size:13px;color:#6b7280">Erst nach der Best\u00e4tigung und einem gesetzten Passwort ist dein Konto vollst\u00e4ndig einsatzbereit.</p>
         </div>
       `,
     }),
@@ -230,6 +234,71 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
   }
 };
 
+const sendSetPasswordReminderEmail = async ({ email, openAppUrl, isFirstReminder = false }) => {
+  const { resendApiKey, registrationMailFrom } = getRegistrationConfig();
+
+  if (!resendApiKey || !registrationMailFrom) {
+    const error = new Error("Mail transport is not configured.");
+    error.code = "registration-mail-not-configured";
+    throw error;
+  }
+
+  const subject = isFirstReminder
+    ? "Lege jetzt dein Passwort in OctoVault fest"
+    : "Erinnerung: Passwort in OctoVault festlegen";
+
+  const intro = isFirstReminder
+    ? "Deine E-Mail ist jetzt bestätigt. Öffne OctoVault und lege als nächsten Schritt dein Passwort fest."
+    : "Deine E-Mail ist bereits bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.";
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: registrationMailFrom,
+      to: email,
+      subject,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+          <p>${intro}</p>
+          <p style="margin:24px 0">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </p>
+          <p>Solange kein Passwort hinterlegt ist, kannst du dein Konto auf neuen Geräten noch nicht vollständig verwenden.</p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    logger.error("registration:send-password-reminder-failed", {
+      email,
+      status: response.status,
+      body,
+    });
+    const error = new Error("Failed to send password reminder email.");
+    error.code = "registration-mail-send-failed";
+    throw error;
+  }
+};
+
+const buildAppHomeUrl = () => {
+  const { appConfirmationDeepLinkUrl } = getRegistrationConfig();
+  const normalized = String(appConfirmationDeepLinkUrl || DEFAULT_APP_CONFIRM_DEEP_LINK_URL);
+
+  if (normalized.endsWith("confirm-email")) {
+    return normalized.replace(/confirm-email$/, "");
+  }
+
+  return normalized;
+};
+
 const renderHtml = (title, message, content = "") => `<!doctype html>
 <html lang="de">
   <head>
@@ -242,8 +311,10 @@ const renderHtml = (title, message, content = "") => `<!doctype html>
       section { width:100%; max-width:460px; background:#ffffff; border:1px solid #dce4ef; border-radius:24px; padding:28px; box-shadow:0 12px 32px rgba(15,23,42,0.08); }
       h1 { margin:0 0 12px; font-size:24px; line-height:1.25; }
       p { margin:0; color:#5f6877; line-height:1.6; }
-      .actions { margin-top:24px; display:flex; justify-content:flex-start; }
-      button { appearance:none; border:0; border-radius:999px; padding:12px 18px; background:#15803D; color:#ffffff; font-weight:600; cursor:pointer; }
+      .actions { margin-top:24px; display:flex; justify-content:flex-start; gap:12px; flex-wrap:wrap; }
+      a, button { appearance:none; border:0; border-radius:999px; padding:12px 18px; background:#15803D; color:#ffffff; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+      .secondary { background:#eef3f9; color:#111827; border:1px solid #dce4ef; }
+      .note { margin-top:16px; font-size:13px; color:#6b7280; }
     </style>
   </head>
   <body>
@@ -733,7 +804,7 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   if (request.method === "GET") {
-  logRegistrationEvent("registrationConfirm:get-rendered-no-confirm", {
+    logRegistrationEvent("registrationConfirm:get-rendered-no-confirm", {
       tokenHash: shortenHash(tokenHash),
       alreadyConfirmed: Boolean(usedAt),
       openAppUrl,
@@ -741,26 +812,27 @@ const registrationConfirmHandler = async (request, response) => {
       flowVersion: REGISTRATION_FLOW_VERSION,
     });
 
-      response.status(200).send(
-        renderHtml(
-          usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
-          usedAt
-            ? "Die E-Mail wurde bereits in der App verarbeitet. Du kannst OctoVault jetzt erneut \u00f6ffnen."
-            : "Dieser Link best\u00e4tigt noch nichts. \u00d6ffne OctoVault per Button oder best\u00e4tige bewusst hier im Browser und mache danach in der App weiter.",
-          `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-              OctoVault \u00f6ffnen
-            </a>
-            ${
-              usedAt
-                ? ""
-                : `<form method="post" action="?token=${encodeURIComponent(token)}" style="display:inline">
-                     <button type="submit" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#eef3f9;color:#111827;text-decoration:none;font-weight:600;border:1px solid #dce4ef;cursor:pointer">
-                       Im Browser bestätigen
-                     </button>
-                   </form>`
-            }
-          </div>`,
+    response.status(200).send(
+      renderHtml(
+        usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
+        usedAt
+          ? "Deine E-Mail ist bereits best\u00e4tigt. \u00d6ffne jetzt OctoVault und lege dort dein Passwort fest."
+          : "Auf dem Handy \u00f6ffnet dieser Button OctoVault. Wenn du gerade am Computer bist, kannst du deine E-Mail auch hier im Browser best\u00e4tigen und danach in der App dein Passwort festlegen.",
+        `<div class="actions">
+          <a href="${openAppUrl}">
+            OctoVault \u00f6ffnen
+          </a>
+          ${
+            usedAt
+              ? ""
+              : `<form method="post" action="?token=${encodeURIComponent(token)}" style="display:inline">
+                   <button type="submit" class="secondary">
+                     E-Mail im Browser best\u00e4tigen
+                   </button>
+                 </form>
+                 <p class="note">Im Browser wird nur deine E-Mail best\u00e4tigt. Das Passwort legst du danach in der App fest.</p>`
+          }
+        </div>`,
       ),
     );
     return;
@@ -771,7 +843,7 @@ const registrationConfirmHandler = async (request, response) => {
     return;
   }
 
-  if (request.method === "POST") {
+  if (request.method === "POST" && false) {
   logRegistrationEvent("registrationConfirm:browser-confirm-blocked", {
       tokenHash: shortenHash(tokenHash),
       alreadyConfirmed: Boolean(usedAt),
@@ -815,15 +887,16 @@ const registrationConfirmHandler = async (request, response) => {
     tokenHash: shortenHash(tokenHash),
     alreadyConfirmed: Boolean(usedAt),
     trigger: "explicit-browser-post",
+    flowVersion: REGISTRATION_FLOW_VERSION,
   });
 
   if (usedAt) {
     response.status(200).send(
       renderHtml(
         "E-Mail bereits bestätigt",
-        "Diese E-Mail wurde bereits bestätigt. Du kannst jetzt zur App zurückkehren und dein Passwort festlegen.",
+        "Diese E-Mail wurde bereits bestätigt. Kehre jetzt in OctoVault zurück und lege dort dein Passwort fest.",
         `<div class="actions">
-          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+          <a href="${openAppUrl}">
             OctoVault öffnen
           </a>
         </div>`,
@@ -847,7 +920,7 @@ const registrationConfirmHandler = async (request, response) => {
           "Bestätigung nicht möglich",
           "Dieser Vorgang ist nicht mehr offen.",
           `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            <a href="${openAppUrl}">
               OctoVault öffnen
             </a>
           </div>`,
@@ -879,7 +952,7 @@ const registrationConfirmHandler = async (request, response) => {
           "Bestätigung abgelaufen",
           "Die Registrierung ist abgelaufen. Bitte starte sie erneut in der App.",
           `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            <a href="${openAppUrl}">
               OctoVault öffnen
             </a>
           </div>`,
@@ -899,7 +972,7 @@ const registrationConfirmHandler = async (request, response) => {
           "Bestätigung nicht möglich",
           "Dieser Link wurde durch einen neueren Link ersetzt oder gehört nicht mehr zum aktuellen Vorgang.",
           `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            <a href="${openAppUrl}">
               OctoVault öffnen
             </a>
           </div>`,
@@ -916,9 +989,9 @@ const registrationConfirmHandler = async (request, response) => {
       response.status(200).send(
         renderHtml(
           "E-Mail bereits bestätigt",
-          "Diese E-Mail wurde bereits bestätigt. Du kannst jetzt zur App zurückkehren und dein Passwort festlegen.",
+          "Diese E-Mail wurde bereits bestätigt. Kehre jetzt in OctoVault zurück und lege dort dein Passwort fest.",
           `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            <a href="${openAppUrl}">
               OctoVault öffnen
             </a>
           </div>`,
@@ -933,7 +1006,7 @@ const registrationConfirmHandler = async (request, response) => {
           "Bestätigung nicht möglich",
           "Dieser Vorgang ist nicht mehr offen.",
           `<div class="actions">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            <a href="${openAppUrl}">
               OctoVault öffnen
             </a>
           </div>`,
@@ -947,7 +1020,10 @@ const registrationConfirmHandler = async (request, response) => {
       uid: tokenData.uid,
       email,
       trigger: "explicit-browser-post",
+      flowVersion: REGISTRATION_FLOW_VERSION,
     });
+
+    const reminderSentAt = new Date().toISOString();
 
     await db.runTransaction(async (transaction) => {
       transaction.set(
@@ -957,6 +1033,8 @@ const registrationConfirmHandler = async (request, response) => {
             ...pendingRegistration,
             status: "confirmed",
             confirmedAt: new Date().toISOString(),
+            reminderCount: 1,
+            reminderLastSentAt: reminderSentAt,
           },
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
@@ -981,12 +1059,18 @@ const registrationConfirmHandler = async (request, response) => {
       );
     });
 
+    await sendSetPasswordReminderEmail({
+      email,
+      openAppUrl: buildAppHomeUrl(),
+      isFirstReminder: true,
+    });
+
     response.status(200).send(
       renderHtml(
         "E-Mail bestätigt",
-        "Die E-Mail wurde bestätigt. Kehre jetzt in OctoVault zurück und lege dort dein Passwort fest.",
+        "Deine E-Mail ist jetzt bestätigt. Kehre in OctoVault zurück und lege dort als Nächstes dein Passwort fest.",
         `<div class="actions">
-          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+          <a href="${openAppUrl}">
             OctoVault öffnen
           </a>
         </div>`,
@@ -1001,9 +1085,9 @@ const registrationConfirmHandler = async (request, response) => {
     response.status(500).send(
       renderHtml(
         "Bestätigung fehlgeschlagen",
-        "Die Bestätigung konnte gerade nicht abgeschlossen werden. Öffne die App oder versuche es später erneut.",
+        "Die Bestätigung konnte gerade nicht abgeschlossen werden. Öffne OctoVault oder versuche es später erneut.",
         `<div class="actions">
-          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+          <a href="${openAppUrl}">
             OctoVault öffnen
           </a>
         </div>`,
@@ -1338,9 +1422,86 @@ const registrationFinalizeHandler = async (request, response) => {
   }
 };
 
+const sendPendingPasswordReminderHandler = async () => {
+  const now = Date.now();
+  const snapshot = await db
+    .collection("users")
+    .where("pendingRegistration.status", "==", "confirmed")
+    .get();
+
+  for (const userDoc of snapshot.docs) {
+    const userData = userDoc.data();
+    const pendingRegistration = userData?.pendingRegistration;
+
+    if (!pendingRegistration || typeof pendingRegistration.pendingEmail !== "string") {
+      continue;
+    }
+
+    const expiresAt = new Date(String(pendingRegistration.expiresAt || ""));
+    if (!(expiresAt instanceof Date) || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now) {
+      continue;
+    }
+
+    const lastSentAt = pendingRegistration.reminderLastSentAt
+      ? new Date(String(pendingRegistration.reminderLastSentAt))
+      : null;
+
+    if (
+      lastSentAt instanceof Date &&
+      !Number.isNaN(lastSentAt.getTime()) &&
+      now - lastSentAt.getTime() < PASSWORD_REMINDER_INTERVAL_MS
+    ) {
+      continue;
+    }
+
+    try {
+      await sendSetPasswordReminderEmail({
+        email: normalizeEmail(pendingRegistration.pendingEmail),
+        openAppUrl: buildAppHomeUrl(),
+        isFirstReminder: false,
+      });
+
+      await userDoc.ref.set(
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            reminderCount: Number(pendingRegistration.reminderCount ?? 0) + 1,
+            reminderLastSentAt: new Date().toISOString(),
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      logRegistrationEvent("registrationReminder:sent", {
+        uid: userDoc.id,
+        email: normalizeEmail(pendingRegistration.pendingEmail),
+        reminderCount: Number(pendingRegistration.reminderCount ?? 0) + 1,
+        flowVersion: REGISTRATION_FLOW_VERSION,
+      });
+    } catch (error) {
+      logger.error("registrationReminder", {
+        uid: userDoc.id,
+        email: normalizeEmail(pendingRegistration.pendingEmail),
+        code: error.code || "registration-reminder-failed",
+        message: error.message || "Reminder mail failed.",
+        stack: error.stack || null,
+      });
+    }
+  }
+};
+
 exports.registrationStart = onRequest(PUBLIC_HTTP_OPTIONS, registrationStartHandler);
 exports.registrationResend = onRequest(PUBLIC_HTTP_OPTIONS, registrationResendHandler);
 exports.registrationCancel = onRequest(PUBLIC_HTTP_OPTIONS, registrationCancelHandler);
 exports.registrationConfirm = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmHandler);
 exports.registrationConfirmApp = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmAppHandler);
 exports.registrationFinalize = onRequest(PUBLIC_HTTP_OPTIONS, registrationFinalizeHandler);
+exports.registrationPasswordReminder = onSchedule(
+  {
+    region: REGION,
+    schedule: "every 24 hours",
+    timeZone: "Europe/Berlin",
+  },
+  sendPendingPasswordReminderHandler,
+);

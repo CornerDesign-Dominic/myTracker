@@ -384,8 +384,19 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   {t("settings.pendingConfirmedTitle")}
                 </Text>
               </View>
+              <View style={styles.accountIdentityRow}>
+                <Text style={[typography.meta, styles.accountIdentityLabel]}>
+                  {t("settings.pendingConfirmedEmailLabel")}
+                </Text>
+                <Text style={[typography.body, styles.accountIdentityValue]}>
+                  {pendingRegistration?.pendingEmail ?? t("common.none")}
+                </Text>
+              </View>
               <Text style={[typography.secondary, styles.accountText]}>
                 {t("settings.pendingConfirmedDescription")}
+              </Text>
+              <Text style={[typography.secondary, styles.pendingBackendHint]}>
+                {t("settings.pendingConfirmedHint")}
               </Text>
             </>
           ) : hasPendingRegistration ? (

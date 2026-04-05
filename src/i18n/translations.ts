@@ -67,7 +67,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noDueOn: "Am {{date}} ist nichts fällig.",
     },
     onboarding: {
-      welcomeTitle: "Alle deine Abos an einem Ort",
+      welcomeTitle: "OctoVault\nAlle Abos im Griff ",
       welcomeDescription: "Sieh, was du wirklich zahlst – und was du sparen kannst.",
       howItWorksTitle: "Deine Abos im Griff",
       howItWorksAddTitle: "Alle Abos an einem Ort",

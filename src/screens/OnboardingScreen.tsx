@@ -140,23 +140,26 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
               <View style={styles.copyBlock}>
                 <Text style={[typography.pageTitle, styles.title]}>{item.title}</Text>
                 {item.renderStatusOverview ? (
-                  <View style={styles.statusPanel}>
+                  <View style={styles.statusList}>
                     <StatusCard
-                      icon="add-circle-outline"
+                      icon="list-outline"
                       title={t("onboarding.howItWorksAddTitle")}
                       description={t("onboarding.howItWorksAddDescription")}
+                      plain
                       showDivider
                     />
                     <StatusCard
-                      icon="list-outline"
+                      icon="card-outline"
                       title={t("onboarding.howItWorksTrackTitle")}
                       description={t("onboarding.howItWorksTrackDescription")}
+                      plain
                       showDivider
                     />
                     <StatusCard
                       icon="checkmark-done-outline"
                       title={t("onboarding.howItWorksStayOnTopTitle")}
                       description={t("onboarding.howItWorksStayOnTopDescription")}
+                      plain
                     />
                   </View>
                 ) : (
@@ -218,17 +221,25 @@ const StatusCard = ({
   title,
   description,
   showDivider = false,
+  plain = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
   showDivider?: boolean;
+  plain?: boolean;
 }) => {
   const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
 
   return (
-    <View style={[styles.statusCard, showDivider ? styles.statusCardDivider : null]}>
+    <View
+      style={[
+        styles.statusCard,
+        plain ? styles.statusCardPlain : null,
+        showDivider ? styles.statusCardDivider : null,
+      ]}
+    >
       <View style={styles.statusCardRow}>
         <View style={styles.statusIconWrap}>
           <Ionicons name={icon} size={18} color={colors.accent} />
@@ -298,6 +309,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.surface,
       alignItems: "center",
       justifyContent: "center",
+      transform: [{ translateY: -10 }],
     },
     copyBlock: {
       width: "100%",
@@ -307,6 +319,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     title: {
       color: colors.textPrimary,
       textAlign: "center",
+      marginTop: -15,
     },
     description: {
       color: colors.textSecondary,
@@ -322,8 +335,16 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.surface,
       marginTop: spacing.xs,
     },
+    statusList: {
+      width: "100%",
+      marginTop: spacing.xs,
+    },
     statusCard: {
       padding: spacing.md,
+    },
+    statusCardPlain: {
+      paddingHorizontal: 0,
+      backgroundColor: "transparent",
     },
     statusCardDivider: {
       borderBottomWidth: 1,

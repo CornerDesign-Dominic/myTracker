@@ -85,8 +85,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EEF0FF",
     },
     dark: {
-      accent: "#818CF8",
-      accentSoft: "rgba(129,140,248,0.18)",
+      accent: "#7C86E8",
+      accentSoft: "rgba(124,134,232,0.16)",
     },
   },
   blue: {
@@ -95,8 +95,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EAF2FF",
     },
     dark: {
-      accent: "#60A5FA",
-      accentSoft: "rgba(96,165,250,0.2)",
+      accent: "#5A97E3",
+      accentSoft: "rgba(90,151,227,0.17)",
     },
   },
   teal: {
@@ -105,8 +105,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#E7F7F5",
     },
     dark: {
-      accent: "#2DD4BF",
-      accentSoft: "rgba(45,212,191,0.18)",
+      accent: "#39B7A8",
+      accentSoft: "rgba(57,183,168,0.16)",
     },
   },
   green: {
@@ -115,8 +115,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EAF8EE",
     },
     dark: {
-      accent: "#4ADE80",
-      accentSoft: "rgba(74,222,128,0.18)",
+      accent: "#57C87D",
+      accentSoft: "rgba(87,200,125,0.16)",
     },
   },
   orange: {
@@ -125,8 +125,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FFF1E8",
     },
     dark: {
-      accent: "#FB923C",
-      accentSoft: "rgba(251,146,60,0.2)",
+      accent: "#E38A4A",
+      accentSoft: "rgba(227,138,74,0.17)",
     },
   },
   slate: {
@@ -135,8 +135,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#F0F4F8",
     },
     dark: {
-      accent: "#94A3B8",
-      accentSoft: "rgba(148,163,184,0.18)",
+      accent: "#8997AB",
+      accentSoft: "rgba(137,151,171,0.16)",
     },
   },
   sage: {
@@ -145,8 +145,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EEF4F0",
     },
     dark: {
-      accent: "#9EC5AE",
-      accentSoft: "rgba(158,197,174,0.18)",
+      accent: "#93B59F",
+      accentSoft: "rgba(147,181,159,0.16)",
     },
   },
   forest: {
@@ -155,8 +155,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EAF5EF",
     },
     dark: {
-      accent: "#6FB08B",
-      accentSoft: "rgba(111,176,139,0.18)",
+      accent: "#69A07F",
+      accentSoft: "rgba(105,160,127,0.16)",
     },
   },
   sand: {
@@ -165,8 +165,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FBF4EA",
     },
     dark: {
-      accent: "#D7B27B",
-      accentSoft: "rgba(215,178,123,0.18)",
+      accent: "#C8A874",
+      accentSoft: "rgba(200,168,116,0.16)",
     },
   },
   amber: {
@@ -175,8 +175,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FEF3C7",
     },
     dark: {
-      accent: "#E6B800",
-      accentSoft: "rgba(230,184,0,0.18)",
+      accent: "#D9AD1F",
+      accentSoft: "rgba(217,173,31,0.16)",
     },
   },
   coral: {
@@ -185,8 +185,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FDEDEA",
     },
     dark: {
-      accent: "#F09A8F",
-      accentSoft: "rgba(240,154,143,0.18)",
+      accent: "#DD9388",
+      accentSoft: "rgba(221,147,136,0.16)",
     },
   },
   rose: {
@@ -195,8 +195,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FBEFF3",
     },
     dark: {
-      accent: "#E4A0B6",
-      accentSoft: "rgba(228,160,182,0.18)",
+      accent: "#D08EA5",
+      accentSoft: "rgba(208,142,165,0.16)",
     },
   },
   violet: {
@@ -205,8 +205,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#F1EEFC",
     },
     dark: {
-      accent: "#A996F2",
-      accentSoft: "rgba(169,150,242,0.18)",
+      accent: "#8F7CDE",
+      accentSoft: "rgba(143,124,222,0.16)",
     },
   },
   cyan: {
@@ -215,8 +215,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#EAF7FA",
     },
     dark: {
-      accent: "#6AC3D9",
-      accentSoft: "rgba(106,195,217,0.18)",
+      accent: "#5FAFC2",
+      accentSoft: "rgba(95,175,194,0.16)",
     },
   },
   gold: {
@@ -225,8 +225,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#FAF4E6",
     },
     dark: {
-      accent: "#D7B15A",
-      accentSoft: "rgba(215,177,90,0.18)",
+      accent: "#C79F54",
+      accentSoft: "rgba(199,159,84,0.16)",
     },
   },
   graphite: {
@@ -235,8 +235,8 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
       accentSoft: "#F2F4F7",
     },
     dark: {
-      accent: "#9AA4B2",
-      accentSoft: "rgba(154,164,178,0.18)",
+      accent: "#8D97A4",
+      accentSoft: "rgba(141,151,164,0.16)",
     },
   },
 };

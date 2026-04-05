@@ -247,13 +247,10 @@ export const getAccentPalette = (accentColor: AccentColor, mode: AppThemeMode) =
 export const accentColorOptions = [
   "green",
   "indigo",
-  "forest",
-  "blue",
   "cyan",
   "teal",
   "violet",
   "rose",
-  "coral",
   "orange",
   "amber",
   "slate",

@@ -85,7 +85,7 @@ export const buildSnapshotFromSinglePurchase = (
 export const canUseAccentColor = (
   accentColor: AccentColor,
   hasPremiumAccents: boolean,
-) => FREE_ACCENT_COLORS.includes(accentColor) || hasPremiumAccents;
+) => true;
 
 export const getSafeAccentColor = (
   accentColor: AccentColor,

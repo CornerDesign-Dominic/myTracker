@@ -27,7 +27,14 @@ export const AccountScreen = ({ navigation }: Props) => {
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
   const styles = getStyles(colors);
-  const { currentUser, changePassword, logout } = useAuth();
+  const {
+    currentUser,
+    isAnonymous,
+    pendingRegistration,
+    changePassword,
+    completePendingRegistration,
+    logout,
+  } = useAuth();
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
   const [isPasswordChangedModalVisible, setIsPasswordChangedModalVisible] = useState(false);
@@ -36,7 +43,11 @@ export const AccountScreen = ({ navigation }: Props) => {
   const [nextPasswordRepeat, setNextPasswordRepeat] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const email = currentUser?.email ?? "";
+  const hasConfirmedPendingRegistration =
+    isAnonymous && pendingRegistration?.status === "confirmed";
+  const email =
+    currentUser?.email ??
+    (hasConfirmedPendingRegistration ? pendingRegistration?.pendingEmail ?? "" : "");
 
   const closeChangePasswordModal = () => {
     if (isChangingPassword) {
@@ -56,7 +67,7 @@ export const AccountScreen = ({ navigation }: Props) => {
       return;
     }
 
-    if (currentPassword.length < 6) {
+    if (!hasConfirmedPendingRegistration && currentPassword.length < 6) {
       setPasswordError(t("settings.accountCurrentPasswordError"));
       return;
     }
@@ -74,7 +85,11 @@ export const AccountScreen = ({ navigation }: Props) => {
     try {
       setIsChangingPassword(true);
       setPasswordError(null);
-      await changePassword(currentPassword, nextPassword);
+      if (hasConfirmedPendingRegistration) {
+        await completePendingRegistration(nextPassword);
+      } else {
+        await changePassword(currentPassword, nextPassword);
+      }
       closeChangePasswordModal();
       setIsPasswordChangedModalVisible(true);
     } catch (error) {
@@ -88,10 +103,18 @@ export const AccountScreen = ({ navigation }: Props) => {
 
       if (errorCode === "auth/invalid-credential" || errorCode === "auth/wrong-password") {
         setPasswordError(t("settings.accountCurrentPasswordWrong"));
+      } else if (errorCode === "pending-registration-not-confirmed") {
+        setPasswordError(t("settings.pendingFinalizeNotConfirmed"));
+      } else if (errorCode === "pending-registration-expired") {
+        setPasswordError(t("settings.pendingExpiredDescription"));
       } else if (errorCode === "auth/weak-password") {
         setPasswordError(t("auth.passwordError"));
       } else {
-        setPasswordError(t("settings.accountChangePasswordError"));
+        setPasswordError(
+          hasConfirmedPendingRegistration
+            ? t("settings.pendingFinalizeError")
+            : t("settings.accountChangePasswordError"),
+        );
       }
     } finally {
       setIsChangingPassword(false);
@@ -112,9 +135,27 @@ export const AccountScreen = ({ navigation }: Props) => {
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView contentContainerStyle={layout.content} showsVerticalScrollIndicator={false}>
         <View style={[surfaces.mainPanel, styles.primaryCard]}>
-          <Text style={[typography.cardTitle, styles.emailLabel]}>{t("auth.email")}</Text>
+          <Text style={[typography.cardTitle, styles.sectionTitle]}>
+            {t("settings.accountEmailTitle")}
+          </Text>
           <Text style={[typography.body, styles.emailValue]}>{email || t("common.none")}</Text>
-          <Text style={[typography.secondary, styles.hintText]}>{t("settings.accountManageHint")}</Text>
+          <View style={styles.verifiedRow}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+            <Text style={[typography.meta, styles.verifiedLabel]}>
+              {t("settings.accountEmailConfirmed")}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[surfaces.panel, styles.secondaryCard]}>
+          <Text style={[typography.cardTitle, styles.sectionTitle]}>
+            {t("settings.accountPasswordTitle")}
+          </Text>
+          <Text style={[typography.secondary, styles.hintText]}>
+            {hasConfirmedPendingRegistration
+              ? t("settings.accountPasswordPendingDescription")
+              : t("settings.accountPasswordSetDescription")}
+          </Text>
           <View style={styles.primaryActionWrap}>
             <Pressable
               style={[buttons.buttonBase, buttons.primaryButton]}
@@ -122,11 +163,14 @@ export const AccountScreen = ({ navigation }: Props) => {
               disabled={!email}
             >
               <Text style={[typography.button, styles.primaryButtonText]}>
-                {t("settings.accountChangePasswordAction")}
+                {hasConfirmedPendingRegistration
+                  ? t("settings.pendingFinalizeAction")
+                  : t("settings.accountChangePasswordAction")}
               </Text>
             </Pressable>
           </View>
         </View>
+
         <Pressable
           style={[buttons.buttonBase, buttons.secondaryButton, styles.logoutButton]}
           onPress={() => setIsLogoutModalVisible(true)}
@@ -184,24 +228,34 @@ export const AccountScreen = ({ navigation }: Props) => {
           <View style={[surfaces.panel, styles.confirmationSheet]}>
             <View style={styles.modalHeader}>
               <Text style={[typography.cardTitle, styles.modalTitle]}>
-                {t("settings.accountChangePasswordTitle")}
+                {hasConfirmedPendingRegistration
+                  ? t("settings.pendingFinalizeTitle")
+                  : t("settings.accountChangePasswordTitle")}
               </Text>
               <Pressable onPress={closeChangePasswordModal} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
             </View>
             <Text style={[typography.secondary, styles.modalText]}>
-              {t("settings.accountChangePasswordModalHint")}
+              {hasConfirmedPendingRegistration
+                ? t("settings.pendingFinalizeDescription")
+                : t("settings.accountChangePasswordModalHint")}
             </Text>
             <View style={styles.passwordForm}>
-              <Text style={[typography.meta, styles.inputLabel]}>{t("settings.accountCurrentPasswordLabel")}</Text>
-              <TextInput
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                style={[inputs.input, styles.input]}
-              />
+              {!hasConfirmedPendingRegistration ? (
+                <>
+                  <Text style={[typography.meta, styles.inputLabel]}>
+                    {t("settings.accountCurrentPasswordLabel")}
+                  </Text>
+                  <TextInput
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    style={[inputs.input, styles.input]}
+                  />
+                </>
+              ) : null}
               <Text style={[typography.meta, styles.inputLabel]}>{t("settings.accountNewPasswordLabel")}</Text>
               <TextInput
                 value={nextPassword}
@@ -238,7 +292,9 @@ export const AccountScreen = ({ navigation }: Props) => {
                 disabled={isChangingPassword}
               >
                 <Text style={[typography.button, styles.primaryButtonText]}>
-                  {t("settings.accountChangePasswordConfirm")}
+                  {hasConfirmedPendingRegistration
+                    ? t("settings.pendingFinalizeSubmit")
+                    : t("settings.accountChangePasswordConfirm")}
                 </Text>
               </Pressable>
             </View>
@@ -292,11 +348,23 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     primaryCard: {
       gap: spacing.md,
     },
-    emailLabel: {
-      color: colors.textSecondary,
+    secondaryCard: {
+      gap: spacing.md,
+    },
+    sectionTitle: {
+      color: colors.textPrimary,
     },
     emailValue: {
       color: colors.textPrimary,
+    },
+    verifiedRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    verifiedLabel: {
+      color: colors.accent,
+      textTransform: "uppercase",
     },
     hintText: {
       color: colors.textSecondary,

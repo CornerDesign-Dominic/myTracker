@@ -360,7 +360,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
         contentContainerStyle={[layout.content, styles.contentWithTabBar]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[surfaces.mainPanel, styles.primaryCard]}>
+        <View style={[surfaces.mainPanel, styles.primaryCard, styles.accountPrimaryCard]}>
           <View style={styles.sectionHeader}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accountTitle")}</Text>
           </View>
@@ -384,19 +384,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   {t("settings.pendingConfirmedTitle")}
                 </Text>
               </View>
-              <View style={styles.accountIdentityRow}>
-                <Text style={[typography.meta, styles.accountIdentityLabel]}>
-                  {t("settings.pendingConfirmedEmailLabel")}
-                </Text>
-                <Text style={[typography.body, styles.accountIdentityValue]}>
-                  {pendingRegistration?.pendingEmail ?? t("common.none")}
+              <View style={styles.pendingAlertRow}>
+                <Ionicons name="alert-circle-outline" size={18} color={colors.accent} />
+                <Text style={[typography.meta, styles.pendingAlertLabel]}>
+                  {t("settings.pendingPasswordMissingTitle")}
                 </Text>
               </View>
               <Text style={[typography.secondary, styles.accountText]}>
                 {t("settings.pendingConfirmedDescription")}
-              </Text>
-              <Text style={[typography.secondary, styles.pendingBackendHint]}>
-                {t("settings.pendingConfirmedHint")}
               </Text>
             </>
           ) : hasPendingRegistration ? (
@@ -491,14 +486,24 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 </Pressable>
               </>
             ) : hasConfirmedRegistration ? (
-              <Pressable
-                style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
-                onPress={() => setIsCompleteRegistrationModalVisible(true)}
-              >
-                <Text style={[typography.button, styles.actionPrimaryText]}>
-                  {t("settings.pendingFinalizeAction")}
-                </Text>
-              </Pressable>
+              <View style={styles.optionColumn}>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.primaryButton, styles.actionButton]}
+                  onPress={() => setIsCompleteRegistrationModalVisible(true)}
+                >
+                  <Text style={[typography.button, styles.actionPrimaryText]}>
+                    {t("settings.pendingFinalizeAction")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[buttons.buttonBase, buttons.secondaryButton, styles.actionButton]}
+                  onPress={() => navigation.navigate("Account")}
+                >
+                  <Text style={[typography.button, styles.optionText]}>
+                    {t("settings.pendingConfirmedAccountAction")}
+                  </Text>
+                </Pressable>
+              </View>
             ) : (
               <>
                 {isAnonymous ? (
@@ -536,9 +541,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <View style={[surfaces.mainPanel, styles.primaryCard]}>
-          <Text style={[typography.cardTitle, styles.groupTitle]}>
-            {isPremium ? t("settings.premiumCardTitlePremium") : t("settings.premiumCardTitleFree")}
-          </Text>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[typography.cardTitle, styles.groupTitle]}>
+              {isPremium ? t("settings.premiumCardTitlePremium") : t("settings.premiumCardTitleFree")}
+            </Text>
+            <Ionicons name="diamond-outline" size={18} color={colors.accent} />
+          </View>
           <Text style={[typography.secondary, styles.premiumLead]}>
             {isPremium
               ? t("settings.premiumCardDescriptionPremium")
@@ -959,6 +967,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     primaryCard: {
       gap: spacing.md,
     },
+    accountPrimaryCard: {
+      gap: spacing.sm,
+    },
     accountText: {
       color: colors.textSecondary,
       lineHeight: 22,
@@ -969,6 +980,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.sm,
     },
     verifiedLabel: {
+      color: colors.accent,
+      textTransform: "uppercase",
+    },
+    pendingAlertRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    pendingAlertLabel: {
       color: colors.accent,
       textTransform: "uppercase",
     },
@@ -1148,6 +1168,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       flexDirection: "row",
       gap: spacing.sm,
       flexWrap: "wrap",
+    },
+    optionColumn: {
+      width: "100%",
+      gap: spacing.xs,
     },
     actionButton: {
       flex: 1,

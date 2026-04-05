@@ -136,22 +136,26 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           <Animated.View style={[styles.loadedContent, { opacity: contentOpacity }]}>
             {showPasswordPendingNotice ? (
               <Pressable
-                style={[surfaces.subtlePanel, styles.passwordPendingCard]}
+                style={[surfaces.mainSubtlePanel, styles.passwordPendingCard]}
                 onPress={() => navigation.navigate("Settings")}
               >
                 <View style={styles.passwordPendingHeader}>
                   <View style={styles.passwordPendingCopy}>
-                    <Text style={[typography.meta, styles.passwordPendingTitle]}>
-                      {t("home.passwordPendingTitle")}
-                    </Text>
-                    <Text style={[typography.secondary, styles.passwordPendingDescription]}>
-                      {t("home.passwordPendingDescription")}
-                    </Text>
+                    <View style={styles.passwordPendingTitleRow}>
+                      <Ionicons
+                        name="alert-circle-outline"
+                        size={16}
+                        color={colors.accent}
+                      />
+                      <Text style={[typography.meta, styles.passwordPendingTitle]}>
+                        {t("home.passwordPendingTitle")}
+                      </Text>
+                    </View>
                   </View>
                   <Ionicons
                     name="chevron-forward-outline"
                     size={18}
-                    color={colors.textSecondary}
+                    color={colors.accent}
                   />
                 </View>
               </Pressable>
@@ -478,6 +482,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       justifyContent: "center",
+      borderColor: colors.accent,
     },
     passwordPendingHeader: {
       flexDirection: "row",
@@ -487,14 +492,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     passwordPendingCopy: {
       flex: 1,
-      gap: spacing.xxs,
+    },
+    passwordPendingTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
     },
     passwordPendingTitle: {
-      color: colors.textPrimary,
+      color: colors.accent,
       textTransform: "uppercase",
-    },
-    passwordPendingDescription: {
-      color: colors.textSecondary,
     },
     emptySectionRow: {
       paddingVertical: spacing.md,

@@ -126,9 +126,21 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountBenefitDevices: "Beim Gerätewechsel einfach weiter nutzen",
       accountBenefitRestore: "Nach Neuinstallation wiederherstellen",
       accountVerified: "Verifiziert",
+      accountEmailConfirmed: "E-Mail bestätigt",
       accountManageAction: "Mein Konto",
       accountManageHint:
         "Hier kannst du dein Passwort verwalten oder dich bei Bedarf von deinem Konto abmelden.",
+      accountStatusTitle: "Kontostatus",
+      accountSecurityTitle: "Sicherheit",
+      accountEmailTitle: "E-Mail-Adresse",
+      accountPendingTitle: "Passwort noch ausstehend",
+      accountPendingDescription:
+        "Deine E-Mail ist bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.",
+      accountPasswordTitle: "Passwort",
+      accountPasswordSetDescription:
+        "Hier kannst du dein Passwort ändern.",
+      accountPasswordPendingDescription:
+        "Lege jetzt dein Passwort fest, damit dein Konto vollständig nutzbar und wiederherstellbar ist.",
       accountChangePasswordTitle: "Passwort geändert ",
       accountChangePasswordAction: "Passwort ändern",
       accountChangePasswordModalHint:
@@ -139,7 +151,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountCurrentPasswordError: "Bitte gib dein aktuelles Passwort ein.",
       accountCurrentPasswordWrong: "Das aktuelle Passwort ist nicht korrekt.",
       accountChangePasswordConfirm: "aktualisieren",
-      accountPasswordChangedSuccess: "",
+      accountPasswordChangedSuccess: "Dein Passwort wurde erfolgreich gespeichert.",
       accountChangePasswordError:
         "Das Passwort konnte gerade nicht geändert werden.",
       loggedInBadge: "Eingeloggt",
@@ -147,11 +159,11 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingStatusDescription:
         "Die Registrierung wurde vorbereitet. Öffne den Link aus der E-Mail auf diesem Gerät. In OctoVault bestätigst du dann die E-Mail und legst direkt dein Passwort fest.",
       pendingConfirmedTitle: "E-Mail bestätigt",
+      pendingPasswordMissingTitle: "Passwort fehlt",
       pendingConfirmedDescription:
-        "Deine E-Mail ist bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.",
+        "Lege jetzt noch dein Passwort fest, damit dein Konto wiederherstellbar ist.",
       pendingConfirmedEmailLabel: "Bestätigte E-Mail",
-      pendingConfirmedHint:
-        "Solange noch kein Passwort hinterlegt ist, kannst du dein Konto auf neuen Geräten noch nicht vollständig verwenden.",
+      pendingConfirmedAccountAction: "Zum Konto",
       pendingExpiredDescription:
         "Die gestartete Registrierung ist abgelaufen. Du kannst jederzeit eine neue Registrierung starten.",
       pendingCancelledDescription:
@@ -308,9 +320,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       total: "Gesamt",
       due: "Ausstehend",
       paid: "Bezahlt",
-      passwordPendingTitle: "Passwort noch ausstehend",
+      passwordPendingTitle: "Setze dein Passwort",
       passwordPendingDescription:
-        "Deine E-Mail ist bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.",
+        "Lege jetzt noch dein Passwort fest.",
       passwordPendingAction: "In Einstellungen fortfahren",
     },
     allSubscriptions: {
@@ -638,9 +650,21 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountBenefitDevices: "Keep using the app after switching devices",
       accountBenefitRestore: "Restore your data after reinstalling",
       accountVerified: "Verified",
+      accountEmailConfirmed: "Email confirmed",
       accountManageAction: "My account",
       accountManageHint:
         "Here you can manage your password or sign out of your account when needed.",
+      accountStatusTitle: "Account status",
+      accountSecurityTitle: "Security",
+      accountEmailTitle: "Email address",
+      accountPendingTitle: "Password still pending",
+      accountPendingDescription:
+        "Your email is confirmed. Set your password now so your account is fully usable.",
+      accountPasswordTitle: "Password",
+      accountPasswordSetDescription:
+        "You can change your password here.",
+      accountPasswordPendingDescription:
+        "Set your password now so your account is fully usable and recoverable.",
       accountChangePasswordTitle: "Change password",
       accountChangePasswordAction: "Change password",
       accountChangePasswordModalHint:
@@ -659,11 +683,11 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingStatusDescription:
         "The registration has been prepared. Open the link from the email on this device. Inside OctoVault you will confirm the email and set your password right away.",
       pendingConfirmedTitle: "Email confirmed",
+      pendingPasswordMissingTitle: "Password missing",
       pendingConfirmedDescription:
-        "Your email is confirmed. Set your password now so your account is fully usable.",
+        "Set your password now so your account can be restored later.",
       pendingConfirmedEmailLabel: "Confirmed email",
-      pendingConfirmedHint:
-        "As long as no password has been set yet, your account is not fully usable on new devices.",
+      pendingConfirmedAccountAction: "Go to account",
       pendingExpiredDescription:
         "The started registration has expired. You can start a new registration at any time.",
       pendingCancelledDescription:
@@ -819,9 +843,9 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       total: "Total",
       due: "Due",
       paid: "Paid",
-      passwordPendingTitle: "Password still missing",
+      passwordPendingTitle: "Set your password",
       passwordPendingDescription:
-        "Your email is confirmed. Set your password now so your account is fully usable.",
+        "Set your password now.",
       passwordPendingAction: "Continue in Settings",
     },
     allSubscriptions: {

@@ -248,7 +248,6 @@ export const accentColorOptions = [
   "green",
   "indigo",
   "forest",
-  "sage",
   "blue",
   "cyan",
   "teal",
@@ -257,10 +256,7 @@ export const accentColorOptions = [
   "coral",
   "orange",
   "amber",
-  "gold",
-  "sand",
   "slate",
-  "graphite",
 ] as const satisfies readonly AccentColor[];
 
 export const createTheme = (mode: AppThemeMode, accentColor: AccentColor = "green") => ({

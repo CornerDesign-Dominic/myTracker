@@ -729,10 +729,11 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   if (request.method === "GET") {
-    logRegistrationEvent("registrationConfirm:get-open-app-rendered", {
+    logRegistrationEvent("registrationConfirm:get-rendered-no-confirm", {
       tokenHash: shortenHash(tokenHash),
       alreadyConfirmed: Boolean(usedAt),
       openAppUrl,
+      note: "GET renders buttons only and never writes confirmed.",
     });
 
       response.status(200).send(
@@ -740,7 +741,7 @@ const registrationConfirmHandler = async (request, response) => {
           usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
           usedAt
             ? "Die E-Mail wurde bereits in der App verarbeitet. Du kannst OctoVault jetzt erneut \u00f6ffnen."
-            : "Dieser Link \u00f6ffnet bevorzugt OctoVault. Wenn das auf diesem Ger\u00e4t nicht m\u00f6glich ist, kannst du die Best\u00e4tigung hier im Browser bewusst ausl\u00f6sen und danach in der App weitermachen.",
+            : "Dieser Link best\u00e4tigt noch nichts. \u00d6ffne OctoVault per Button oder best\u00e4tige bewusst hier im Browser und mache danach in der App weiter.",
           `<div class="actions">
             <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
               OctoVault \u00f6ffnen
@@ -754,12 +755,7 @@ const registrationConfirmHandler = async (request, response) => {
                      </button>
                    </form>`
             }
-          </div>
-          <script>
-            window.setTimeout(function () {
-              window.location.href = ${JSON.stringify(openAppUrl)};
-            }, 120);
-        </script>`,
+          </div>`,
       ),
     );
     return;
@@ -792,6 +788,7 @@ const registrationConfirmHandler = async (request, response) => {
   logRegistrationEvent("registrationConfirm:browser-confirm:start", {
     tokenHash: shortenHash(tokenHash),
     alreadyConfirmed: Boolean(usedAt),
+    trigger: "explicit-browser-post",
   });
 
   if (usedAt) {
@@ -919,6 +916,13 @@ const registrationConfirmHandler = async (request, response) => {
       return;
     }
 
+    logRegistrationEvent("registrationConfirm:browser-confirm:confirmed-write", {
+      tokenHash: shortenHash(tokenHash),
+      uid: tokenData.uid,
+      email,
+      trigger: "explicit-browser-post",
+    });
+
     await db.runTransaction(async (transaction) => {
       transaction.set(
         userRef,
@@ -988,6 +992,7 @@ const registrationConfirmAppHandler = async (request, response) => {
     hasAuthorization: Boolean(request.headers.authorization),
     userAgent: request.headers["user-agent"] ?? null,
     hasToken: typeof request.body?.token === "string" && request.body.token.trim().length > 0,
+    note: "App confirm must only be called after explicit in-app button tap.",
   });
   setCors(response);
   if (request.method === "OPTIONS") {
@@ -1119,6 +1124,13 @@ const registrationConfirmAppHandler = async (request, response) => {
       jsonError(response, 409, "registration-not-pending", "No pending registration found.");
       return;
     }
+
+    logRegistrationEvent("registrationConfirmApp:confirmed-write", {
+      tokenHash: shortenHash(tokenHash),
+      uid: decodedToken.uid,
+      email,
+      trigger: "explicit-app-post",
+    });
 
     await db.runTransaction(async (transaction) => {
       transaction.set(

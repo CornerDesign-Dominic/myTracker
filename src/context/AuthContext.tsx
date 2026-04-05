@@ -58,7 +58,7 @@ type AuthContextValue = {
   startPendingRegistration: (email: string) => Promise<void>;
   resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
   cancelPendingRegistration: () => Promise<void>;
-  confirmPendingRegistrationLink: (token: string) => Promise<{ email: string; status: "confirmed" }>;
+  confirmPendingRegistrationLink: (token: string, source?: string) => Promise<{ email: string; status: "confirmed" }>;
   completePendingRegistration: (password: string) => Promise<void>;
   signInAnonymous: () => Promise<void>;
   upgradeAnonymousAccount: (email: string, password: string) => Promise<void>;
@@ -613,7 +613,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const confirmPendingRegistrationLink = async (token: string) => {
+  const confirmPendingRegistrationLink = async (token: string, source = "unknown") => {
     const userId = currentUser?.uid;
 
     if (!userId || !currentUser?.isAnonymous) {
@@ -633,6 +633,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       localStatus: pendingRegistration?.status ?? null,
       pendingEmail: pendingRegistration?.pendingEmail ?? null,
       tokenLength: trimmedToken.length,
+      source,
+      trigger: "explicit-user-action-required",
     });
 
     try {

@@ -20,6 +20,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "ConfirmEmailLink">;
 
 type LinkState =
   | "checking"
+  | "idle"
   | "ready"
   | "invalid"
   | "expired"
@@ -40,6 +41,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
     authIsReady,
     currentUser,
     isAnonymous,
+    pendingRegistration,
     confirmPendingRegistrationLink,
     completePendingRegistration,
   } = useAuth();
@@ -51,6 +53,17 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
   const [linkState, setLinkState] = useState<LinkState>("checking");
   const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
   const token = typeof route.params?.token === "string" ? route.params.token.trim() : "";
+
+  useEffect(() => {
+    console.log("[AuthDebug] ConfirmEmailLinkScreen:mounted", {
+      tokenLength: token.length,
+      authIsReady,
+      uid: currentUser?.uid ?? null,
+      isAnonymous,
+      localPendingStatus: pendingRegistration?.status ?? null,
+      note: "No server confirmation is triggered on mount.",
+    });
+  }, [authIsReady, currentUser?.uid, isAnonymous, pendingRegistration?.status, token.length]);
 
   useEffect(() => {
     if (!authIsReady) {
@@ -67,68 +80,95 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    let isActive = true;
+    if (pendingRegistration?.status === "confirmed") {
+      setConfirmedEmail(pendingRegistration.pendingEmail);
+      setLinkState("ready");
+      return;
+    }
 
-    const confirmLink = async () => {
-      try {
-        setIsConfirmingLink(true);
-        setError(null);
-        const result = await confirmPendingRegistrationLink(token);
+    if (pendingRegistration?.status === "cancelled") {
+      setLinkState("cancelled");
+      return;
+    }
 
-        if (!isActive) {
-          return;
-        }
+    if (pendingRegistration?.status === "expired") {
+      setLinkState("expired");
+      return;
+    }
 
-        setConfirmedEmail(result.email);
-        setLinkState("ready");
-      } catch (confirmationError) {
-        if (!isActive) {
-          return;
-        }
-
-        const errorCode =
-          typeof confirmationError === "object" &&
-          confirmationError !== null &&
-          "code" in confirmationError &&
-          typeof (confirmationError as { code?: unknown }).code === "string"
-            ? (confirmationError as { code: string }).code
-            : null;
-
-        if (
-          errorCode === "registration-session-mismatch" ||
-          errorCode === "registration-token-mismatch" ||
-          errorCode === "registration-not-pending"
-        ) {
-          setLinkState("session-mismatch");
-        } else if (
-          errorCode === "pending-registration-expired" ||
-          errorCode === "invalid-registration-token"
-        ) {
-          setLinkState("expired");
-        } else if (errorCode === "registration-cancelled") {
-          setLinkState("cancelled");
-        } else {
-          setLinkState("error");
-          setError(t("auth.confirmLinkGenericError"));
-        }
-      } finally {
-        if (isActive) {
-          setIsConfirmingLink(false);
-        }
-      }
-    };
-
-    confirmLink();
-
-    return () => {
-      isActive = false;
-    };
-  }, [authIsReady, confirmPendingRegistrationLink, isAnonymous, t, token]);
+    setLinkState("idle");
+  }, [authIsReady, isAnonymous, pendingRegistration, token]);
 
   const canSubmit = useMemo(
     () => linkState === "ready" && !isSubmittingPassword && !isConfirmingLink,
     [isConfirmingLink, isSubmittingPassword, linkState],
   );
+
+  const canConfirmEmail = useMemo(
+    () => linkState === "idle" && !isConfirmingLink && !isSubmittingPassword,
+    [isConfirmingLink, isSubmittingPassword, linkState],
+  );
+
+  const handleConfirmEmail = async () => {
+    console.log("[AuthDebug] ConfirmEmailLinkScreen:confirm-button-tap", {
+      tokenLength: token.length,
+      linkState,
+      uid: currentUser?.uid ?? null,
+      isAnonymous,
+      localPendingStatus: pendingRegistration?.status ?? null,
+      trigger: "explicit-user-tap",
+    });
+
+    try {
+      setIsConfirmingLink(true);
+      setError(null);
+      const result = await confirmPendingRegistrationLink(
+        token,
+        "ConfirmEmailLinkScreen.confirm-button",
+      );
+      setConfirmedEmail(result.email);
+      setLinkState("ready");
+      console.log("[AuthDebug] ConfirmEmailLinkScreen:confirm-button-success", {
+        uid: currentUser?.uid ?? null,
+        email: result.email,
+        status: result.status,
+      });
+    } catch (confirmationError) {
+      const errorCode =
+        typeof confirmationError === "object" &&
+        confirmationError !== null &&
+        "code" in confirmationError &&
+        typeof (confirmationError as { code?: unknown }).code === "string"
+          ? (confirmationError as { code: string }).code
+          : null;
+
+      console.log("[AuthDebug] ConfirmEmailLinkScreen:confirm-button-error", {
+        code: errorCode,
+        message:
+          confirmationError instanceof Error ? confirmationError.message : String(confirmationError),
+      });
+
+      if (
+        errorCode === "registration-session-mismatch" ||
+        errorCode === "registration-token-mismatch" ||
+        errorCode === "registration-not-pending"
+      ) {
+        setLinkState("session-mismatch");
+      } else if (
+        errorCode === "pending-registration-expired" ||
+        errorCode === "invalid-registration-token"
+      ) {
+        setLinkState("expired");
+      } else if (errorCode === "registration-cancelled") {
+        setLinkState("cancelled");
+      } else {
+        setLinkState("error");
+        setError(t("auth.confirmLinkGenericError"));
+      }
+    } finally {
+      setIsConfirmingLink(false);
+    }
+  };
 
   const handleSubmit = async () => {
     console.log("[AuthDebug] ConfirmEmailLinkScreen:submit", {
@@ -188,7 +228,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
   };
 
   const renderBody = () => {
-    if (!authIsReady || isConfirmingLink || linkState === "checking") {
+    if (!authIsReady || linkState === "checking") {
       return (
         <View style={styles.centeredState}>
           <ActivityIndicator size="small" color={colors.accent} />
@@ -267,6 +307,46 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
           <Text style={[typography.secondary, styles.bodyText]}>
             {error ?? t("auth.confirmLinkGenericError")}
           </Text>
+        </View>
+      );
+    }
+
+    if (linkState === "idle") {
+      return (
+        <View style={styles.stack}>
+          <View style={styles.stack}>
+            <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkTitle")}</Text>
+            <Text style={[typography.secondary, styles.bodyText]}>
+              {t("auth.confirmLinkDescription")}
+            </Text>
+          </View>
+          {pendingRegistration?.pendingEmail ? (
+            <View style={styles.emailCard}>
+              <Text style={[typography.meta, styles.emailLabel]}>{t("auth.email")}</Text>
+              <Text style={[typography.body, styles.emailValue]}>
+                {pendingRegistration.pendingEmail}
+              </Text>
+            </View>
+          ) : null}
+          <Text style={[typography.meta, styles.hintText]}>{t("auth.confirmLinkHint")}</Text>
+          {error ? <Text style={[typography.secondary, styles.errorText]}>{error}</Text> : null}
+          <Pressable
+            style={[
+              buttons.buttonBase,
+              buttons.primaryButton,
+              !canConfirmEmail ? styles.primaryButtonDisabled : null,
+            ]}
+            onPress={handleConfirmEmail}
+            disabled={!canConfirmEmail}
+          >
+            {isConfirmingLink ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Text style={[typography.button, styles.primaryButtonText]}>
+                {t("auth.confirmLinkConfirmAction")}
+              </Text>
+            )}
+          </Pressable>
         </View>
       );
     }

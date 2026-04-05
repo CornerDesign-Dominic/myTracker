@@ -261,11 +261,12 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "In OctoVault bestätigst du die E-Mail und vergibst direkt dein Passwort.",
       confirmLinkTitle: "E-Mail in OctoVault bestätigen",
       confirmLinkDescription:
-        "Deine E-Mail wurde in OctoVault bestätigt. Lege jetzt dein Passwort fest, um dein Konto fertig zu verknüpfen.",
+        "Bestätige deine E-Mail jetzt bewusst in OctoVault. Erst danach legst du dein Passwort fest und schließt die Registrierung ab.",
       confirmLinkHint:
         "Diese Registrierung gehört zu deiner aktuellen anonymen App-Sitzung. Wenn du die Registrierung auf einem anderen Gerät gestartet hast, öffne den Link bitte dort.",
+      confirmLinkConfirmAction: "E-Mail jetzt bestätigen",
       confirmLinkSubmit: "Passwort festlegen",
-      confirmLinkOpeningApp: "E-Mail wird in OctoVault geprüft...",
+      confirmLinkOpeningApp: "Bestätigungslink wird in OctoVault vorbereitet...",
       confirmLinkInvalidTitle: "Link ungültig",
       confirmLinkInvalidDescription:
         "Dieser Bestätigungslink ist unvollständig oder nicht mehr gültig.",
@@ -764,11 +765,12 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Inside OctoVault you will confirm the email and set your password directly.",
       confirmLinkTitle: "Confirm email in OctoVault",
       confirmLinkDescription:
-        "Your email has been confirmed in OctoVault. Set your password now to finish linking your account.",
+        "Confirm your email explicitly in OctoVault first. After that, set your password to finish linking your account.",
       confirmLinkHint:
         "This registration belongs to your current anonymous app session. If you started the registration on another device, open the link there.",
+      confirmLinkConfirmAction: "Confirm email now",
       confirmLinkSubmit: "Set password",
-      confirmLinkOpeningApp: "Checking your email in OctoVault...",
+      confirmLinkOpeningApp: "Preparing your confirmation link in OctoVault...",
       confirmLinkInvalidTitle: "Invalid link",
       confirmLinkInvalidDescription:
         "This confirmation link is incomplete or no longer valid.",

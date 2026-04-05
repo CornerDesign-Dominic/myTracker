@@ -171,12 +171,12 @@ const accentPalettes: Record<AccentColor, Record<AppThemeMode, AccentPalette>> =
   },
   amber: {
     light: {
-      accent: "#C48A2C",
-      accentSoft: "#FCF5E8",
+      accent: "#EAB308",
+      accentSoft: "#FEF3C7",
     },
     dark: {
-      accent: "#E5B85B",
-      accentSoft: "rgba(229,184,91,0.18)",
+      accent: "#E6B800",
+      accentSoft: "rgba(230,184,0,0.18)",
     },
   },
   coral: {

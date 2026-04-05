@@ -854,6 +854,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                 style={[
                   buttons.buttonBase,
                   buttons.primaryButton,
+                  styles.purchasePrimaryButton,
                   styles.purchaseButton,
                   !lifetimePremiumPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
                 ]}
@@ -1370,11 +1371,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     purchaseButton: {
       minHeight: 48,
     },
+    purchasePrimaryButton: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
     purchaseButtonDisabled: {
-      opacity: 0.55,
+      opacity: 0.9,
     },
     purchasePrimaryText: {
-      color: colors.accent,
+      color: "#FFFFFF",
     },
     purchaseErrorText: {
       color: colors.danger,

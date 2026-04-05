@@ -291,33 +291,28 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
             onPress={() => setIsLimitModalVisible(false)}
           />
           <View style={[surfaces.panel, styles.limitModal]}>
-            <Text style={[typography.cardTitle, styles.limitModalTitle]}>
-              {t("subscription.limitReachedTitle")}
-            </Text>
+            <View style={styles.planInfoHeader}>
+              <Text style={[typography.cardTitle, styles.limitModalTitle]}>
+                {t("subscription.limitReachedTitle")}
+              </Text>
+              <Pressable onPress={() => setIsLimitModalVisible(false)} hitSlop={10}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
             <Text style={[typography.secondary, styles.limitModalDescription]}>
               {t("subscription.limitReachedMessage")}
             </Text>
-            <View style={styles.limitModalActions}>
-              <Pressable
-                style={[buttons.buttonBase, buttons.secondaryButton, styles.limitModalButton]}
-                onPress={() => setIsLimitModalVisible(false)}
-              >
-                <Text style={[typography.button, styles.limitModalSecondaryText]}>
-                  {t("common.cancel")}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[buttons.buttonBase, buttons.primaryButton, styles.limitModalButton]}
-                onPress={() => {
-                  setIsLimitModalVisible(false);
-                  navigation.navigate("Settings");
-                }}
-              >
-                <Text style={[typography.button, styles.limitModalPrimaryText]}>
-                  {t("subscription.limitReachedUpgrade")}
-                </Text>
-              </Pressable>
-            </View>
+            <Pressable
+              style={[buttons.buttonBase, buttons.primaryButton, styles.limitModalSingleAction]}
+              onPress={() => {
+                setIsLimitModalVisible(false);
+                navigation.navigate("Settings");
+              }}
+            >
+              <Text style={[typography.button, styles.limitModalPrimaryText]}>
+                {t("subscription.limitReachedUpgrade")}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -476,6 +471,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     limitModalButton: {
       flex: 1,
+    },
+    limitModalSingleAction: {
+      width: "100%",
     },
     limitModalPrimaryText: {
       color: colors.accentText,

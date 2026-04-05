@@ -33,6 +33,13 @@ export const resolveDeepLink = (url: string): ResolvedDeepLink | null => {
   }
 
   if (path === deepLinkPaths.confirmEmail) {
+    console.log("[AuthDebug] linking:confirm-email-resolved", {
+      url,
+      path,
+      hasToken: typeof parsed.queryParams?.token === "string",
+      mode: typeof parsed.queryParams?.mode === "string" ? parsed.queryParams.mode : null,
+      oobCode: typeof parsed.queryParams?.oobCode === "string",
+    });
     return {
       kind: "confirm-email",
       url,

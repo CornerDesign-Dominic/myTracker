@@ -15,6 +15,7 @@ const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
+const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only";
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
 const DEFAULT_APP_CONFIRM_DEEP_LINK_URL = "octovault://confirm-email";
@@ -260,6 +261,7 @@ const registrationStartHandler = async (request, response) => {
     method: request.method,
     hasAuthorization: Boolean(request.headers.authorization),
     userAgent: request.headers["user-agent"] ?? null,
+    flowVersion: REGISTRATION_FLOW_VERSION,
   });
   setCors(response);
   if (request.method === "OPTIONS") {
@@ -399,7 +401,7 @@ const registrationStartHandler = async (request, response) => {
       throw error;
     }
 
-    response.status(200).json({ ok: true });
+    response.status(200).json({ ok: true, flowVersion: REGISTRATION_FLOW_VERSION });
   } catch (error) {
     logger.error("registrationStart", {
       code: error.code || "registration-start-failed",
@@ -428,6 +430,7 @@ const registrationResendHandler = async (request, response) => {
     method: request.method,
     hasAuthorization: Boolean(request.headers.authorization),
     userAgent: request.headers["user-agent"] ?? null,
+    flowVersion: REGISTRATION_FLOW_VERSION,
   });
   setCors(response);
   if (request.method === "OPTIONS") {
@@ -589,7 +592,7 @@ const registrationResendHandler = async (request, response) => {
       throw error;
     }
 
-    response.status(200).json({ ok: true });
+    response.status(200).json({ ok: true, flowVersion: REGISTRATION_FLOW_VERSION });
   } catch (error) {
     logger.error("registrationResend", {
       code: error.code || "registration-resend-failed",
@@ -729,11 +732,12 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   if (request.method === "GET") {
-    logRegistrationEvent("registrationConfirm:get-rendered-no-confirm", {
+  logRegistrationEvent("registrationConfirm:get-rendered-no-confirm", {
       tokenHash: shortenHash(tokenHash),
       alreadyConfirmed: Boolean(usedAt),
       openAppUrl,
       note: "GET renders buttons only and never writes confirmed.",
+      flowVersion: REGISTRATION_FLOW_VERSION,
     });
 
       response.status(200).send(
@@ -767,10 +771,11 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   if (request.method === "POST") {
-    logRegistrationEvent("registrationConfirm:browser-confirm-blocked", {
+  logRegistrationEvent("registrationConfirm:browser-confirm-blocked", {
       tokenHash: shortenHash(tokenHash),
       alreadyConfirmed: Boolean(usedAt),
       note: "Browser confirmation is disabled. App confirmation is required.",
+      flowVersion: REGISTRATION_FLOW_VERSION,
     });
     response.status(405).send(
       renderHtml(
@@ -1013,6 +1018,7 @@ const registrationConfirmAppHandler = async (request, response) => {
     userAgent: request.headers["user-agent"] ?? null,
     hasToken: typeof request.body?.token === "string" && request.body.token.trim().length > 0,
     note: "App confirm must only be called after explicit in-app button tap.",
+    flowVersion: REGISTRATION_FLOW_VERSION,
   });
   setCors(response);
   if (request.method === "OPTIONS") {
@@ -1136,7 +1142,7 @@ const registrationConfirmAppHandler = async (request, response) => {
         uid: decodedToken.uid,
         email,
       });
-      response.status(200).json({ ok: true, email, status: "confirmed" });
+      response.status(200).json({ ok: true, email, status: "confirmed", flowVersion: REGISTRATION_FLOW_VERSION });
       return;
     }
 
@@ -1191,7 +1197,7 @@ const registrationConfirmAppHandler = async (request, response) => {
       nextStatus: "confirmed",
     });
 
-    response.status(200).json({ ok: true, email, status: "confirmed" });
+    response.status(200).json({ ok: true, email, status: "confirmed", flowVersion: REGISTRATION_FLOW_VERSION });
   } catch (error) {
     logger.error("registrationConfirmApp", {
       code: error.code || "registration-confirm-app-failed",
@@ -1222,6 +1228,7 @@ const registrationFinalizeHandler = async (request, response) => {
     method: request.method,
     hasAuthorization: Boolean(request.headers.authorization),
     userAgent: request.headers["user-agent"] ?? null,
+    flowVersion: REGISTRATION_FLOW_VERSION,
   });
   setCors(response);
   if (request.method === "OPTIONS") {
@@ -1305,6 +1312,7 @@ const registrationFinalizeHandler = async (request, response) => {
     response.status(200).json({
       ok: true,
       email,
+      flowVersion: REGISTRATION_FLOW_VERSION,
     });
   } catch (error) {
     logger.error("registrationFinalize", {

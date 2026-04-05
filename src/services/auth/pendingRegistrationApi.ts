@@ -112,6 +112,12 @@ export const startPendingRegistrationRequest = async (params: {
     });
     throw createApiError(code, errorDetails);
   }
+
+  const body = (await response.json()) as { flowVersion?: string } | null;
+  console.log("[AuthDebug] pendingRegistrationApi:start:success-response", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationStart`,
+    flowVersion: body?.flowVersion ?? null,
+  });
 };
 
 export const resendPendingRegistrationRequest = async (params: {
@@ -139,6 +145,12 @@ export const resendPendingRegistrationRequest = async (params: {
     });
     throw createApiError(code, errorDetails);
   }
+
+  const body = (await response.json()) as { flowVersion?: string } | null;
+  console.log("[AuthDebug] pendingRegistrationApi:resend:success-response", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationResend`,
+    flowVersion: body?.flowVersion ?? null,
+  });
 };
 
 export const cancelPendingRegistrationRequest = async (params: {
@@ -199,7 +211,18 @@ export const confirmPendingRegistrationRequest = async (params: {
     throw createApiError(code, errorDetails);
   }
 
-  return (await response.json()) as { email: string; status: "confirmed" };
+  const body = (await response.json()) as {
+    email: string;
+    status: "confirmed";
+    flowVersion?: string;
+  };
+  console.log("[AuthDebug] pendingRegistrationApi:confirm:success-response", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationConfirmApp`,
+    flowVersion: body.flowVersion ?? null,
+    status: body.status,
+    email: body.email,
+  });
+  return body;
 };
 
 export const finalizePendingRegistrationRequest = async (params: {
@@ -228,5 +251,11 @@ export const finalizePendingRegistrationRequest = async (params: {
     throw createApiError(code, errorDetails);
   }
 
-  return (await response.json()) as { email: string };
+  const body = (await response.json()) as { email: string; flowVersion?: string };
+  console.log("[AuthDebug] pendingRegistrationApi:finalize:success-response", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationFinalize`,
+    flowVersion: body.flowVersion ?? null,
+    email: body.email,
+  });
+  return body;
 };

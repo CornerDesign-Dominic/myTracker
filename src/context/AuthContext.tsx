@@ -104,6 +104,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState<PendingRegistrationDocument | null>(null);
   const previousPendingRegistrationStatusRef = useRef<PendingRegistrationDocument["status"] | null>(null);
+  const previousPendingRegistrationSignatureRef = useRef<string | null>(null);
+  const lastExplicitConfirmIntentRef = useRef<{
+    at: number;
+    source: string;
+    uid: string;
+    pendingEmail: string | null;
+    tokenLength: number;
+  } | null>(null);
 
   useEffect(() => {
     crashlyticsService.setUserId(currentUser?.uid ?? null);
@@ -166,6 +174,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         hasUserId: Boolean(currentUser?.uid),
         hasFirebaseConfig: hasRequiredFirebaseConfig,
       });
+      previousPendingRegistrationStatusRef.current = null;
+      previousPendingRegistrationSignatureRef.current = null;
       setPendingRegistration(null);
       return;
     }
@@ -174,26 +184,70 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       const nextPendingRegistration =
         currentUser.isAnonymous ? document?.pendingRegistration ?? null : null;
       const previousStatus = previousPendingRegistrationStatusRef.current;
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:update`, {
-        uid: currentUser.uid,
-        isAnonymous: currentUser.isAnonymous,
-        previousStatus,
+      const nextSignature = JSON.stringify({
         status: nextPendingRegistration?.status ?? null,
         pendingEmail: nextPendingRegistration?.pendingEmail ?? null,
         expiresAt: nextPendingRegistration?.expiresAt ?? null,
         confirmedAt: nextPendingRegistration?.confirmedAt ?? null,
+        cancelledAt: nextPendingRegistration?.cancelledAt ?? null,
       });
+      const previousSignature = previousPendingRegistrationSignatureRef.current;
+
+      if (previousSignature !== nextSignature) {
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:update`, {
+          uid: currentUser.uid,
+          isAnonymous: currentUser.isAnonymous,
+          previousStatus,
+          status: nextPendingRegistration?.status ?? null,
+          pendingEmail: nextPendingRegistration?.pendingEmail ?? null,
+          expiresAt: nextPendingRegistration?.expiresAt ?? null,
+          confirmedAt: nextPendingRegistration?.confirmedAt ?? null,
+        });
+      }
 
       if (previousStatus !== nextPendingRegistration?.status && nextPendingRegistration?.status === "confirmed") {
+        const lastExplicitConfirmIntent = lastExplicitConfirmIntentRef.current;
+        const msSinceExplicitConfirm =
+          lastExplicitConfirmIntent ? Date.now() - lastExplicitConfirmIntent.at : null;
+        const hasRecentExplicitConfirm =
+          typeof msSinceExplicitConfirm === "number" &&
+          msSinceExplicitConfirm >= 0 &&
+          msSinceExplicitConfirm < 2 * 60 * 1000;
+
         console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:transition:confirmed`, {
           uid: currentUser.uid,
           pendingEmail: nextPendingRegistration.pendingEmail,
           confirmedAt: nextPendingRegistration.confirmedAt ?? null,
           expiresAt: nextPendingRegistration.expiresAt,
+          hasRecentExplicitConfirm,
+          msSinceExplicitConfirm,
+          explicitConfirmSource: lastExplicitConfirmIntent?.source ?? null,
+          explicitConfirmUid: lastExplicitConfirmIntent?.uid ?? null,
+          explicitConfirmPendingEmail: lastExplicitConfirmIntent?.pendingEmail ?? null,
         });
+
+        if (!hasRecentExplicitConfirm) {
+          console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:unexpected-confirmed-from-server`, {
+            uid: currentUser.uid,
+            pendingEmail: nextPendingRegistration.pendingEmail,
+            confirmedAt: nextPendingRegistration.confirmedAt ?? null,
+            expiresAt: nextPendingRegistration.expiresAt,
+            previousStatus,
+            explicitConfirmIntent: lastExplicitConfirmIntent,
+            note: "Confirmed arrived without a recent explicit in-app confirm tap.",
+          });
+        } else {
+          console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirmed-after-explicit-tap`, {
+            uid: currentUser.uid,
+            pendingEmail: nextPendingRegistration.pendingEmail,
+            confirmedAt: nextPendingRegistration.confirmedAt ?? null,
+            explicitConfirmSource: lastExplicitConfirmIntent?.source ?? null,
+          });
+        }
       }
 
       previousPendingRegistrationStatusRef.current = nextPendingRegistration?.status ?? null;
+      previousPendingRegistrationSignatureRef.current = nextSignature;
       setPendingRegistration(nextPendingRegistration);
     });
 
@@ -355,6 +409,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const auth = ensureAuth();
     const trimmedEmail = email.trim().toLowerCase();
     const previousPendingRegistration = pendingRegistration;
+    lastExplicitConfirmIntentRef.current = null;
     console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:start`, {
       uid: userId,
       email: trimmedEmail,
@@ -631,6 +686,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       source,
       trigger: "explicit-user-action-required",
     });
+    lastExplicitConfirmIntentRef.current = {
+      at: Date.now(),
+      source,
+      uid: userId,
+      pendingEmail: pendingRegistration?.pendingEmail ?? null,
+      tokenLength: trimmedToken.length,
+    };
 
     try {
       const idToken = await currentUser.getIdToken();

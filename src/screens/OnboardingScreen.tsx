@@ -26,8 +26,10 @@ type Slide = {
   key: string;
   title: string;
   description?: string;
+  subtext?: string;
   icon: keyof typeof Ionicons.glyphMap;
   renderStatusOverview?: boolean;
+  renderDataOverview?: boolean;
 };
 
 export const OnboardingScreen = ({ onComplete }: Props) => {
@@ -49,25 +51,20 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
       {
         key: "how-it-works",
         title: t("onboarding.howItWorksTitle"),
-        icon: "repeat-outline",
+        icon: "list-circle-outline",
         renderStatusOverview: true,
       },
       {
         key: "data",
         title: t("onboarding.dataTitle"),
-        description: t("onboarding.dataDescription"),
         icon: "shield-checkmark-outline",
-      },
-      {
-        key: "support",
-        title: t("onboarding.supportTitle"),
-        description: t("onboarding.supportDescription"),
-        icon: "color-palette-outline",
+        renderDataOverview: true,
       },
       {
         key: "start",
         title: t("onboarding.startTitle"),
         description: t("onboarding.startDescription"),
+        subtext: t("onboarding.startSubtext"),
         icon: "rocket-outline",
       },
     ],
@@ -162,8 +159,36 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
                       plain
                     />
                   </View>
+                ) : item.renderDataOverview ? (
+                  <View style={styles.statusList}>
+                    <StatusCard
+                      icon="person-outline"
+                      title={t("onboarding.dataStartTitle")}
+                      description={t("onboarding.dataStartDescription")}
+                      plain
+                      showDivider
+                    />
+                    <StatusCard
+                      icon="cloud-outline"
+                      title={t("onboarding.dataSafeTitle")}
+                      description={t("onboarding.dataSafeDescription")}
+                      plain
+                      showDivider
+                    />
+                    <StatusCard
+                      icon="mail-outline"
+                      title={t("onboarding.dataEmailTitle")}
+                      description={t("onboarding.dataEmailDescription")}
+                      plain
+                    />
+                  </View>
                 ) : (
-                  <Text style={[typography.body, styles.description]}>{item.description}</Text>
+                  <>
+                    <Text style={[typography.body, styles.description]}>{item.description}</Text>
+                    {item.subtext ? (
+                      <Text style={[typography.secondary, styles.subtext]}>{item.subtext}</Text>
+                    ) : null}
+                  </>
                 )}
               </View>
             </View>
@@ -326,6 +351,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "center",
       lineHeight: 24,
       maxWidth: 320,
+    },
+    subtext: {
+      color: colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 20,
+      maxWidth: 320,
+      opacity: 0.9,
+      marginTop: -2,
     },
     statusPanel: {
       width: "100%",

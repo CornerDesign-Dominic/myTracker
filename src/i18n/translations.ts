@@ -77,13 +77,18 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       howItWorksStayOnTopTitle: "Nichts geht verloren",
       howItWorksStayOnTopDescription: "Vergiss keine Abos mehr.",
       dataTitle: "Deine Daten gehören dir",
-      dataDescription:
-        "Du kannst die App anonym nutzen.\nDeine Daten werden sicher gespeichert.\nMit E-Mail kannst du sie jederzeit wiederherstellen.",
+      dataStartTitle: "Anonym starten",
+      dataStartDescription: "Du kannst die App ohne Account nutzen.",
+      dataSafeTitle: "Sicher gespeichert",
+      dataSafeDescription: "Deine Daten bleiben geschützt.",
+      dataEmailTitle: "E-Mail Verknüpfung",
+      dataEmailDescription: "Optional für Backup und Wiederherstellung.",
       supportTitle: "Unterstütze die App",
       supportDescription:
         "Die App ist unabhängig entwickelt, werbefrei und komplett kostenlos.\n\nWenn sie dir gefällt, kannst du sie mit kleinen Extras unterstützen – zum Beispiel durch neue Akzentfarben.",
       startTitle: "Starte jetzt",
-      startDescription: "Lege dein erstes Abo an und behalte den Überblick.",
+      startDescription: "Lege dein erstes Abo an und behalte alles im Blick.",
+      startSubtext: "Ohne Abo. Premium einmalig freischalten.",
       startCta: "Starten",
     },
     settings: {
@@ -619,13 +624,18 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       howItWorksStayOnTopTitle: "Nothing gets lost",
       howItWorksStayOnTopDescription: "Never forget a subscription again.",
       dataTitle: "Your data belongs to you",
-      dataDescription:
-        "You do not need an account. Everything works directly on your device.\n\nYou can optionally sign in to back up your data.",
+      dataStartTitle: "Start anonymously",
+      dataStartDescription: "You can use the app without an account.",
+      dataSafeTitle: "Stored securely",
+      dataSafeDescription: "Your data stays protected.",
+      dataEmailTitle: "Optional with email",
+      dataEmailDescription: "For backup and recovery.",
       supportTitle: "Support the app",
       supportDescription:
         "The app is independently developed, ad-free and completely free.\n\nIf you like it, you can support it with small extras – for example with new accent colors.",
       startTitle: "Start now",
-      startDescription: "Create your first subscription and keep the overview.",
+      startDescription: "Add your first subscription and keep everything in view.",
+      startSubtext: "No subscription. Unlock Premium once.",
       startCta: "Start",
     },
     settings: {

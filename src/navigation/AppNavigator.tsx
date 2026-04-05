@@ -12,6 +12,7 @@ import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
 import { AccountScreen } from "@/screens/AccountScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
+import { ConfirmEmailLinkScreen } from "@/screens/ConfirmEmailLinkScreen";
 import { DeepLinkPlaceholderScreen } from "@/screens/DeepLinkPlaceholderScreen";
 import { BillingFrequencyScreen } from "@/screens/BillingFrequencyScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
@@ -190,7 +191,7 @@ export const AppNavigator = ({
         />
         <Stack.Screen
           name="ConfirmEmailLink"
-          component={DeepLinkPlaceholderScreen}
+          component={ConfirmEmailLinkScreen}
           options={{ title: "Confirm email" }}
         />
         <Stack.Screen

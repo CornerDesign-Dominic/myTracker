@@ -18,6 +18,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -26,6 +27,7 @@ import { analyticsEventNames } from "@/services/analytics/events";
 import { analyticsService } from "@/services/analytics/service";
 import {
   cancelPendingRegistrationRequest,
+  confirmPendingRegistrationRequest,
   finalizePendingRegistrationRequest,
   resendPendingRegistrationRequest,
   startPendingRegistrationRequest,
@@ -57,6 +59,7 @@ type AuthContextValue = {
   resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
   cancelPendingRegistration: () => Promise<void>;
   completePendingRegistration: (password: string) => Promise<void>;
+  confirmPendingRegistrationWithPassword: (token: string, password: string) => Promise<void>;
   signInAnonymous: () => Promise<void>;
   upgradeAnonymousAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -100,6 +103,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState<PendingRegistrationDocument | null>(null);
+  const previousPendingRegistrationStatusRef = useRef<PendingRegistrationDocument["status"] | null>(null);
 
   useEffect(() => {
     crashlyticsService.setUserId(currentUser?.uid ?? null);
@@ -169,13 +173,27 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const unsubscribe = subscribeToUserDocument(currentUser.uid, (document) => {
       const nextPendingRegistration =
         currentUser.isAnonymous ? document?.pendingRegistration ?? null : null;
+      const previousStatus = previousPendingRegistrationStatusRef.current;
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:update`, {
         uid: currentUser.uid,
         isAnonymous: currentUser.isAnonymous,
+        previousStatus,
         status: nextPendingRegistration?.status ?? null,
         pendingEmail: nextPendingRegistration?.pendingEmail ?? null,
         expiresAt: nextPendingRegistration?.expiresAt ?? null,
+        confirmedAt: nextPendingRegistration?.confirmedAt ?? null,
       });
+
+      if (previousStatus !== nextPendingRegistration?.status && nextPendingRegistration?.status === "confirmed") {
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:transition:confirmed`, {
+          uid: currentUser.uid,
+          pendingEmail: nextPendingRegistration.pendingEmail,
+          confirmedAt: nextPendingRegistration.confirmedAt ?? null,
+          expiresAt: nextPendingRegistration.expiresAt,
+        });
+      }
+
+      previousPendingRegistrationStatusRef.current = nextPendingRegistration?.status ?? null;
       setPendingRegistration(nextPendingRegistration);
     });
 
@@ -649,6 +667,94 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
+  const confirmPendingRegistrationWithPassword = async (token: string, password: string) => {
+    const userId = currentUser?.uid;
+
+    if (!userId || !currentUser?.isAnonymous) {
+      throw new Error("Pending registration confirmation requires an anonymous user.");
+    }
+
+    const trimmedToken = token.trim();
+
+    if (!trimmedToken) {
+      const error = new Error("Registration token is invalid.");
+      (error as Error & { code?: string }).code = "invalid-registration-token";
+      throw error;
+    }
+
+    if (password.length < 6) {
+      const error = new Error("Password must be at least 6 characters long.");
+      (error as Error & { code?: string }).code = "auth/weak-password";
+      throw error;
+    }
+
+    console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:start`, {
+      uid: userId,
+      localStatus: pendingRegistration?.status ?? null,
+      pendingEmail: pendingRegistration?.pendingEmail ?? null,
+      tokenLength: trimmedToken.length,
+      passwordLength: password.length,
+    });
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      const confirmResponse = await confirmPendingRegistrationRequest({
+        idToken,
+        token: trimmedToken,
+      });
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:confirmed`, {
+        uid: userId,
+        email: confirmResponse.email,
+      });
+
+      const finalizeResponse = await finalizePendingRegistrationRequest({ idToken });
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:finalize-success`, {
+        uid: userId,
+        email: finalizeResponse.email,
+      });
+
+      await upgradeAnonymousAccount(finalizeResponse.email, password);
+      await updateUserPendingRegistration(userId, null);
+      setPendingRegistration(null);
+      analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {
+        uid: userId,
+        emailDomain: finalizeResponse.email.split("@")[1] ?? null,
+      });
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:success`, {
+        uid: userId,
+        email: finalizeResponse.email,
+      });
+    } catch (error) {
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:error`, {
+        uid: userId,
+        pendingEmail: pendingRegistration?.pendingEmail ?? null,
+        code:
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          typeof (error as { code?: unknown }).code === "string"
+            ? (error as { code: string }).code
+            : null,
+        status:
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          typeof (error as { status?: unknown }).status === "number"
+            ? (error as { status: number }).status
+            : null,
+        body:
+          typeof error === "object" &&
+          error !== null &&
+          "body" in error &&
+          typeof (error as { body?: unknown }).body === "string"
+            ? (error as { body: string }).body
+            : null,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
   const logout = async () => {
     const auth = ensureAuth();
     setIsLoggingOut(true);
@@ -685,6 +791,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       resendPendingRegistration,
       cancelPendingRegistration,
       completePendingRegistration,
+      confirmPendingRegistrationWithPassword,
       signInAnonymous,
       upgradeAnonymousAccount,
       logout,

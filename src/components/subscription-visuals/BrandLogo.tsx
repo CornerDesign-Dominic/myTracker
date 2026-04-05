@@ -1,8 +1,7 @@
-import { StyleSheet, Text, View } from "react-native";
-import { SvgXml } from "react-native-svg";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import type { BrandVisualKey } from "@/constants/subscriptionAssets";
-import { brandSvgAssets } from "@/components/subscription-visuals/brandSvgAssets";
+import { brandImageAssets } from "@/components/subscription-visuals/brandImageAssets";
 
 type BrandLogoProps = {
   brand: BrandVisualKey;
@@ -45,10 +44,10 @@ const getScale = (size: number, brand: BrandVisualKey) => {
 
 export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
   const scale = getScale(size, brand);
-  const svgAsset = brandSvgAssets[brand];
+  const imageAsset = brandImageAssets[brand];
 
-  if (svgAsset) {
-    return <SvgAssetLogo asset={svgAsset} scale={scale} />;
+  if (imageAsset) {
+    return <ImageAssetLogo asset={imageAsset} scale={scale} />;
   }
 
   switch (brand) {
@@ -181,11 +180,11 @@ export const BrandLogo = ({ brand, size }: BrandLogoProps) => {
   }
 };
 
-const SvgAssetLogo = ({
+const ImageAssetLogo = ({
   asset,
   scale,
 }: {
-  asset: NonNullable<(typeof brandSvgAssets)[BrandVisualKey]>;
+  asset: NonNullable<(typeof brandImageAssets)[BrandVisualKey]>;
   scale: ReturnType<typeof getScale>;
 }) => {
   const iconSize = scale.frame * (asset.scale ?? 0.8);
@@ -196,7 +195,14 @@ const SvgAssetLogo = ({
       backgroundColor={asset.backgroundColor ?? "transparent"}
       borderColor={asset.borderColor}
     >
-      <SvgXml xml={asset.xml} width={iconSize} height={iconSize} color={asset.color} />
+      <Image
+        source={asset.source}
+        resizeMode="contain"
+        style={{
+          width: iconSize,
+          height: iconSize,
+        }}
+      />
     </LogoFrame>
   );
 };

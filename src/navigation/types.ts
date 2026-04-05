@@ -8,7 +8,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ResetPasswordLink: { oobCode?: string | null; mode?: string | null } | undefined;
-  ConfirmEmailLink: { oobCode?: string | null; mode?: string | null } | undefined;
+  ConfirmEmailLink: { token?: string | null; oobCode?: string | null; mode?: string | null } | undefined;
   PurchaseSuccessLink: { productId?: string | null; orderId?: string | null } | undefined;
   PurchaseCancelledLink: { productId?: string | null } | undefined;
   OpenSubscriptionLink: { subscriptionId?: string | null } | undefined;

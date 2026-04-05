@@ -17,6 +17,7 @@ const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
+const DEFAULT_APP_CONFIRM_DEEP_LINK_URL = "octovault://confirm-email";
 
 const setCors = (response) => {
   response.set("Access-Control-Allow-Origin", "*");
@@ -37,6 +38,10 @@ const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value 
 const normalizeEmail = (value) => String(value ?? "").trim().toLowerCase();
 const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 const hashEmail = (email) => crypto.createHash("sha256").update(normalizeEmail(email)).digest("hex");
+const shortenHash = (value) => String(value ?? "").slice(0, 12);
+const logRegistrationEvent = (event, payload = {}) => {
+  logger.info(event, payload);
+};
 
 const buildPendingRegistrationState = (email, now, status = "pending") => ({
   status,
@@ -94,9 +99,14 @@ const verifyAnonymousCaller = async (request) => {
 const getRegistrationConfig = () => ({
   confirmationBaseUrl:
     process.env.REGISTRATION_CONFIRMATION_URL || DEFAULT_CONFIRMATION_URL,
+  appConfirmationDeepLinkUrl:
+    process.env.REGISTRATION_APP_CONFIRMATION_DEEP_LINK_URL || DEFAULT_APP_CONFIRM_DEEP_LINK_URL,
   resendApiKey: process.env.RESEND_API_KEY,
   registrationMailFrom: process.env.REGISTRATION_MAIL_FROM,
 });
+
+const buildDeepLinkUrl = (baseUrl, token) =>
+  `${baseUrl}${String(baseUrl).includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
 
 const ensureEmailUnused = async (email) => {
   try {
@@ -195,10 +205,11 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
           <p>Bitte best\u00e4tige deine E-Mail innerhalb von 72 Stunden.</p>
           <p style="margin:24px 0">
             <a href="${confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-              E-Mail best\u00e4tigen
+              OctoVault \u00f6ffnen
             </a>
           </p>
-          <p>Vorher wird keine Verbindung mit deiner Mail hergestellt.</p>
+          <p>Der Link \u00f6ffnet OctoVault. Erst in der App best\u00e4tigst du die E-Mail und vergibst dein Passwort.</p>
+          <p style="margin-top:16px;font-size:13px;color:#6b7280">Falls der Button nicht reagiert, \u00f6ffne dieselbe Mail auf dem Ger\u00e4t im Browser und tippe den Link dort erneut an.</p>
         </div>
       `,
     }),
@@ -245,6 +256,11 @@ const renderHtml = (title, message, content = "") => `<!doctype html>
 </html>`;
 
 const registrationStartHandler = async (request, response) => {
+  logRegistrationEvent("registrationStart:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+  });
   setCors(response);
   if (request.method === "OPTIONS") {
     response.status(204).send("");
@@ -291,6 +307,15 @@ const registrationStartHandler = async (request, response) => {
 
     const currentPendingRegistration = userSnapshot.data()?.pendingRegistration;
     const currentPendingEmail = normalizeEmail(currentPendingRegistration?.pendingEmail);
+
+    logRegistrationEvent("registrationStart:state-before-write", {
+      uid: decodedToken.uid,
+      email,
+      reservationStatus: existingReservationStatus,
+      currentPendingStatus: currentPendingRegistration?.status ?? null,
+      currentPendingEmail,
+      nextTokenHash: shortenHash(tokenHash),
+    });
 
     if (
       existingReservation &&
@@ -352,6 +377,13 @@ const registrationStartHandler = async (request, response) => {
       { merge: true },
     );
 
+    logRegistrationEvent("registrationStart:pending-written", {
+      uid: decodedToken.uid,
+      email,
+      nextStatus: pendingRegistration.status,
+      tokenHash: shortenHash(tokenHash),
+    });
+
     try {
       await sendConfirmationEmail({ email, confirmationUrl });
     } catch (error) {
@@ -392,6 +424,11 @@ const registrationStartHandler = async (request, response) => {
 };
 
 const registrationResendHandler = async (request, response) => {
+  logRegistrationEvent("registrationResend:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+  });
   setCors(response);
   if (request.method === "OPTIONS") {
     response.status(204).send("");
@@ -480,6 +517,15 @@ const registrationResendHandler = async (request, response) => {
       lastRequestedAt: now.toISOString(),
     };
 
+    logRegistrationEvent("registrationResend:state-before-write", {
+      uid: decodedToken.uid,
+      email,
+      pendingStatus: pendingRegistration.status,
+      reservationStatus,
+      nextTokenHash: shortenHash(tokenHash),
+      reservationCurrentTokenHash: shortenHash(reservation?.currentTokenHash),
+    });
+
     await ensureEmailUnused(email);
 
     if (!reservation || reservation.uid !== decodedToken.uid) {
@@ -529,6 +575,13 @@ const registrationResendHandler = async (request, response) => {
       { merge: true },
     );
 
+    logRegistrationEvent("registrationResend:pending-written", {
+      uid: decodedToken.uid,
+      email,
+      nextStatus: nextPendingRegistration.status,
+      tokenHash: shortenHash(tokenHash),
+    });
+
     try {
       await sendConfirmationEmail({ email, confirmationUrl });
     } catch (error) {
@@ -563,6 +616,11 @@ const registrationResendHandler = async (request, response) => {
 };
 
 const registrationCancelHandler = async (request, response) => {
+  logRegistrationEvent("registrationCancel:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+  });
   setCors(response);
   if (request.method === "OPTIONS") {
     response.status(204).send("");
@@ -602,6 +660,12 @@ const registrationCancelHandler = async (request, response) => {
       { merge: true },
     );
 
+    logRegistrationEvent("registrationCancel:pending-written", {
+      uid: decodedToken.uid,
+      email,
+      nextStatus: "cancelled",
+    });
+
     if (reservation && reservation.uid === decodedToken.uid) {
       await reservationRef.set(
         {
@@ -638,6 +702,13 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   const tokenHash = hashToken(token);
+  logRegistrationEvent("registrationConfirm:request", {
+    method: request.method,
+    tokenHash: shortenHash(tokenHash),
+    userAgent: request.headers["user-agent"] ?? null,
+    hasCookie: Boolean(request.headers.cookie),
+    queryKeys: Object.keys(request.query ?? {}),
+  });
   const tokenRef = db.collection(REGISTRATION_COLLECTION).doc(tokenHash);
   const tokenSnapshot = await tokenRef.get();
 
@@ -649,6 +720,8 @@ const registrationConfirmHandler = async (request, response) => {
   const tokenData = tokenSnapshot.data();
   const expiresAt = tokenData?.expiresAt?.toDate?.();
   const usedAt = tokenData?.usedAt?.toDate?.();
+  const { appConfirmationDeepLinkUrl } = getRegistrationConfig();
+  const openAppUrl = buildDeepLinkUrl(appConfirmationDeepLinkUrl, token);
 
   if (!(expiresAt instanceof Date) || expiresAt.getTime() <= Date.now()) {
     response.status(410).send(renderHtml("Link abgelaufen", "Dieser Best\u00e4tigungslink ist nicht mehr g\u00fcltig."));
@@ -656,127 +729,264 @@ const registrationConfirmHandler = async (request, response) => {
   }
 
   if (request.method === "GET") {
-    if (usedAt) {
-      response
-        .status(200)
-        .send(renderHtml("E-Mail bereits best\u00e4tigt", "Diese E-Mail wurde bereits best\u00e4tigt. Du kannst jetzt zur App zur\u00fcckkehren."));
-      return;
-    }
+    logRegistrationEvent("registrationConfirm:get-open-app-rendered", {
+      tokenHash: shortenHash(tokenHash),
+      alreadyConfirmed: Boolean(usedAt),
+      openAppUrl,
+    });
 
     response.status(200).send(
       renderHtml(
-        "E-Mail best\u00e4tigen",
-        "Best\u00e4tige deine E-Mail mit einem bewussten Klick. Erst danach wird der Vorgang in der App als best\u00e4tigt markiert.",
+        usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
+        usedAt
+          ? "Die E-Mail wurde bereits in der App verarbeitet. Du kannst OctoVault jetzt erneut \u00f6ffnen."
+          : "Dieser Link best\u00e4tigt noch nichts auf dem Server. Er \u00f6ffnet OctoVault, damit du die E-Mail dort best\u00e4tigst und direkt dein Passwort setzt.",
         `<div class="actions">
-          <form method="post" action="?token=${encodeURIComponent(token)}">
-            <button type="submit">E-Mail best\u00e4tigen</button>
-          </form>
-        </div>`,
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault \u00f6ffnen
+          </a>
+        </div>
+        <script>
+          window.setTimeout(function () {
+            window.location.href = ${JSON.stringify(openAppUrl)};
+          }, 120);
+        </script>`,
       ),
     );
     return;
   }
 
-  if (request.method !== "POST") {
-    response.status(405).send(renderHtml("Methode nicht erlaubt", "Dieser Link unterst\u00fctzt nur GET und POST."));
+  if (request.method === "HEAD") {
+    response.status(200).send("");
     return;
   }
 
-  if (usedAt) {
-    response
-      .status(200)
-      .send(renderHtml("E-Mail bereits best\u00e4tigt", "Diese E-Mail wurde bereits best\u00e4tigt. Du kannst jetzt zur App zur\u00fcckkehren."));
-    return;
-  }
-
-  const email = normalizeEmail(tokenData.email);
-  const emailHash = tokenData.emailHash || hashEmail(email);
-  const userRef = db.collection("users").doc(String(tokenData.uid));
-  const reservationRef = db.collection(REGISTRATION_EMAIL_RESERVATIONS_COLLECTION).doc(String(emailHash));
-  const [userSnapshot, reservationSnapshot] = await Promise.all([userRef.get(), reservationRef.get()]);
-  const pendingRegistration = userSnapshot.data()?.pendingRegistration;
-  const reservation = reservationSnapshot.data();
-
-  if (
-    !pendingRegistration ||
-    pendingRegistration.status !== "pending" ||
-    normalizeEmail(pendingRegistration.pendingEmail) !== email
-  ) {
-    response.status(409).send(renderHtml("Best\u00e4tigung nicht m\u00f6glich", "Dieser Vorgang ist nicht mehr offen."));
-    return;
-  }
-
-  if (
-    !reservation ||
-    reservation.uid !== tokenData.uid ||
-    normalizeEmail(reservation.email) !== email ||
-    reservation.status !== "pending" ||
-    reservation.currentTokenHash !== tokenHash
-  ) {
-    response.status(409).send(renderHtml("Best\u00e4tigung nicht m\u00f6glich", "Dieser Vorgang ist nicht mehr offen."));
-    return;
-  }
-
-  if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
-    await userRef.set(
-      {
-        pendingRegistration: {
-          ...pendingRegistration,
-          status: "expired",
-        },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-    await reservationRef.set(
-      {
-        status: "expired",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-    response.status(410).send(renderHtml("Best\u00e4tigung abgelaufen", "Die Registrierung ist abgelaufen. Bitte starte sie erneut in der App."));
-    return;
-  }
-
-  await db.runTransaction(async (transaction) => {
-    transaction.set(
-      userRef,
-      {
-        pendingRegistration: {
-          ...pendingRegistration,
-          status: "confirmed",
-          confirmedAt: new Date().toISOString(),
-        },
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-    transaction.set(
-      reservationRef,
-      {
-        status: "confirmed",
-        confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-    transaction.set(
-      tokenRef,
-      {
-        status: "confirmed",
-        usedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+  logRegistrationEvent("registrationConfirm:non-get-request-ignored", {
+    tokenHash: shortenHash(tokenHash),
+    method: request.method,
   });
+  response.status(405).send(
+    renderHtml(
+      "Nur in der App best\u00e4tigen",
+      "Dieser Link \u00f6ffnet nur OctoVault. Die eigentliche Best\u00e4tigung passiert erst nach deinem bewussten Schritt in der App.",
+      `<div class="actions">
+        <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+          OctoVault \u00f6ffnen
+        </a>
+      </div>`,
+    ),
+  );
+};
 
-  response
-    .status(200)
-    .send(renderHtml("E-Mail best\u00e4tigt", "E-Mail best\u00e4tigt. Du kannst jetzt zur App zur\u00fcckkehren."));
+const registrationConfirmAppHandler = async (request, response) => {
+  logRegistrationEvent("registrationConfirmApp:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+    hasToken: typeof request.body?.token === "string" && request.body.token.trim().length > 0,
+  });
+  setCors(response);
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    jsonError(response, 405, "method-not-allowed", "Only POST is allowed.");
+    return;
+  }
+
+  try {
+    const decodedToken = await verifyAnonymousCaller(request);
+    const token = String(request.body?.token ?? "").trim();
+
+    if (!token) {
+      jsonError(response, 400, "invalid-registration-token", "Registration token is invalid.");
+      return;
+    }
+
+    const tokenHash = hashToken(token);
+    const tokenRef = db.collection(REGISTRATION_COLLECTION).doc(tokenHash);
+    const tokenSnapshot = await tokenRef.get();
+
+    if (!tokenSnapshot.exists) {
+      jsonError(response, 410, "invalid-registration-token", "Registration token is invalid.");
+      return;
+    }
+
+    const tokenData = tokenSnapshot.data();
+    const expiresAt = tokenData?.expiresAt?.toDate?.();
+
+    if (!(expiresAt instanceof Date) || expiresAt.getTime() <= Date.now()) {
+      jsonError(response, 410, "pending-registration-expired", "Pending registration expired.");
+      return;
+    }
+
+    if (tokenData?.uid !== decodedToken.uid) {
+      logRegistrationEvent("registrationConfirmApp:session-mismatch", {
+        tokenHash: shortenHash(tokenHash),
+        requestUid: decodedToken.uid,
+        tokenUid: tokenData?.uid ?? null,
+      });
+      jsonError(
+        response,
+        409,
+        "registration-session-mismatch",
+        "This confirmation link belongs to a different anonymous session.",
+      );
+      return;
+    }
+
+    const email = normalizeEmail(tokenData.email);
+    const emailHash = tokenData.emailHash || hashEmail(email);
+    const userRef = db.collection("users").doc(decodedToken.uid);
+    const reservationRef = db.collection(REGISTRATION_EMAIL_RESERVATIONS_COLLECTION).doc(String(emailHash));
+    const [userSnapshot, reservationSnapshot] = await Promise.all([userRef.get(), reservationRef.get()]);
+    const pendingRegistration = userSnapshot.data()?.pendingRegistration;
+    const reservation = reservationSnapshot.data();
+
+    logRegistrationEvent("registrationConfirmApp:state-before-write", {
+      tokenHash: shortenHash(tokenHash),
+      uid: decodedToken.uid,
+      email,
+      tokenStatus: tokenData?.status ?? null,
+      pendingStatus: pendingRegistration?.status ?? null,
+      reservationStatus: reservation?.status ?? null,
+      reservationCurrentTokenHash: shortenHash(reservation?.currentTokenHash),
+    });
+
+    if (!pendingRegistration || normalizeEmail(pendingRegistration.pendingEmail) !== email) {
+      jsonError(response, 409, "registration-not-pending", "No pending registration found.");
+      return;
+    }
+
+    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
+      await userRef.set(
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            status: "expired",
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      await reservationRef.set(
+        {
+          status: "expired",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      jsonError(response, 410, "pending-registration-expired", "Pending registration expired.");
+      return;
+    }
+
+    if (
+      !reservation ||
+      reservation.uid !== decodedToken.uid ||
+      normalizeEmail(reservation.email) !== email ||
+      reservation.currentTokenHash !== tokenHash
+    ) {
+      jsonError(
+        response,
+        409,
+        "registration-token-mismatch",
+        "This confirmation link is no longer active for the current registration.",
+      );
+      return;
+    }
+
+    if (
+      pendingRegistration.status === "confirmed" &&
+      reservation.status === "confirmed" &&
+      tokenData?.status === "confirmed"
+    ) {
+      logRegistrationEvent("registrationConfirmApp:already-confirmed", {
+        tokenHash: shortenHash(tokenHash),
+        uid: decodedToken.uid,
+        email,
+      });
+      response.status(200).json({ ok: true, email, status: "confirmed" });
+      return;
+    }
+
+    if (pendingRegistration.status !== "pending" || reservation.status !== "pending" || tokenData?.status !== "pending") {
+      jsonError(response, 409, "registration-not-pending", "No pending registration found.");
+      return;
+    }
+
+    await db.runTransaction(async (transaction) => {
+      transaction.set(
+        userRef,
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            status: "confirmed",
+            confirmedAt: new Date().toISOString(),
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      transaction.set(
+        reservationRef,
+        {
+          status: "confirmed",
+          confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      transaction.set(
+        tokenRef,
+        {
+          status: "confirmed",
+          usedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+
+    logRegistrationEvent("registrationConfirmApp:confirmed", {
+      tokenHash: shortenHash(tokenHash),
+      uid: decodedToken.uid,
+      email,
+      nextStatus: "confirmed",
+    });
+
+    response.status(200).json({ ok: true, email, status: "confirmed" });
+  } catch (error) {
+    logger.error("registrationConfirmApp", {
+      code: error.code || "registration-confirm-app-failed",
+      message: error.message || "Registration confirmation failed.",
+      stack: error.stack || null,
+    });
+    const code = error.code || "registration-confirm-app-failed";
+    const status =
+      code === "missing-auth-token" || code === "invalid-registration-token"
+        ? code === "invalid-registration-token"
+          ? 410
+          : 400
+        : code === "registration-requires-anonymous-user"
+          ? 403
+          : code === "pending-registration-expired"
+            ? 410
+            : code === "registration-session-mismatch" ||
+                code === "registration-token-mismatch" ||
+                code === "registration-not-pending"
+              ? 409
+              : 500;
+    jsonError(response, status, code, error.message || "Registration confirmation failed.");
+  }
 };
 
 const registrationFinalizeHandler = async (request, response) => {
+  logRegistrationEvent("registrationFinalize:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+  });
   setCors(response);
   if (request.method === "OPTIONS") {
     response.status(204).send("");
@@ -838,6 +1048,14 @@ const registrationFinalizeHandler = async (request, response) => {
       return;
     }
 
+    logRegistrationEvent("registrationFinalize:confirmed-state-verified", {
+      uid: decodedToken.uid,
+      email,
+      pendingStatus: pendingRegistration.status,
+      reservationStatus: reservation.status,
+      reservationCurrentTokenHash: shortenHash(reservation.currentTokenHash),
+    });
+
     try {
       await auth.getUserByEmail(email);
       jsonError(response, 409, "auth/email-already-in-use", "Email already in use.");
@@ -879,4 +1097,5 @@ exports.registrationStart = onRequest({ region: REGION }, registrationStartHandl
 exports.registrationResend = onRequest({ region: REGION }, registrationResendHandler);
 exports.registrationCancel = onRequest({ region: REGION }, registrationCancelHandler);
 exports.registrationConfirm = onRequest({ region: REGION }, registrationConfirmHandler);
+exports.registrationConfirmApp = onRequest({ region: REGION }, registrationConfirmAppHandler);
 exports.registrationFinalize = onRequest({ region: REGION }, registrationFinalizeHandler);

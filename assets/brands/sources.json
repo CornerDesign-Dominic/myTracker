@@ -1,146 +1,281 @@
 [
-    {
-        "brandKey":  "netflix",
-        "brand":  "Netflix",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/netflix.svg",
-        "slug":  "netflix",
-        "color":  "#E50914",
-        "background":  "#120709"
-    },
-    {
-        "brandKey":  "spotify",
-        "brand":  "Spotify",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/spotify.svg",
-        "slug":  "spotify",
-        "color":  "#1ED760",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "youtube",
-        "brand":  "YouTube",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/youtube.svg",
-        "slug":  "youtube",
-        "color":  "#FF0000",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "dropbox",
-        "brand":  "Dropbox",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/dropbox.svg",
-        "slug":  "dropbox",
-        "color":  "#0061FF",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "notion",
-        "brand":  "Notion",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/notion.svg",
-        "slug":  "notion",
-        "color":  "#000000",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "dazn",
-        "brand":  "DAZN",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/dazn.svg",
-        "slug":  "dazn",
-        "color":  "#F8F8F5",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "paypal",
-        "brand":  "PayPal",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/paypal.svg",
-        "slug":  "paypal",
-        "color":  "#002991",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "revolut",
-        "brand":  "Revolut",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/revolut.svg",
-        "slug":  "revolut",
-        "color":  "#191C1F",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "n26",
-        "brand":  "N26",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/n26.svg",
-        "slug":  "n26",
-        "color":  "#48AC98",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "github",
-        "brand":  "GitHub",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/github.svg",
-        "slug":  "github",
-        "color":  "#181717",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "twitch",
-        "brand":  "Twitch",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/twitch.svg",
-        "slug":  "twitch",
-        "color":  "#9146FF",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "evernote",
-        "brand":  "Evernote",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/evernote.svg",
-        "slug":  "evernote",
-        "color":  "#00A82D",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "udemy",
-        "brand":  "Udemy",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/udemy.svg",
-        "slug":  "udemy",
-        "color":  "#A435F0",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "zoom",
-        "brand":  "Zoom",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/zoom.svg",
-        "slug":  "zoom",
-        "color":  "#0B5CFF",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "appleMusic",
-        "brand":  "Apple Music",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/applemusic.svg",
-        "slug":  "applemusic",
-        "color":  "#FA243C",
-        "background":  "#FFFFFF"
-    },
-    {
-        "brandKey":  "patreon",
-        "brand":  "Patreon",
-        "sourceType":  "Simple Icons",
-        "sourceUrl":  "https://github.com/simple-icons/simple-icons/blob/develop/icons/patreon.svg",
-        "slug":  "patreon",
-        "color":  "#000000",
-        "background":  "#FFFFFF"
-    }
+  {
+    "brandKey": "appleMusic",
+    "brand": "Apple Music",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/applemusic.svg",
+    "slug": "applemusic",
+    "color": "#FA243C",
+    "assetFile": "applemusic.png"
+  },
+  {
+    "brandKey": "appleTvPlus",
+    "brand": "Apple TV+",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/appletv.svg",
+    "slug": "appletv",
+    "color": "#000000",
+    "assetFile": "appletvplus.png"
+  },
+  {
+    "brandKey": "claude",
+    "brand": "Claude",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/claude.svg",
+    "slug": "claude",
+    "color": "#D97757",
+    "assetFile": "claude.png"
+  },
+  {
+    "brandKey": "dazn",
+    "brand": "DAZN",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/dazn.svg",
+    "slug": "dazn",
+    "color": "#F8F8F5",
+    "assetFile": "dazn.png"
+  },
+  {
+    "brandKey": "deezer",
+    "brand": "Deezer",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/deezer.svg",
+    "slug": "deezer",
+    "color": "#A238FF",
+    "assetFile": "deezer.png"
+  },
+  {
+    "brandKey": "dropbox",
+    "brand": "Dropbox",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/dropbox.svg",
+    "slug": "dropbox",
+    "color": "#0061FF",
+    "assetFile": "dropbox.png"
+  },
+  {
+    "brandKey": "ebayPlus",
+    "brand": "eBay Plus",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/ebay.svg",
+    "slug": "ebay",
+    "color": "#E53238",
+    "assetFile": "ebayplus.png"
+  },
+  {
+    "brandKey": "evernote",
+    "brand": "Evernote",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/evernote.svg",
+    "slug": "evernote",
+    "color": "#00A82D",
+    "assetFile": "evernote.png"
+  },
+  {
+    "brandKey": "figma",
+    "brand": "Figma",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/figma.svg",
+    "slug": "figma",
+    "color": "#F24E1E",
+    "assetFile": "figma.png"
+  },
+  {
+    "brandKey": "github",
+    "brand": "GitHub",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/github.svg",
+    "slug": "github",
+    "color": "#181717",
+    "assetFile": "github.png"
+  },
+  {
+    "brandKey": "googleDrive",
+    "brand": "Google Drive",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/googledrive.svg",
+    "slug": "googledrive",
+    "color": "#4285F4",
+    "assetFile": "googledrive.png"
+  },
+  {
+    "brandKey": "icloud",
+    "brand": "iCloud",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/icloud.svg",
+    "slug": "icloud",
+    "color": "#3693F3",
+    "assetFile": "icloud.png"
+  },
+  {
+    "brandKey": "n26",
+    "brand": "N26",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/n26.svg",
+    "slug": "n26",
+    "color": "#48AC98",
+    "assetFile": "n26.png"
+  },
+  {
+    "brandKey": "netflix",
+    "brand": "Netflix",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/netflix.svg",
+    "slug": "netflix",
+    "color": "#E50914",
+    "assetFile": "netflix.png"
+  },
+  {
+    "brandKey": "notion",
+    "brand": "Notion",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/notion.svg",
+    "slug": "notion",
+    "color": "#000000",
+    "assetFile": "notion.png"
+  },
+  {
+    "brandKey": "ottoUp",
+    "brand": "Otto Up",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/otto.svg",
+    "slug": "otto",
+    "color": "#D4021D",
+    "assetFile": "ottoup.png"
+  },
+  {
+    "brandKey": "paramountPlus",
+    "brand": "Paramount+",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/paramountplus.svg",
+    "slug": "paramountplus",
+    "color": "#0064FF",
+    "assetFile": "paramountplus.png"
+  },
+  {
+    "brandKey": "patreon",
+    "brand": "Patreon",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/patreon.svg",
+    "slug": "patreon",
+    "color": "#000000",
+    "assetFile": "patreon.png"
+  },
+  {
+    "brandKey": "paypal",
+    "brand": "PayPal",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/paypal.svg",
+    "slug": "paypal",
+    "color": "#002991",
+    "assetFile": "paypal.png"
+  },
+  {
+    "brandKey": "perplexity",
+    "brand": "Perplexity",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/perplexity.svg",
+    "slug": "perplexity",
+    "color": "#1FB8CD",
+    "assetFile": "perplexity.png"
+  },
+  {
+    "brandKey": "playstationPlus",
+    "brand": "PlayStation Plus",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/playstation.svg",
+    "slug": "playstation",
+    "color": "#0070D1",
+    "assetFile": "playstationplus.png"
+  },
+  {
+    "brandKey": "revolut",
+    "brand": "Revolut",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/revolut.svg",
+    "slug": "revolut",
+    "color": "#191C1F",
+    "assetFile": "revolut.png"
+  },
+  {
+    "brandKey": "skillshare",
+    "brand": "Skillshare",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/skillshare.svg",
+    "slug": "skillshare",
+    "color": "#00FF84",
+    "assetFile": "skillshare.png"
+  },
+  {
+    "brandKey": "sky",
+    "brand": "Sky",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/sky.svg",
+    "slug": "sky",
+    "color": "#0072C9",
+    "assetFile": "sky.png"
+  },
+  {
+    "brandKey": "soundcloud",
+    "brand": "SoundCloud Go",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/soundcloud.svg",
+    "slug": "soundcloud",
+    "color": "#FF5500",
+    "assetFile": "soundcloud.png"
+  },
+  {
+    "brandKey": "spotify",
+    "brand": "Spotify",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/spotify.svg",
+    "slug": "spotify",
+    "color": "#1ED760",
+    "assetFile": "spotify.png"
+  },
+  {
+    "brandKey": "twitch",
+    "brand": "Twitch",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/twitch.svg",
+    "slug": "twitch",
+    "color": "#9146FF",
+    "assetFile": "twitch.png"
+  },
+  {
+    "brandKey": "udemy",
+    "brand": "Udemy",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/udemy.svg",
+    "slug": "udemy",
+    "color": "#A435F0",
+    "assetFile": "udemy.png"
+  },
+  {
+    "brandKey": "youtube",
+    "brand": "YouTube",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/youtube.svg",
+    "slug": "youtube",
+    "color": "#FF0000",
+    "assetFile": "youtube.png"
+  },
+  {
+    "brandKey": "zalandoPlus",
+    "brand": "Zalando Plus",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/zalando.svg",
+    "slug": "zalando",
+    "color": "#FF6900",
+    "assetFile": "zalandoplus.png"
+  },
+  {
+    "brandKey": "zoom",
+    "brand": "Zoom",
+    "sourceType": "Simple Icons",
+    "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/zoom.svg",
+    "slug": "zoom",
+    "color": "#0B5CFF",
+    "assetFile": "zoom.png"
+  }
 ]

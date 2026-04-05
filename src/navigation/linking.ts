@@ -37,6 +37,7 @@ export const resolveDeepLink = (url: string): ResolvedDeepLink | null => {
       kind: "confirm-email",
       url,
       params: {
+        hasToken: typeof parsed.queryParams?.token === "string",
         oobCode: typeof parsed.queryParams?.oobCode === "string" ? parsed.queryParams.oobCode : null,
         mode: typeof parsed.queryParams?.mode === "string" ? parsed.queryParams.mode : null,
       },

@@ -1,6 +1,7 @@
 import type { AccentColor } from "@/theme";
 
 export const LIFETIME_PREMIUM_PRODUCT_ID = "octovault_lifetime_premium";
+// Legacy Google Play SKU kept for restore / entitlement recognition of older purchases.
 export const LEGACY_LIFETIME_PREMIUM_PRODUCT_IDS = ["support_colors"] as const;
 export const ALL_LIFETIME_PREMIUM_PRODUCT_IDS = [
   LIFETIME_PREMIUM_PRODUCT_ID,

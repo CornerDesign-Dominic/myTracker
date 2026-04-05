@@ -30,6 +30,7 @@ export type ResolvedDeepLink =
       kind: "confirm-email";
       url: string;
       params: {
+        hasToken?: boolean;
         oobCode?: string | null;
         mode?: string | null;
       };

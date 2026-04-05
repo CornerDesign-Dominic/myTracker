@@ -145,10 +145,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       loggedInBadge: "Eingeloggt",
       pendingStatusTitle: "Bestätigung ausstehend",
       pendingStatusDescription:
-        "Die Registrierung wurde vorbereitet. Nach der Mail-Bestätigung kann die Verknüpfung abgeschlossen werden. Bis dahin bleibt dein aktueller App-Stand unverändert.",
+        "Die Registrierung wurde vorbereitet. Öffne den Link aus der E-Mail auf diesem Gerät. In OctoVault bestätigst du dann die E-Mail und legst direkt dein Passwort fest.",
       pendingConfirmedTitle: "E-Mail bestätigt",
       pendingConfirmedDescription:
-        "Lege ein Passwort fest, um dein Konto zu verknüpfen.",
+        "Die E-Mail wurde bereits bestätigt. Lege jetzt noch dein Passwort fest, um die Verknüpfung abzuschließen.",
       pendingExpiredDescription:
         "Die gestartete Registrierung ist abgelaufen. Du kannst jederzeit eine neue Registrierung starten.",
       pendingCancelledDescription:
@@ -172,7 +172,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       pendingResendError:
         "Die Bestätigungs-Mail konnte gerade nicht erneut gesendet werden.",
       pendingBackendHint:
-        "Bis zur Bestätigung bleibt dein aktueller Nutzer anonym und unverknüpft.",
+        "Bis zur Bestätigung in der App bleibt dein aktueller Nutzer anonym und unverknüpft.",
       loginAction: "Login",
       registerAction: "Registrieren",
       logoutAction: "Abmelden",
@@ -256,9 +256,32 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordRepeatError: "Die Passwörter stimmen nicht überein.",
       pendingModalTitle: "E-Mail bestätigen",
       pendingModalDescription:
-        "Wir haben dir eine E-Mail gesendet.\nBestätige sie innerhalb von 72 Stunden um dein Konto zu verknüpfen",
+        "Wir haben dir eine E-Mail gesendet.\nÖffne den Link innerhalb von 72 Stunden auf diesem Gerät, um dein Konto zu verknüpfen.",
       pendingModalBackendHint:
-        "Das Passwort setzt du danach in der App in den Einstellungen.",
+        "In OctoVault bestätigst du die E-Mail und vergibst direkt dein Passwort.",
+      confirmLinkTitle: "E-Mail in OctoVault bestätigen",
+      confirmLinkDescription:
+        "Dieser Link gehört zu deiner laufenden Registrierung. Bestätige jetzt die E-Mail und lege direkt dein Passwort fest.",
+      confirmLinkHint:
+        "Die Bestätigung ist an deine aktuelle anonyme App-Sitzung gebunden. Öffne den Link auf demselben Gerät, auf dem du die Registrierung gestartet hast.",
+      confirmLinkSubmit: "Bestätigen und Passwort setzen",
+      confirmLinkInvalidTitle: "Link ungültig",
+      confirmLinkInvalidDescription:
+        "Dieser Bestätigungslink ist unvollständig oder nicht mehr gültig.",
+      confirmLinkExpiredTitle: "Link abgelaufen",
+      confirmLinkExpiredDescription:
+        "Diese Registrierung ist abgelaufen. Starte die Registrierung bitte erneut in der App.",
+      confirmLinkCancelledTitle: "Registrierung abgebrochen",
+      confirmLinkCancelledDescription:
+        "Diese Registrierung wurde bereits abgebrochen. Bitte starte den Vorgang erneut in der App.",
+      confirmLinkSessionMismatchTitle: "Falsche App-Sitzung",
+      confirmLinkSessionMismatchDescription:
+        "Dieser Link gehört zu einer anderen anonymen App-Sitzung. Öffne ihn bitte auf dem Gerät und in der App-Sitzung, in der du die Registrierung gestartet hast.",
+      confirmLinkAlreadyLinkedTitle: "Konto bereits verknüpft",
+      confirmLinkAlreadyLinkedDescription:
+        "Dieses Gerät ist bereits mit einem Konto verknüpft. Du kannst jetzt zu den Einstellungen zurückkehren.",
+      confirmLinkGenericError:
+        "Die Bestätigung konnte gerade nicht abgeschlossen werden. Bitte versuche es erneut.",
     },
     home: {
       monthPaymentSingular: "Zahlung",
@@ -625,10 +648,10 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       loggedInBadge: "Signed in",
       pendingStatusTitle: "Confirmation pending",
       pendingStatusDescription:
-        "The registration has been prepared. Once the email is confirmed, the linking can be completed. Until then, your current app data stays unchanged.",
+        "The registration has been prepared. Open the link from the email on this device. Inside OctoVault you will confirm the email and set your password right away.",
       pendingConfirmedTitle: "Email confirmed",
       pendingConfirmedDescription:
-        "Set a password to link your account.",
+        "The email has already been confirmed. Set your password now to finish linking your account.",
       pendingExpiredDescription:
         "The started registration has expired. You can start a new registration at any time.",
       pendingCancelledDescription:
@@ -651,7 +674,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "A new confirmation email has been triggered.",
       pendingResendError: "The confirmation email could not be sent again right now.",
       pendingBackendHint:
-        "Until confirmation, your current user stays anonymous and unlinked.",
+        "Until the in-app confirmation, your current user stays anonymous and unlinked.",
       loginAction: "Login",
       registerAction: "Register",
       logoutAction: "Log out",
@@ -735,9 +758,32 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordRepeatError: "The passwords do not match.",
       pendingModalTitle: "Confirm email",
       pendingModalDescription:
-        "We sent you an email.\nConfirm it within 72 hours to link your account.",
+        "We sent you an email.\nOpen the link on this device within 72 hours to link your account.",
       pendingModalBackendHint:
-        "You set your password afterwards in the app under Settings.",
+        "Inside OctoVault you will confirm the email and set your password directly.",
+      confirmLinkTitle: "Confirm email in OctoVault",
+      confirmLinkDescription:
+        "This link belongs to your pending registration. Confirm the email now and set your password right away.",
+      confirmLinkHint:
+        "The confirmation is tied to your current anonymous app session. Open this link on the same device where you started the registration.",
+      confirmLinkSubmit: "Confirm and set password",
+      confirmLinkInvalidTitle: "Invalid link",
+      confirmLinkInvalidDescription:
+        "This confirmation link is incomplete or no longer valid.",
+      confirmLinkExpiredTitle: "Link expired",
+      confirmLinkExpiredDescription:
+        "This registration has expired. Please start the registration again in the app.",
+      confirmLinkCancelledTitle: "Registration cancelled",
+      confirmLinkCancelledDescription:
+        "This registration was already cancelled. Please start the process again in the app.",
+      confirmLinkSessionMismatchTitle: "Wrong app session",
+      confirmLinkSessionMismatchDescription:
+        "This link belongs to a different anonymous app session. Please open it on the same device and in the same app session where you started the registration.",
+      confirmLinkAlreadyLinkedTitle: "Account already linked",
+      confirmLinkAlreadyLinkedDescription:
+        "This device is already linked to an account. You can return to Settings now.",
+      confirmLinkGenericError:
+        "The confirmation could not be completed right now. Please try again.",
     },
     home: {
       monthPaymentSingular: "payment",

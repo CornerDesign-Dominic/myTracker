@@ -86,6 +86,11 @@ export const startPendingRegistrationRequest = async (params: {
   idToken: string;
   email: string;
 }) => {
+  console.log("[AuthDebug] pendingRegistrationApi:start:request", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationStart`,
+    method: "POST",
+    email: params.email,
+  });
   const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationStart`, {
     method: "POST",
     headers: buildHeaders(params.idToken),
@@ -112,6 +117,10 @@ export const startPendingRegistrationRequest = async (params: {
 export const resendPendingRegistrationRequest = async (params: {
   idToken: string;
 }) => {
+  console.log("[AuthDebug] pendingRegistrationApi:resend:request", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationResend`,
+    method: "POST",
+  });
   const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationResend`, {
     method: "POST",
     headers: buildHeaders(params.idToken),
@@ -135,6 +144,10 @@ export const resendPendingRegistrationRequest = async (params: {
 export const cancelPendingRegistrationRequest = async (params: {
   idToken: string;
 }) => {
+  console.log("[AuthDebug] pendingRegistrationApi:cancel:request", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationCancel`,
+    method: "POST",
+  });
   const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationCancel`, {
     method: "POST",
     headers: buildHeaders(params.idToken),
@@ -155,9 +168,47 @@ export const cancelPendingRegistrationRequest = async (params: {
   }
 };
 
+export const confirmPendingRegistrationRequest = async (params: {
+  idToken: string;
+  token: string;
+}) => {
+  console.log("[AuthDebug] pendingRegistrationApi:confirm:request", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationConfirmApp`,
+    method: "POST",
+    hasToken: params.token.trim().length > 0,
+  });
+  const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationConfirmApp`, {
+    method: "POST",
+    headers: buildHeaders(params.idToken),
+    body: JSON.stringify({
+      token: params.token,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorDetails = await parseErrorResponse(response);
+    const code = errorDetails.code ?? "pending-registration-confirm-failed";
+    console.log("[AuthDebug] pendingRegistrationApi:confirm:error-response", {
+      url: `${REGISTRATION_API_BASE_URL}/registrationConfirmApp`,
+      status: errorDetails.status,
+      code,
+      message: errorDetails.message,
+      contentType: errorDetails.contentType,
+      body: errorDetails.body,
+    });
+    throw createApiError(code, errorDetails);
+  }
+
+  return (await response.json()) as { email: string; status: "confirmed" };
+};
+
 export const finalizePendingRegistrationRequest = async (params: {
   idToken: string;
 }) => {
+  console.log("[AuthDebug] pendingRegistrationApi:finalize:request", {
+    url: `${REGISTRATION_API_BASE_URL}/registrationFinalize`,
+    method: "POST",
+  });
   const response = await fetch(`${REGISTRATION_API_BASE_URL}/registrationFinalize`, {
     method: "POST",
     headers: buildHeaders(params.idToken),

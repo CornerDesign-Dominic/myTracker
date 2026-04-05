@@ -248,7 +248,6 @@ export const accentColorOptions = [
   "green",
   "indigo",
   "cyan",
-  "teal",
   "violet",
   "rose",
   "orange",

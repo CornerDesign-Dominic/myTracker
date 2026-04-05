@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -15,6 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { radius, spacing } from "@/theme";
+
+const octoVaultLogo = require("../../assets/app/octovault-onboarding.png");
 
 type CompletionTarget = "tabs" | "subscription-form";
 
@@ -127,12 +130,16 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
             <View style={styles.slideContent}>
-              <View style={styles.visualWrap}>
-                <View style={styles.visualOrb} />
-                <View style={styles.visualSurface}>
-                  <Ionicons name={item.icon} size={42} color={colors.accent} />
+                <View style={styles.visualWrap}>
+                  <View style={styles.visualOrb} />
+                  <View style={styles.visualSurface}>
+                    {item.key === "welcome" ? (
+                      <Image source={octoVaultLogo} style={styles.welcomeLogo} resizeMode="contain" />
+                    ) : (
+                      <Ionicons name={item.icon} size={42} color={colors.accent} />
+                    )}
+                  </View>
                 </View>
-              </View>
 
               <View style={styles.copyBlock}>
                 <Text style={[typography.pageTitle, styles.title]}>{item.title}</Text>
@@ -347,6 +354,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       alignItems: "center",
       justifyContent: "center",
       transform: [{ translateY: -10 }],
+    },
+    welcomeLogo: {
+      width: 64,
+      height: 64,
     },
     copyBlock: {
       width: "100%",

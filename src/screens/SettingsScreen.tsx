@@ -657,6 +657,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
               <Text style={[typography.secondary, styles.legalLink]}>{t("common.imprint")}</Text>
             </Pressable>
           </View>
+          <Pressable style={styles.legalRow} onPress={() => navigation.navigate("FAQ")}>
+            <Text style={[typography.secondary, styles.legalLink]}>{t("common.faq")}</Text>
+          </Pressable>
           <Pressable style={styles.legalRow} onPress={() => setIsContactModalVisible(true)}>
             <Text style={[typography.secondary, styles.legalLink]}>{t("settings.contactTitle")}</Text>
           </Pressable>

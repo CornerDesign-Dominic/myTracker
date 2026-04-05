@@ -22,6 +22,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       login: "Login",
       register: "Registrierung",
       account: "Datensicherung",
+      faq: "FAQ",
       terms: "AGB",
       privacy: "Datenschutz",
       imprint: "Impressum",
@@ -66,18 +67,18 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       noDueOn: "Am {{date}} ist nichts fällig.",
     },
     onboarding: {
-      welcomeTitle: "Behalte deine Abos im Griff",
-      welcomeDescription: "Sieh, was du wirklich zahlst – und was du dir sparst.",
+      welcomeTitle: "Alle deine Abos an einem Ort",
+      welcomeDescription: "Sieh, was du wirklich zahlst – und was du sparen kannst.",
       howItWorksTitle: "So funktioniert’s",
-      statusActiveTitle: "Aktiv",
-      statusActiveDescription: "Zahlung wird gebucht",
-      statusPausedTitle: "Pausiert",
-      statusPausedDescription: "Wird als Sparbetrag gebucht. Jederzeit reaktivierbar",
-      statusCancelledTitle: "Gekündigt",
-      statusCancelledDescription: "Keine weiteren Zahlungen",
+      howItWorksAddTitle: "Abo hinzufügen",
+      howItWorksAddDescription: "Trage deine Abos schnell und einfach ein.",
+      howItWorksTrackTitle: "Alles im Blick",
+      howItWorksTrackDescription: "Sieh deine Abos übersichtlich an einem Ort.",
+      howItWorksStayOnTopTitle: "Status verstehen",
+      howItWorksStayOnTopDescription: "Behalte aktive und beendete Abos im Überblick.",
       dataTitle: "Deine Daten gehören dir",
       dataDescription:
-        "Du brauchst keinen Account. Alles funktioniert direkt auf deinem Gerät.\n\nOptional kannst du dich anmelden, um deine Daten zu sichern.",
+        "Du kannst die App anonym nutzen.\nDeine Daten werden sicher gespeichert.\nMit E-Mail kannst du sie jederzeit wiederherstellen.",
       supportTitle: "Unterstütze die App",
       supportDescription:
         "Die App ist unabhängig entwickelt, werbefrei und komplett kostenlos.\n\nWenn sie dir gefällt, kannst du sie mit kleinen Extras unterstützen – zum Beispiel durch neue Akzentfarben.",
@@ -247,6 +248,23 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactPrepared: "Wird vorbereitet",
       contactPreparedDescription: "Diese Kontaktmöglichkeit wird aktuell in der App vorbereitet.",
       legalTitle: "Rechtliches",
+    },
+    faq: {
+      introTitle: "Häufige Fragen",
+      introText:
+        "Hier findest du kurze Antworten auf die wichtigsten Fragen rund um Konto, Premium und deine Daten.",
+      registrationQuestion: "Brauche ich ein Konto, um die App zu nutzen?",
+      registrationAnswer:
+        "Nein. Du kannst OctoVault auch anonym nutzen. Mit einem Konto kannst du deine Daten aber sichern und später wiederherstellen.",
+      passwordQuestion: "Warum soll ich noch ein Passwort festlegen?",
+      passwordAnswer:
+        "Erst mit einem Passwort ist dein Konto auf einem neuen Gerät wiederherstellbar.",
+      premiumQuestion: "Was bringt mir Premium?",
+      premiumAnswer:
+        "Mit Premium hebst du das Limit von 10 Abos auf und schaltest zusätzliche Akzentfarben frei.",
+      dataQuestion: "Wo werden meine Daten gespeichert?",
+      dataAnswer:
+        "Deine Daten bleiben mit deinem Nutzerkonto verknüpft und können nach einer Neuinstallation wiederhergestellt werden.",
     },
     auth: {
       email: "E-Mail",
@@ -546,6 +564,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       login: "Login",
       register: "Register",
       account: "Account",
+      faq: "FAQ",
       terms: "Terms",
       privacy: "Privacy",
       imprint: "Imprint",
@@ -593,12 +612,12 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       welcomeTitle: "Keep your subscriptions under control",
       welcomeDescription: "See what you really pay – and what you save.",
       howItWorksTitle: "How it works",
-      statusActiveTitle: "Active",
-      statusActiveDescription: "Payment is booked",
-      statusPausedTitle: "Paused",
-      statusPausedDescription: "Payment is skipped and you save the amount",
-      statusCancelledTitle: "Cancelled",
-      statusCancelledDescription: "No further payments",
+      howItWorksAddTitle: "Add a subscription",
+      howItWorksAddDescription: "Add your subscriptions quickly and easily.",
+      howItWorksTrackTitle: "Everything in view",
+      howItWorksTrackDescription: "See your subscriptions clearly in one place.",
+      howItWorksStayOnTopTitle: "Understand status",
+      howItWorksStayOnTopDescription: "Keep active and ended subscriptions in view.",
       dataTitle: "Your data belongs to you",
       dataDescription:
         "You do not need an account. Everything works directly on your device.\n\nYou can optionally sign in to back up your data.",
@@ -770,6 +789,23 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactPrepared: "In progress",
       contactPreparedDescription: "This contact option is currently being prepared in the app.",
       legalTitle: "Legal",
+    },
+    faq: {
+      introTitle: "Frequently asked questions",
+      introText:
+        "Here you can find short answers to the most important questions about your account, Premium and your data.",
+      registrationQuestion: "Do I need an account to use the app?",
+      registrationAnswer:
+        "No. You can use OctoVault anonymously. An account lets you back up and restore your data later.",
+      passwordQuestion: "Why should I set a password now?",
+      passwordAnswer:
+        "Only with a password can your account be restored on a new device.",
+      premiumQuestion: "What do I get with Premium?",
+      premiumAnswer:
+        "Premium removes the limit of 10 subscriptions and unlocks additional accent colors.",
+      dataQuestion: "Where is my data stored?",
+      dataAnswer:
+        "Your data stays linked to your account and can be restored after a fresh install.",
     },
     auth: {
       email: "Email",

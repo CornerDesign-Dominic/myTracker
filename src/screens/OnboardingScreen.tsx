@@ -142,21 +142,21 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
                 {item.renderStatusOverview ? (
                   <View style={styles.statusPanel}>
                     <StatusCard
-                      icon="checkmark-circle-outline"
-                      title={t("onboarding.statusActiveTitle")}
-                      description={t("onboarding.statusActiveDescription")}
+                      icon="add-circle-outline"
+                      title={t("onboarding.howItWorksAddTitle")}
+                      description={t("onboarding.howItWorksAddDescription")}
                       showDivider
                     />
                     <StatusCard
-                      icon="pause-circle-outline"
-                      title={t("onboarding.statusPausedTitle")}
-                      description={t("onboarding.statusPausedDescription")}
+                      icon="list-outline"
+                      title={t("onboarding.howItWorksTrackTitle")}
+                      description={t("onboarding.howItWorksTrackDescription")}
                       showDivider
                     />
                     <StatusCard
-                      icon="close-circle-outline"
-                      title={t("onboarding.statusCancelledTitle")}
-                      description={t("onboarding.statusCancelledDescription")}
+                      icon="checkmark-done-outline"
+                      title={t("onboarding.howItWorksStayOnTopTitle")}
+                      description={t("onboarding.howItWorksStayOnTopDescription")}
                     />
                   </View>
                 ) : (

@@ -21,6 +21,7 @@ export type RootStackParamList = {
   MonthlyPreview: undefined;
   Settings: undefined;
   Account: undefined;
+  FAQ: undefined;
   Terms: undefined;
   Privacy: undefined;
   Imprint: undefined;

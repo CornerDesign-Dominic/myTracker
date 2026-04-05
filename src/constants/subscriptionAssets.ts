@@ -26,6 +26,7 @@ export type BrandVisualKey =
   | "gemini"
   | "googleDrive"
   | "github"
+  | "gymMembership"
   | "googleOne"
   | "hulu"
   | "icloud"
@@ -58,6 +59,9 @@ export type BrandVisualKey =
   | "twitch"
   | "udemy"
   | "urbanSportsClub"
+  | "vpnService"
+  | "domainHosting"
+  | "webHosting"
   | "xboxGamePass"
   | "youtube"
   | "zalandoPlus"
@@ -358,6 +362,22 @@ const brandMatchers: BrandMatcher[] = [
   {
     key: "blinkist",
     aliases: ["blinkist"],
+  },
+  {
+    key: "gymMembership",
+    aliases: ["gym membership"],
+  },
+  {
+    key: "domainHosting",
+    aliases: ["domain hosting"],
+  },
+  {
+    key: "webHosting",
+    aliases: ["web hosting"],
+  },
+  {
+    key: "vpnService",
+    aliases: ["vpn service"],
   },
   {
     key: "expressvpn",

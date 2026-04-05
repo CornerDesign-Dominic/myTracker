@@ -65,11 +65,6 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   );
 
   const handleCreateSubscription = () => {
-    if (!isPremium && subscriptions.length === FREE_SUBSCRIPTION_LIMIT - 1) {
-      setIsPlanInfoModalVisible(true);
-      return;
-    }
-
     if (!canCreateSubscription) {
       setIsLimitModalVisible(true);
       return;

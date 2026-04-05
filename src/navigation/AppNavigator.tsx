@@ -15,6 +15,7 @@ import { CalendarScreen } from "@/screens/CalendarScreen";
 import { ConfirmEmailLinkScreen } from "@/screens/ConfirmEmailLinkScreen";
 import { DeepLinkPlaceholderScreen } from "@/screens/DeepLinkPlaceholderScreen";
 import { BillingFrequencyScreen } from "@/screens/BillingFrequencyScreen";
+import { FAQScreen } from "@/screens/FAQScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
 import { LoginScreen } from "@/screens/LoginScreen";
@@ -270,6 +271,13 @@ export const AppNavigator = ({
           component={AccountScreen}
           options={{
             title: t("settings.accountManageAction"),
+          }}
+        />
+        <Stack.Screen
+          name="FAQ"
+          component={FAQScreen}
+          options={{
+            title: t("common.faq"),
           }}
         />
         <Stack.Screen

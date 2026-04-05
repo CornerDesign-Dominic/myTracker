@@ -66,6 +66,12 @@ export const brandImageAssets: Partial<Record<BrandVisualKey, BrandImageAsset>> 
     scale: 0.86,
     source: require("../../../assets/brands/disneyplus.png"),
   },
+  domainHosting: {
+    backgroundColor: "#FFFFFF",
+    borderColor: subtleBorder,
+    scale: 0.86,
+    source: require("../../../assets/brands/domainhosting.png"),
+  },
   dropbox: {
     backgroundColor: "#FFFFFF",
     borderColor: subtleBorder,
@@ -101,6 +107,12 @@ export const brandImageAssets: Partial<Record<BrandVisualKey, BrandImageAsset>> 
     borderColor: subtleBorder,
     scale: 0.82,
     source: require("../../../assets/brands/github.png"),
+  },
+  gymMembership: {
+    backgroundColor: "#FFFFFF",
+    borderColor: subtleBorder,
+    scale: 0.86,
+    source: require("../../../assets/brands/gymmembership.png"),
   },
   googleDrive: {
     backgroundColor: "#FFFFFF",
@@ -245,6 +257,18 @@ export const brandImageAssets: Partial<Record<BrandVisualKey, BrandImageAsset>> 
     borderColor: subtleBorder,
     scale: 0.84,
     source: require("../../../assets/brands/urbansportsclub.png"),
+  },
+  vpnService: {
+    backgroundColor: "#FFFFFF",
+    borderColor: subtleBorder,
+    scale: 0.86,
+    source: require("../../../assets/brands/vpnservice.png"),
+  },
+  webHosting: {
+    backgroundColor: "#FFFFFF",
+    borderColor: subtleBorder,
+    scale: 0.86,
+    source: require("../../../assets/brands/webhosting.png"),
   },
   xboxGamePass: {
     backgroundColor: "#FFFFFF",

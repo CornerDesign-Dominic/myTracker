@@ -1,11 +1,27 @@
 [
   {
+    "brandKey": "amazonPrime",
+    "brand": "Amazon Prime / Prime Video",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://www.primevideo.com/favicon.ico",
+    "color": "#000000",
+    "assetFile": "amazonprime.png"
+  },
+  {
+    "brandKey": "appleFitnessPlus",
+    "brand": "Apple Fitness+",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://www.apple.com/favicon.ico",
+    "color": "#000000",
+    "assetFile": "applefitnessplus.png"
+  },
+  {
     "brandKey": "appleMusic",
     "brand": "Apple Music",
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/applemusic.svg",
     "slug": "applemusic",
-    "color": "#FA243C",
+    "color": "#000000",
     "assetFile": "applemusic.png"
   },
   {
@@ -18,12 +34,20 @@
     "assetFile": "appletvplus.png"
   },
   {
+    "brandKey": "canva",
+    "brand": "Canva",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://www.canva.com/favicon.ico",
+    "color": "#000000",
+    "assetFile": "canva.png"
+  },
+  {
     "brandKey": "claude",
     "brand": "Claude",
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/claude.svg",
     "slug": "claude",
-    "color": "#D97757",
+    "color": "#000000",
     "assetFile": "claude.png"
   },
   {
@@ -32,7 +56,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/dazn.svg",
     "slug": "dazn",
-    "color": "#F8F8F5",
+    "color": "#000000",
     "assetFile": "dazn.png"
   },
   {
@@ -41,8 +65,16 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/deezer.svg",
     "slug": "deezer",
-    "color": "#A238FF",
+    "color": "#000000",
     "assetFile": "deezer.png"
+  },
+  {
+    "brandKey": "disneyPlus",
+    "brand": "Disney+",
+    "sourceType": "Official website",
+    "sourceUrl": "https://static-assets.bamgrid.com/product/disneyplus/favicons/mask-icon-aurora.86b2f302cf50180b25ddd8835041b1c3.svg",
+    "color": "#000000",
+    "assetFile": "disneyplus.png"
   },
   {
     "brandKey": "dropbox",
@@ -50,7 +82,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/dropbox.svg",
     "slug": "dropbox",
-    "color": "#0061FF",
+    "color": "#000000",
     "assetFile": "dropbox.png"
   },
   {
@@ -59,7 +91,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/ebay.svg",
     "slug": "ebay",
-    "color": "#E53238",
+    "color": "#000000",
     "assetFile": "ebayplus.png"
   },
   {
@@ -68,7 +100,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/evernote.svg",
     "slug": "evernote",
-    "color": "#00A82D",
+    "color": "#000000",
     "assetFile": "evernote.png"
   },
   {
@@ -77,8 +109,16 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/figma.svg",
     "slug": "figma",
-    "color": "#F24E1E",
+    "color": "#000000",
     "assetFile": "figma.png"
+  },
+  {
+    "brandKey": "freeletics",
+    "brand": "Freeletics",
+    "sourceType": "Official website",
+    "sourceUrl": "https://assets.freeletics.net/images/favicon.svg",
+    "color": "#000000",
+    "assetFile": "freeletics.png"
   },
   {
     "brandKey": "github",
@@ -86,7 +126,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/github.svg",
     "slug": "github",
-    "color": "#181717",
+    "color": "#000000",
     "assetFile": "github.png"
   },
   {
@@ -95,7 +135,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/googledrive.svg",
     "slug": "googledrive",
-    "color": "#4285F4",
+    "color": "#000000",
     "assetFile": "googledrive.png"
   },
   {
@@ -104,8 +144,24 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/icloud.svg",
     "slug": "icloud",
-    "color": "#3693F3",
+    "color": "#000000",
     "assetFile": "icloud.png"
+  },
+  {
+    "brandKey": "masterclass",
+    "brand": "MasterClass",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://www.masterclass.com/favicon-32x32.png",
+    "color": "#000000",
+    "assetFile": "masterclass.png"
+  },
+  {
+    "brandKey": "microsoft365",
+    "brand": "Microsoft 365",
+    "sourceType": "Official Microsoft CDN",
+    "sourceUrl": "https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/m365_48x1.svg",
+    "color": "#000000",
+    "assetFile": "microsoft365.png"
   },
   {
     "brandKey": "n26",
@@ -113,7 +169,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/n26.svg",
     "slug": "n26",
-    "color": "#48AC98",
+    "color": "#000000",
     "assetFile": "n26.png"
   },
   {
@@ -122,8 +178,16 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/netflix.svg",
     "slug": "netflix",
-    "color": "#E50914",
+    "color": "#000000",
     "assetFile": "netflix.png"
+  },
+  {
+    "brandKey": "nintendoSwitchOnline",
+    "brand": "Nintendo Switch Online",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://assets.nintendo.com/image/upload/ncom/icons/fav-icons/apple-touch-icon.png",
+    "color": "#000000",
+    "assetFile": "nintendoswitchonline.png"
   },
   {
     "brandKey": "notion",
@@ -135,12 +199,20 @@
     "assetFile": "notion.png"
   },
   {
+    "brandKey": "oneDrive",
+    "brand": "OneDrive",
+    "sourceType": "Official Microsoft CDN",
+    "sourceUrl": "https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/onedrive_48x1.svg",
+    "color": "#000000",
+    "assetFile": "onedrive.png"
+  },
+  {
     "brandKey": "ottoUp",
     "brand": "Otto Up",
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/otto.svg",
     "slug": "otto",
-    "color": "#D4021D",
+    "color": "#000000",
     "assetFile": "ottoup.png"
   },
   {
@@ -149,7 +221,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/paramountplus.svg",
     "slug": "paramountplus",
-    "color": "#0064FF",
+    "color": "#000000",
     "assetFile": "paramountplus.png"
   },
   {
@@ -167,7 +239,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/paypal.svg",
     "slug": "paypal",
-    "color": "#002991",
+    "color": "#000000",
     "assetFile": "paypal.png"
   },
   {
@@ -176,7 +248,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/perplexity.svg",
     "slug": "perplexity",
-    "color": "#1FB8CD",
+    "color": "#000000",
     "assetFile": "perplexity.png"
   },
   {
@@ -185,7 +257,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/playstation.svg",
     "slug": "playstation",
-    "color": "#0070D1",
+    "color": "#000000",
     "assetFile": "playstationplus.png"
   },
   {
@@ -194,7 +266,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/revolut.svg",
     "slug": "revolut",
-    "color": "#191C1F",
+    "color": "#000000",
     "assetFile": "revolut.png"
   },
   {
@@ -203,7 +275,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/skillshare.svg",
     "slug": "skillshare",
-    "color": "#00FF84",
+    "color": "#000000",
     "assetFile": "skillshare.png"
   },
   {
@@ -212,8 +284,16 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/sky.svg",
     "slug": "sky",
-    "color": "#0072C9",
+    "color": "#000000",
     "assetFile": "sky.png"
+  },
+  {
+    "brandKey": "slack",
+    "brand": "Slack",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://a.slack-edge.com/e6a93c1/img/icons/favicon-32.png",
+    "color": "#000000",
+    "assetFile": "slack.png"
   },
   {
     "brandKey": "soundcloud",
@@ -221,7 +301,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/soundcloud.svg",
     "slug": "soundcloud",
-    "color": "#FF5500",
+    "color": "#000000",
     "assetFile": "soundcloud.png"
   },
   {
@@ -230,7 +310,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/spotify.svg",
     "slug": "spotify",
-    "color": "#1ED760",
+    "color": "#000000",
     "assetFile": "spotify.png"
   },
   {
@@ -239,7 +319,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/twitch.svg",
     "slug": "twitch",
-    "color": "#9146FF",
+    "color": "#000000",
     "assetFile": "twitch.png"
   },
   {
@@ -248,8 +328,24 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/udemy.svg",
     "slug": "udemy",
-    "color": "#A435F0",
+    "color": "#000000",
     "assetFile": "udemy.png"
+  },
+  {
+    "brandKey": "urbanSportsClub",
+    "brand": "Urban Sports Club",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://urbansportsclub.com/apple-touch-icon-180x180.png",
+    "color": "#000000",
+    "assetFile": "urbansportsclub.png"
+  },
+  {
+    "brandKey": "xboxGamePass",
+    "brand": "Xbox Game Pass",
+    "sourceType": "Official website favicon",
+    "sourceUrl": "https://www.xbox.com/favicon.ico",
+    "color": "#000000",
+    "assetFile": "xboxgamepass.png"
   },
   {
     "brandKey": "youtube",
@@ -257,7 +353,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/youtube.svg",
     "slug": "youtube",
-    "color": "#FF0000",
+    "color": "#000000",
     "assetFile": "youtube.png"
   },
   {
@@ -266,7 +362,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/zalando.svg",
     "slug": "zalando",
-    "color": "#FF6900",
+    "color": "#000000",
     "assetFile": "zalandoplus.png"
   },
   {
@@ -275,7 +371,7 @@
     "sourceType": "Simple Icons",
     "sourceUrl": "https://github.com/simple-icons/simple-icons/blob/develop/icons/zoom.svg",
     "slug": "zoom",
-    "color": "#0B5CFF",
+    "color": "#000000",
     "assetFile": "zoom.png"
   }
 ]

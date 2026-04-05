@@ -510,17 +510,12 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           : null;
 
       if (errorCode === "registration-already-confirmed") {
-        const confirmedRegistration: PendingRegistrationDocument = {
-          ...pendingRegistration,
-          status: "confirmed",
-          confirmedAt: new Date().toISOString(),
-        };
-        setPendingRegistration(confirmedRegistration);
-        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:resolved-confirmed`, {
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:resend:server-reported-confirmed`, {
           uid: userId,
           email: pendingRegistration.pendingEmail,
           backendCode: errorCode,
           backendStatus: errorStatus,
+          note: "Local state is not promoted. Waiting for Firestore truth.",
         });
         return "confirmed";
       }

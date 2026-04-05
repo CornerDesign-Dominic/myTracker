@@ -766,6 +766,26 @@ const registrationConfirmHandler = async (request, response) => {
     return;
   }
 
+  if (request.method === "POST") {
+    logRegistrationEvent("registrationConfirm:browser-confirm-blocked", {
+      tokenHash: shortenHash(tokenHash),
+      alreadyConfirmed: Boolean(usedAt),
+      note: "Browser confirmation is disabled. App confirmation is required.",
+    });
+    response.status(405).send(
+      renderHtml(
+        "Bestätigung nur in der App",
+        "Die E-Mail-Bestätigung wird nur noch direkt in OctoVault abgeschlossen. Öffne die App auf dem Gerät, auf dem du die Registrierung gestartet hast.",
+        `<div class="actions">
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault öffnen
+          </a>
+        </div>`,
+      ),
+    );
+    return;
+  }
+
   if (request.method !== "POST") {
     logRegistrationEvent("registrationConfirm:non-supported-request", {
       tokenHash: shortenHash(tokenHash),

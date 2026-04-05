@@ -88,7 +88,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Die App ist unabhängig entwickelt, werbefrei und komplett kostenlos.\n\nWenn sie dir gefällt, kannst du sie mit kleinen Extras unterstützen – zum Beispiel durch neue Akzentfarben.",
       startTitle: "Starte jetzt",
       startDescription: "Lege dein erstes Abo an und behalte alles im Blick.",
-      startSubtext: "Ohne Abo. Premium einmalig freischalten.",
+      startFreeTitle: "Kein laufendes Abo",
+      startPremiumTitle: "Premium einmalig freischalten",
       startCta: "Starten",
     },
     settings: {
@@ -635,7 +636,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "The app is independently developed, ad-free and completely free.\n\nIf you like it, you can support it with small extras – for example with new accent colors.",
       startTitle: "Start now",
       startDescription: "Add your first subscription and keep everything in view.",
-      startSubtext: "No subscription. Unlock Premium once.",
+      startFreeTitle: "No ongoing subscription",
+      startPremiumTitle: "Unlock Premium once",
       startCta: "Start",
     },
     settings: {

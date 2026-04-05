@@ -26,10 +26,10 @@ type Slide = {
   key: string;
   title: string;
   description?: string;
-  subtext?: string;
   icon: keyof typeof Ionicons.glyphMap;
   renderStatusOverview?: boolean;
   renderDataOverview?: boolean;
+  renderStartOverview?: boolean;
 };
 
 export const OnboardingScreen = ({ onComplete }: Props) => {
@@ -64,8 +64,8 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
         key: "start",
         title: t("onboarding.startTitle"),
         description: t("onboarding.startDescription"),
-        subtext: t("onboarding.startSubtext"),
         icon: "rocket-outline",
+        renderStartOverview: true,
       },
     ],
     [t],
@@ -182,13 +182,27 @@ export const OnboardingScreen = ({ onComplete }: Props) => {
                       plain
                     />
                   </View>
-                ) : (
+                ) : item.renderStartOverview ? (
                   <>
                     <Text style={[typography.body, styles.description]}>{item.description}</Text>
-                    {item.subtext ? (
-                      <Text style={[typography.secondary, styles.subtext]}>{item.subtext}</Text>
-                    ) : null}
+                    <View style={styles.startHighlights}>
+                      <StatusCard
+                        icon="checkmark-outline"
+                        title={t("onboarding.startFreeTitle")}
+                        plain
+                        compact
+                        showDivider
+                      />
+                      <StatusCard
+                        icon="diamond-outline"
+                        title={t("onboarding.startPremiumTitle")}
+                        plain
+                        compact
+                      />
+                    </View>
                   </>
+                ) : (
+                  <Text style={[typography.body, styles.description]}>{item.description}</Text>
                 )}
               </View>
             </View>
@@ -247,12 +261,14 @@ const StatusCard = ({
   description,
   showDivider = false,
   plain = false,
+  compact = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  description: string;
+  description?: string;
   showDivider?: boolean;
   plain?: boolean;
+  compact?: boolean;
 }) => {
   const { colors, typography } = useAppTheme();
   const styles = getStyles(colors);
@@ -262,6 +278,7 @@ const StatusCard = ({
       style={[
         styles.statusCard,
         plain ? styles.statusCardPlain : null,
+        compact ? styles.statusCardCompact : null,
         showDivider ? styles.statusCardDivider : null,
       ]}
     >
@@ -271,7 +288,9 @@ const StatusCard = ({
         </View>
         <View style={styles.statusCopy}>
           <Text style={[typography.cardTitle, styles.statusTitle]}>{title}</Text>
-          <Text style={[typography.secondary, styles.statusDescription]}>{description}</Text>
+          {description ? (
+            <Text style={[typography.secondary, styles.statusDescription]}>{description}</Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -352,13 +371,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 24,
       maxWidth: 320,
     },
-    subtext: {
-      color: colors.textSecondary,
-      textAlign: "center",
-      lineHeight: 20,
-      maxWidth: 320,
-      opacity: 0.9,
-      marginTop: -2,
+    startHighlights: {
+      width: "100%",
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     statusPanel: {
       width: "100%",
@@ -378,6 +396,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     statusCardPlain: {
       paddingHorizontal: 0,
       backgroundColor: "transparent",
+    },
+    statusCardCompact: {
+      paddingVertical: spacing.sm,
     },
     statusCardDivider: {
       borderBottomWidth: 1,

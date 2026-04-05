@@ -27,12 +27,12 @@ const androidIntentFilters = HAS_UNIVERSAL_LINK_HOST
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: APP_NAME,
-  slug: "octovault",
+  slug: "subscription-tracker-mvp",
   version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "light",
   scheme: APP_SCHEME,
-  icon: "./assets/app/octovault-icon.png",
+  icon: "./assets/app/icon.png",
   assetBundlePatterns: ["**/*"],
   ios: {
     supportsTablet: true,
@@ -43,8 +43,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     googleServicesFile: "./google-services.json",
     softwareKeyboardLayoutMode: "resize",
     adaptiveIcon: {
-      foregroundImage: "./assets/app/octovault-adaptive-icon.png",
-      backgroundColor: "#F4F7F2",
+      foregroundImage: "./assets/app/icon.png",
+      backgroundColor: "#ffffff",
     },
     intentFilters: androidIntentFilters,
   },

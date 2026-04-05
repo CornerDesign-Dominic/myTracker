@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { appLinking } from "@/navigation/linking";
 import { OnboardingScreen } from "@/screens/OnboardingScreen";
 import { AllSubscriptionsScreen } from "@/screens/AllSubscriptionsScreen";
 import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
 import { AccountScreen } from "@/screens/AccountScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
+import { DeepLinkPlaceholderScreen } from "@/screens/DeepLinkPlaceholderScreen";
 import { BillingFrequencyScreen } from "@/screens/BillingFrequencyScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
@@ -120,7 +122,7 @@ export const AppNavigator = ({
   const { t } = useI18n();
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer linking={appLinking} theme={navigationTheme}>
       <Stack.Navigator
         initialRouteName={showOnboarding ? "Onboarding" : "Tabs"}
         screenOptions={{
@@ -180,6 +182,31 @@ export const AppNavigator = ({
           name="Register"
           component={RegisterScreen}
           options={{ title: t("common.register") }}
+        />
+        <Stack.Screen
+          name="ResetPasswordLink"
+          component={DeepLinkPlaceholderScreen}
+          options={{ title: "Reset password" }}
+        />
+        <Stack.Screen
+          name="ConfirmEmailLink"
+          component={DeepLinkPlaceholderScreen}
+          options={{ title: "Confirm email" }}
+        />
+        <Stack.Screen
+          name="PurchaseSuccessLink"
+          component={DeepLinkPlaceholderScreen}
+          options={{ title: "Purchase success" }}
+        />
+        <Stack.Screen
+          name="PurchaseCancelledLink"
+          component={DeepLinkPlaceholderScreen}
+          options={{ title: "Purchase cancelled" }}
+        />
+        <Stack.Screen
+          name="OpenSubscriptionLink"
+          component={DeepLinkPlaceholderScreen}
+          options={{ title: "Open subscription" }}
         />
         <Stack.Screen
           name="SubscriptionForm"

@@ -3,8 +3,20 @@ import { Platform } from "react-native";
 import { ErrorCode, Product, PurchaseError, useIAP } from "react-native-iap";
 
 import { useAuth } from "@/context/AuthContext";
-import { SUPPORT_COLORS_PRODUCT_ID } from "@/services/purchases/constants";
+import { analyticsEventNames } from "@/services/analytics/events";
+import { analyticsService } from "@/services/analytics/service";
+import {
+  ALL_LIFETIME_PREMIUM_PRODUCT_IDS,
+  LIFETIME_PREMIUM_PRODUCT_ID,
+} from "@/services/purchases/constants";
 import { buildPurchaseSnapshot, buildSnapshotFromSinglePurchase } from "@/services/purchases/entitlements";
+import {
+  buildPurchaseSyncPayload,
+  buildPurchaseVerificationPlaceholder,
+  getPreferredLifetimePremiumProduct,
+  getPurchaseScope,
+  mapProductToDetails,
+} from "@/services/purchases/billingService";
 import {
   createEmptyPurchaseSnapshot,
   readCachedPurchaseSnapshot,
@@ -13,15 +25,16 @@ import {
 import { PurchaseProductDetails, PurchaseSnapshot } from "@/services/purchases/types";
 
 type PurchaseContextValue = {
-  hasSupportColors: boolean;
+  hasPremiumAccents: boolean;
+  hasLifetimePremium: boolean;
   isPremium: boolean;
   isHydrated: boolean;
   isPurchasing: boolean;
   isRefreshing: boolean;
   isStoreConnected: boolean;
   purchaseError: string | null;
-  supportColorsProduct: PurchaseProductDetails | null;
-  purchaseSupportColors: () => Promise<void>;
+  lifetimePremiumProduct: PurchaseProductDetails | null;
+  purchaseLifetimePremium: () => Promise<void>;
   refreshPurchases: () => Promise<void>;
   restorePurchases: () => Promise<void>;
   clearPurchaseError: () => void;
@@ -30,34 +43,19 @@ type PurchaseContextValue = {
 const PurchaseContext = createContext<PurchaseContextValue | null>(null);
 
 const DEFAULT_VALUE: PurchaseContextValue = {
-  hasSupportColors: false,
+  hasPremiumAccents: false,
+  hasLifetimePremium: false,
   isPremium: false,
   isHydrated: true,
   isPurchasing: false,
   isRefreshing: false,
   isStoreConnected: false,
   purchaseError: null,
-  supportColorsProduct: null,
-  purchaseSupportColors: async () => undefined,
+  lifetimePremiumProduct: null,
+  purchaseLifetimePremium: async () => undefined,
   refreshPurchases: async () => undefined,
   restorePurchases: async () => undefined,
   clearPurchaseError: () => undefined,
-};
-
-const getPurchaseScope = (userId?: string | null) => userId ?? "guest";
-
-const mapProduct = (product: Product | null | undefined): PurchaseProductDetails | null => {
-  if (!product) {
-    return null;
-  }
-
-  return {
-    id: product.id,
-    title: product.displayName ?? product.title,
-    description: product.description,
-    displayPrice: product.displayPrice,
-    currencyCode: "currency" in product ? product.currency : null,
-  };
 };
 
 const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
@@ -90,11 +88,20 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
         const nextSnapshot = buildSnapshotFromSinglePurchase(purchase, "android");
         setSnapshot(nextSnapshot);
         await writeCachedPurchaseSnapshot(scope, nextSnapshot);
+        buildPurchaseVerificationPlaceholder(purchase);
+        buildPurchaseSyncPayload(nextSnapshot, currentUser?.uid);
+        analyticsService.track(analyticsEventNames.premiumPurchaseSuccess, {
+          productId: purchase.productId,
+          transactionId: purchase.transactionId ?? null,
+        });
         await getAvailablePurchases({
           includeSuspendedAndroid: false,
         });
       } catch (error) {
         setPurchaseError(error instanceof Error ? error.message : "Purchase processing failed.");
+        analyticsService.track(analyticsEventNames.premiumPurchaseFailed, {
+          reason: error instanceof Error ? error.message : "processing_failed",
+        });
       } finally {
         setIsPurchasing(false);
       }
@@ -105,10 +112,17 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
       } else {
         setPurchaseError(error.message);
       }
+      analyticsService.track(analyticsEventNames.premiumPurchaseFailed, {
+        code: error.code,
+        reason: error.message,
+      });
       setIsPurchasing(false);
     },
     onError: (error) => {
       setPurchaseError(error.message);
+      analyticsService.track(analyticsEventNames.premiumPurchaseFailed, {
+        reason: error.message,
+      });
     },
   });
 
@@ -152,7 +166,7 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
     }
 
     fetchProducts({
-      skus: [SUPPORT_COLORS_PRODUCT_ID],
+      skus: [...ALL_LIFETIME_PREMIUM_PRODUCT_IDS],
       type: "in-app",
     }).catch(() => undefined);
   }, [connected, fetchProducts]);
@@ -183,8 +197,8 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
     writeCachedPurchaseSnapshot(scope, nextSnapshot).catch(() => undefined);
   }, [availablePurchases, hasLoadedStorePurchases, isHydrated, scope]);
 
-  const supportColorsProduct = useMemo(
-    () => mapProduct(products.find((product) => product.id === SUPPORT_COLORS_PRODUCT_ID)),
+  const lifetimePremiumProduct = useMemo(
+    () => mapProductToDetails(getPreferredLifetimePremiumProduct(products as Product[])),
     [products],
   );
 
@@ -216,42 +230,49 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const purchaseSupportColors = async () => {
+  const purchaseLifetimePremium = async () => {
     setPurchaseError(null);
     setIsPurchasing(true);
+    analyticsService.track(analyticsEventNames.premiumPurchaseStarted, {
+      platform: "android",
+    });
 
     try {
       await requestPurchase({
         type: "in-app",
         request: {
           android: {
-            skus: [SUPPORT_COLORS_PRODUCT_ID],
+            skus: [LIFETIME_PREMIUM_PRODUCT_ID],
           },
         },
       });
     } catch (error) {
       setIsPurchasing(false);
       setPurchaseError(error instanceof Error ? error.message : "Purchase failed.");
+      analyticsService.track(analyticsEventNames.premiumPurchaseFailed, {
+        reason: error instanceof Error ? error.message : "request_failed",
+      });
       throw error;
     }
   };
 
   const value = useMemo<PurchaseContextValue>(
     () => ({
-      hasSupportColors: snapshot.entitlements.hasSupportColors,
+      hasPremiumAccents: snapshot.entitlements.hasPremiumAccents,
+      hasLifetimePremium: snapshot.entitlements.hasLifetimePremium,
       isPremium: snapshot.entitlements.isPremium,
       isHydrated,
       isPurchasing,
       isRefreshing,
       isStoreConnected: connected,
       purchaseError,
-      supportColorsProduct,
-      purchaseSupportColors,
+      lifetimePremiumProduct,
+      purchaseLifetimePremium,
       refreshPurchases,
       restorePurchases,
       clearPurchaseError: () => setPurchaseError(null),
     }),
-    [connected, isHydrated, isPurchasing, isRefreshing, purchaseError, snapshot, supportColorsProduct],
+    [connected, isHydrated, isPurchasing, isRefreshing, purchaseError, snapshot, lifetimePremiumProduct],
   );
 
   return <PurchaseContext.Provider value={value}>{children}</PurchaseContext.Provider>;

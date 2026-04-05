@@ -22,6 +22,8 @@ import {
 } from "react";
 
 import { firebaseAuth, hasRequiredFirebaseConfig } from "@/firebase/config";
+import { analyticsEventNames } from "@/services/analytics/events";
+import { analyticsService } from "@/services/analytics/service";
 import {
   cancelPendingRegistrationRequest,
   finalizePendingRegistrationRequest,
@@ -101,12 +103,16 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     crashlyticsService.setUserId(currentUser?.uid ?? null);
+    analyticsService.setUserId(currentUser?.uid ?? null);
   }, [currentUser?.uid]);
 
   const signInAnonymous = async () => {
     const auth = ensureAuth();
     console.log(`${AUTH_DEBUG_PREFIX} signInAnonymous:start`);
     const credential = await signInAnonymously(auth);
+    analyticsService.track(analyticsEventNames.anonymousStart, {
+      uid: credential.user.uid,
+    });
     console.log(`${AUTH_DEBUG_PREFIX} signInAnonymous:success`, {
       uid: credential.user.uid,
       isAnonymous: credential.user.isAnonymous,
@@ -188,6 +194,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         email: credential.user.email,
         isAnonymous: credential.user.isAnonymous,
       });
+      analyticsService.track(analyticsEventNames.loginSuccess, {
+        uid: credential.user.uid,
+      });
       setCurrentUser(credential.user);
       await syncUserDocument(credential.user);
     } catch (error) {
@@ -263,6 +272,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
     try {
       await sendPasswordResetEmail(auth, trimmedEmail);
+      analyticsService.track(analyticsEventNames.passwordResetRequested, {
+        emailDomain: trimmedEmail.split("@")[1] ?? null,
+      });
       console.log(`${AUTH_DEBUG_PREFIX} passwordReset:success`, { email: trimmedEmail });
     } catch (error) {
       console.log(`${AUTH_DEBUG_PREFIX} passwordReset:error`, {
@@ -364,6 +376,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       await startPendingRegistrationRequest({
         idToken,
         email: trimmedEmail,
+      });
+      analyticsService.track(analyticsEventNames.pendingRegistrationStarted, {
+        uid: userId,
+        emailDomain: trimmedEmail.split("@")[1] ?? null,
       });
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:success`, {
         uid: userId,
@@ -615,6 +631,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       await upgradeAnonymousAccount(finalizeResponse.email, password);
       await updateUserPendingRegistration(userId, null);
       setPendingRegistration(null);
+      analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {
+        uid: userId,
+        emailDomain: finalizeResponse.email.split("@")[1] ?? null,
+      });
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:success`, {
         uid: userId,
         email: finalizeResponse.email,

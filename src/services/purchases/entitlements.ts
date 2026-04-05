@@ -2,26 +2,38 @@ import type { Purchase } from "react-native-iap";
 
 import type { AccentColor } from "@/theme";
 
-import { FREE_ACCENT_COLOR, FREE_ACCENT_COLORS, SUPPORT_COLORS_PRODUCT_ID } from "./constants.ts";
+import {
+  ALL_LIFETIME_PREMIUM_PRODUCT_IDS,
+  FREE_ACCENT_COLOR,
+  FREE_ACCENT_COLORS,
+} from "./constants.ts";
 import type { PurchaseEntitlements, PurchaseSnapshot } from "./types.ts";
 
 export const getDefaultEntitlements = (): PurchaseEntitlements => ({
-  hasSupportColors: false,
+  hasPremiumAccents: false,
+  hasLifetimePremium: false,
   isPremium: false,
+  state: "inactive",
+  source: "none",
 });
 
-export const isSupportColorsPurchase = (purchase: Pick<Purchase, "productId" | "purchaseState">) =>
-  purchase.productId === SUPPORT_COLORS_PRODUCT_ID && purchase.purchaseState === "purchased";
+export const isLifetimePremiumPurchase = (purchase: Pick<Purchase, "productId" | "purchaseState">) =>
+  ALL_LIFETIME_PREMIUM_PRODUCT_IDS.includes(
+    purchase.productId as (typeof ALL_LIFETIME_PREMIUM_PRODUCT_IDS)[number],
+  ) && purchase.purchaseState === "purchased";
 
 export const isPurchaseEligibleForEntitlement = (
   purchase: Pick<Purchase, "productId" | "purchaseState"> & {
     isSuspendedAndroid?: boolean | null;
   },
-) => isSupportColorsPurchase(purchase) && !purchase.isSuspendedAndroid;
+) => isLifetimePremiumPurchase(purchase) && !purchase.isSuspendedAndroid;
 
 export const deriveEntitlementsFromPurchases = (purchases: Purchase[]): PurchaseEntitlements => ({
-  hasSupportColors: purchases.some(isPurchaseEligibleForEntitlement),
+  hasPremiumAccents: purchases.some(isPurchaseEligibleForEntitlement),
+  hasLifetimePremium: purchases.some(isPurchaseEligibleForEntitlement),
   isPremium: purchases.some(isPurchaseEligibleForEntitlement),
+  state: purchases.some(isPurchaseEligibleForEntitlement) ? "active" : "inactive",
+  source: purchases.some(isPurchaseEligibleForEntitlement) ? "google-play" : "none",
 });
 
 export const buildPurchaseSnapshot = (
@@ -33,11 +45,16 @@ export const buildPurchaseSnapshot = (
   return {
     entitlements: deriveEntitlementsFromPurchases(purchases),
     lastValidatedAt: new Date().toISOString(),
+    lastSyncedAt: null,
+    acknowledgedAt: matchingPurchase ? new Date().toISOString() : null,
     platform,
     productId: matchingPurchase?.productId ?? null,
     purchaseToken: matchingPurchase?.purchaseToken ?? null,
     transactionId: matchingPurchase?.transactionId ?? null,
-    verificationSource: "local-cache",
+    purchaseState: matchingPurchase ? "restored" : "idle",
+    premiumSource: matchingPurchase ? "google-play" : "none",
+    verificationSource: matchingPurchase ? "play-store" : "local-cache",
+    lastErrorCode: null,
   };
 };
 
@@ -46,23 +63,31 @@ export const buildSnapshotFromSinglePurchase = (
   platform: PurchaseSnapshot["platform"],
 ): PurchaseSnapshot => ({
   entitlements: {
-    hasSupportColors: isPurchaseEligibleForEntitlement(purchase),
+    hasPremiumAccents: isPurchaseEligibleForEntitlement(purchase),
+    hasLifetimePremium: isPurchaseEligibleForEntitlement(purchase),
     isPremium: isPurchaseEligibleForEntitlement(purchase),
+    state: isPurchaseEligibleForEntitlement(purchase) ? "active" : "inactive",
+    source: isPurchaseEligibleForEntitlement(purchase) ? "google-play" : "none",
   },
   lastValidatedAt: new Date().toISOString(),
+  lastSyncedAt: null,
+  acknowledgedAt: new Date().toISOString(),
   platform,
   productId: purchase.productId,
   purchaseToken: purchase.purchaseToken ?? null,
   transactionId: purchase.transactionId ?? null,
-  verificationSource: "local-cache",
+  purchaseState: "purchased",
+  premiumSource: isPurchaseEligibleForEntitlement(purchase) ? "google-play" : "none",
+  verificationSource: "play-store",
+  lastErrorCode: null,
 });
 
 export const canUseAccentColor = (
   accentColor: AccentColor,
-  hasSupportColors: boolean,
-) => FREE_ACCENT_COLORS.includes(accentColor) || hasSupportColors;
+  hasPremiumAccents: boolean,
+) => FREE_ACCENT_COLORS.includes(accentColor) || hasPremiumAccents;
 
 export const getSafeAccentColor = (
   accentColor: AccentColor,
-  hasSupportColors: boolean,
-) => (canUseAccentColor(accentColor, hasSupportColors) ? accentColor : FREE_ACCENT_COLOR);
+  hasPremiumAccents: boolean,
+) => (canUseAccentColor(accentColor, hasPremiumAccents) ? accentColor : FREE_ACCENT_COLOR);

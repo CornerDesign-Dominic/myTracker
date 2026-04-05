@@ -97,14 +97,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
     completePendingRegistration,
   } = useAuth();
   const {
-    hasSupportColors,
+    hasPremiumAccents,
+    hasLifetimePremium,
     isPremium,
     isPurchasing,
     isRefreshing,
     isStoreConnected,
     purchaseError,
-    supportColorsProduct,
-    purchaseSupportColors,
+    lifetimePremiumProduct,
+    purchaseLifetimePremium,
     restorePurchases,
     clearPurchaseError,
   } = usePurchases();
@@ -116,8 +117,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [isCompletingRegistration, setIsCompletingRegistration] = useState(false);
   const [isResendingPendingRegistration, setIsResendingPendingRegistration] = useState(false);
-  const supportColorsPrice = supportColorsProduct?.displayPrice ?? null;
-  const hasLockedAccents = !hasSupportColors;
+  const lifetimePremiumPrice = lifetimePremiumProduct?.displayPrice ?? null;
+  const hasLockedAccents = !hasPremiumAccents;
   const pendingRegistrationState = useMemo(() => {
     if (!isAnonymous || !pendingRegistration) {
       return "idle" as const;
@@ -172,10 +173,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
   }, [clearPurchaseError, isPremiumModalVisible]);
 
   useEffect(() => {
-    if (hasSupportColors) {
+    if (hasLifetimePremium) {
       setIsPremiumModalVisible(false);
     }
-  }, [hasSupportColors]);
+  }, [hasLifetimePremium]);
 
   useEffect(() => {
     if (pendingRegistrationState !== "pending") {
@@ -197,7 +198,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   };
 
   const handleAccentPress = (option: AccentColor) => {
-    if (!canUseAccentColor(option, hasSupportColors)) {
+    if (!canUseAccentColor(option, hasPremiumAccents)) {
       openPremiumModal();
       return;
     }
@@ -207,7 +208,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
   const handlePurchase = async () => {
     try {
-      await purchaseSupportColors();
+      await purchaseLifetimePremium();
     } catch {
       // Error state is handled inside the purchase context.
     }
@@ -583,7 +584,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
               const accentPreview = getAccentPalette(option, mode);
-              const isLocked = !canUseAccentColor(option, hasSupportColors);
+                  const isLocked = !canUseAccentColor(option, hasPremiumAccents);
               const isFree = FREE_ACCENT_COLORS.includes(option);
 
               return (
@@ -771,8 +772,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
                 <View style={styles.premiumPriceCard}>
                   <Text style={[typography.button, styles.premiumPriceText]}>
-                    {supportColorsPrice
-                      ? t("settings.premiumOneTimePrice", { price: supportColorsPrice })
+                    {lifetimePremiumPrice
+                      ? t("settings.premiumOneTimePrice", { price: lifetimePremiumPrice })
                       : t("settings.premiumOneTimePriceLoading")}
                   </Text>
                 </View>
@@ -835,9 +836,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   buttons.buttonBase,
                   buttons.primaryButton,
                   styles.purchaseButton,
-                  !supportColorsPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
+                  !lifetimePremiumPrice || isPurchasing || isRefreshing ? styles.purchaseButtonDisabled : null,
                 ]}
-                disabled={!supportColorsPrice || isPurchasing || isRefreshing}
+                disabled={!lifetimePremiumPrice || isPurchasing || isRefreshing}
                 onPress={handlePurchase}
               >
                 {isPurchasing ? (

@@ -6,7 +6,7 @@ import {
   deriveEntitlementsFromPurchases,
 } from "../../src/services/purchases/entitlements.ts";
 
-test("existing support colors purchase also unlocks premium", () => {
+test("existing legacy purchase still unlocks lifetime premium", () => {
   const entitlements = deriveEntitlementsFromPurchases([
     {
       productId: "support_colors",
@@ -15,11 +15,12 @@ test("existing support colors purchase also unlocks premium", () => {
     } as never,
   ]);
 
-  assert.equal(entitlements.hasSupportColors, true);
+  assert.equal(entitlements.hasPremiumAccents, true);
+  assert.equal(entitlements.hasLifetimePremium, true);
   assert.equal(entitlements.isPremium, true);
 });
 
-test("single purchase snapshot mirrors premium from the existing product", () => {
+test("single purchase snapshot mirrors premium from the legacy product", () => {
   const snapshot = buildSnapshotFromSinglePurchase(
     {
       productId: "support_colors",
@@ -31,6 +32,7 @@ test("single purchase snapshot mirrors premium from the existing product", () =>
     "android",
   );
 
-  assert.equal(snapshot.entitlements.hasSupportColors, true);
+  assert.equal(snapshot.entitlements.hasPremiumAccents, true);
+  assert.equal(snapshot.entitlements.hasLifetimePremium, true);
   assert.equal(snapshot.entitlements.isPremium, true);
 });

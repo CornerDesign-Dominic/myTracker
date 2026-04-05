@@ -83,7 +83,7 @@ const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const { currentUser, authIsReady } = useAuth();
-  const { hasSupportColors } = usePurchases();
+  const { hasPremiumAccents } = usePurchases();
   const [language, setLanguageState] = useState<LanguageOption>(() => getSystemLanguage());
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
   const [theme, setThemeState] = useState<ThemeOption>(() => getSystemTheme());
@@ -127,7 +127,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         }
 
         if (parsedSettings.accentColor) {
-          setAccentColorState(getSafeAccentColor(parsedSettings.accentColor, hasSupportColors));
+          setAccentColorState(getSafeAccentColor(parsedSettings.accentColor, hasPremiumAccents));
         }
       } catch {
         // Keep defaults if local hydration fails.
@@ -137,15 +137,15 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     };
 
     hydrateLocalSettings();
-  }, [hasSupportColors]);
+  }, [hasPremiumAccents]);
 
   useEffect(() => {
-    if (canUseAccentColor(accentColor, hasSupportColors)) {
+    if (canUseAccentColor(accentColor, hasPremiumAccents)) {
       return;
     }
 
     setAccentColorState(FREE_ACCENT_COLOR);
-  }, [accentColor, hasSupportColors]);
+  }, [accentColor, hasPremiumAccents]);
 
   useEffect(() => {
     if (!authIsReady || !isHydrated || !currentUser) {
@@ -285,7 +285,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   };
 
   const setAccentColor = (value: AccentColor) => {
-    if (!canUseAccentColor(value, hasSupportColors)) {
+    if (!canUseAccentColor(value, hasPremiumAccents)) {
       return;
     }
 

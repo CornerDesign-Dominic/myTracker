@@ -1,4 +1,4 @@
-# Tracker
+# OctoVault
 
 Schlanke Expo-/React-Native-App zur Verwaltung von Abonnements mit Firebase Auth, user-bezogener Firestore-Datenhaltung, Payment-History und Sync fuer fehlende Faelligkeiten.
 
@@ -108,3 +108,4 @@ Die verbindlichen Regeln stehen in den Dateien unter `docs/`.
 - [`docs/subscription-history.md`](docs/subscription-history.md) - Event-Modell und History-spezifische Hinweise
 - [`docs/crashlytics.md`](docs/crashlytics.md) - vorbereitete Crashlytics-Integration und echte Testschritte
 - [`docs/design-system.md`](docs/design-system.md) - visuelle Regeln und UI-System
+- [`docs/dev-build-readiness.md`](docs/dev-build-readiness.md) - native/build-relevante Vorbereitung fuer den naechsten Dev Build

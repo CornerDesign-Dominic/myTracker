@@ -249,7 +249,7 @@ export const brandImageAssets: Partial<Record<BrandVisualKey, BrandImageAsset>> 
   xboxGamePass: {
     backgroundColor: "#FFFFFF",
     borderColor: subtleBorder,
-    scale: 0.84,
+    scale: 0.94,
     source: require("../../../assets/brands/xboxgamepass.png"),
   },
   youtube: {

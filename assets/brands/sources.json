@@ -159,9 +159,10 @@
     "brandKey": "microsoft365",
     "brand": "Microsoft 365",
     "sourceType": "Official Microsoft CDN",
-    "sourceUrl": "https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/m365_48x1.svg",
+    "sourceUrl": "https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/assets/brand-icons/product/svg/office_48x1.svg",
     "color": "#000000",
-    "assetFile": "microsoft365.png"
+    "assetFile": "microsoft365.png",
+    "slug": "office"
   },
   {
     "brandKey": "n26",

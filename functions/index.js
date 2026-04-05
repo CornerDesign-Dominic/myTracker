@@ -735,21 +735,30 @@ const registrationConfirmHandler = async (request, response) => {
       openAppUrl,
     });
 
-    response.status(200).send(
-      renderHtml(
-        usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
-        usedAt
-          ? "Die E-Mail wurde bereits in der App verarbeitet. Du kannst OctoVault jetzt erneut \u00f6ffnen."
-          : "Dieser Link best\u00e4tigt noch nichts auf dem Server. Er \u00f6ffnet OctoVault, damit du die E-Mail dort best\u00e4tigst und direkt dein Passwort setzt.",
-        `<div class="actions">
-          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-            OctoVault \u00f6ffnen
-          </a>
-        </div>
-        <script>
-          window.setTimeout(function () {
-            window.location.href = ${JSON.stringify(openAppUrl)};
-          }, 120);
+      response.status(200).send(
+        renderHtml(
+          usedAt ? "OctoVault erneut \u00f6ffnen" : "OctoVault \u00f6ffnen",
+          usedAt
+            ? "Die E-Mail wurde bereits in der App verarbeitet. Du kannst OctoVault jetzt erneut \u00f6ffnen."
+            : "Dieser Link \u00f6ffnet bevorzugt OctoVault. Wenn das auf diesem Ger\u00e4t nicht m\u00f6glich ist, kannst du die Best\u00e4tigung hier im Browser bewusst ausl\u00f6sen und danach in der App weitermachen.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault \u00f6ffnen
+            </a>
+            ${
+              usedAt
+                ? ""
+                : `<form method="post" action="?token=${encodeURIComponent(token)}" style="display:inline">
+                     <button type="submit" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#eef3f9;color:#111827;text-decoration:none;font-weight:600;border:1px solid #dce4ef;cursor:pointer">
+                       Im Browser bestätigen
+                     </button>
+                   </form>`
+            }
+          </div>
+          <script>
+            window.setTimeout(function () {
+              window.location.href = ${JSON.stringify(openAppUrl)};
+            }, 120);
         </script>`,
       ),
     );
@@ -761,22 +770,217 @@ const registrationConfirmHandler = async (request, response) => {
     return;
   }
 
-  logRegistrationEvent("registrationConfirm:non-get-request-ignored", {
+  if (request.method !== "POST") {
+    logRegistrationEvent("registrationConfirm:non-supported-request", {
+      tokenHash: shortenHash(tokenHash),
+      method: request.method,
+    });
+    response.status(405).send(
+      renderHtml(
+        "Nur in der App bestätigen",
+        "Dieser Link unterstützt nur das Öffnen von OctoVault oder eine bewusste Bestätigung im Browser.",
+        `<div class="actions">
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault öffnen
+          </a>
+        </div>`,
+      ),
+    );
+    return;
+  }
+
+  logRegistrationEvent("registrationConfirm:browser-confirm:start", {
     tokenHash: shortenHash(tokenHash),
-    method: request.method,
+    alreadyConfirmed: Boolean(usedAt),
   });
-  response.status(405).send(
-    renderHtml(
-      "Nur in der App best\u00e4tigen",
-      "Dieser Link \u00f6ffnet nur OctoVault. Die eigentliche Best\u00e4tigung passiert erst nach deinem bewussten Schritt in der App.",
-      `<div class="actions">
-        <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-          OctoVault \u00f6ffnen
-        </a>
-      </div>`,
-    ),
-  );
-};
+
+  if (usedAt) {
+    response.status(200).send(
+      renderHtml(
+        "E-Mail bereits bestätigt",
+        "Diese E-Mail wurde bereits bestätigt. Du kannst jetzt zur App zurückkehren und dein Passwort festlegen.",
+        `<div class="actions">
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault öffnen
+          </a>
+        </div>`,
+      ),
+    );
+    return;
+  }
+
+  try {
+    const email = normalizeEmail(tokenData.email);
+    const emailHash = tokenData.emailHash || hashEmail(email);
+    const userRef = db.collection("users").doc(String(tokenData.uid));
+    const reservationRef = db.collection(REGISTRATION_EMAIL_RESERVATIONS_COLLECTION).doc(String(emailHash));
+    const [userSnapshot, reservationSnapshot] = await Promise.all([userRef.get(), reservationRef.get()]);
+    const pendingRegistration = userSnapshot.data()?.pendingRegistration;
+    const reservation = reservationSnapshot.data();
+
+    if (!pendingRegistration || normalizeEmail(pendingRegistration.pendingEmail) !== email) {
+      response.status(409).send(
+        renderHtml(
+          "Bestätigung nicht möglich",
+          "Dieser Vorgang ist nicht mehr offen.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </div>`,
+        ),
+      );
+      return;
+    }
+
+    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
+      await userRef.set(
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            status: "expired",
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      await reservationRef.set(
+        {
+          status: "expired",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      response.status(410).send(
+        renderHtml(
+          "Bestätigung abgelaufen",
+          "Die Registrierung ist abgelaufen. Bitte starte sie erneut in der App.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </div>`,
+        ),
+      );
+      return;
+    }
+
+    if (
+      !reservation ||
+      reservation.uid !== tokenData.uid ||
+      normalizeEmail(reservation.email) !== email ||
+      reservation.currentTokenHash !== tokenHash
+    ) {
+      response.status(409).send(
+        renderHtml(
+          "Bestätigung nicht möglich",
+          "Dieser Link wurde durch einen neueren Link ersetzt oder gehört nicht mehr zum aktuellen Vorgang.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </div>`,
+        ),
+      );
+      return;
+    }
+
+    if (
+      pendingRegistration.status === "confirmed" &&
+      reservation.status === "confirmed" &&
+      tokenData?.status === "confirmed"
+    ) {
+      response.status(200).send(
+        renderHtml(
+          "E-Mail bereits bestätigt",
+          "Diese E-Mail wurde bereits bestätigt. Du kannst jetzt zur App zurückkehren und dein Passwort festlegen.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </div>`,
+        ),
+      );
+      return;
+    }
+
+    if (pendingRegistration.status !== "pending" || reservation.status !== "pending" || tokenData?.status !== "pending") {
+      response.status(409).send(
+        renderHtml(
+          "Bestätigung nicht möglich",
+          "Dieser Vorgang ist nicht mehr offen.",
+          `<div class="actions">
+            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+              OctoVault öffnen
+            </a>
+          </div>`,
+        ),
+      );
+      return;
+    }
+
+    await db.runTransaction(async (transaction) => {
+      transaction.set(
+        userRef,
+        {
+          pendingRegistration: {
+            ...pendingRegistration,
+            status: "confirmed",
+            confirmedAt: new Date().toISOString(),
+          },
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      transaction.set(
+        reservationRef,
+        {
+          status: "confirmed",
+          confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      transaction.set(
+        tokenRef,
+        {
+          status: "confirmed",
+          usedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+
+    response.status(200).send(
+      renderHtml(
+        "E-Mail bestätigt",
+        "Die E-Mail wurde bestätigt. Kehre jetzt in OctoVault zurück und lege dort dein Passwort fest.",
+        `<div class="actions">
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault öffnen
+          </a>
+        </div>`,
+      ),
+    );
+  } catch (error) {
+    logger.error("registrationConfirmBrowser", {
+      code: error.code || "registration-confirm-browser-failed",
+      message: error.message || "Registration confirm browser failed.",
+      stack: error.stack || null,
+    });
+    response.status(500).send(
+      renderHtml(
+        "Bestätigung fehlgeschlagen",
+        "Die Bestätigung konnte gerade nicht abgeschlossen werden. Öffne die App oder versuche es später erneut.",
+        `<div class="actions">
+          <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
+            OctoVault öffnen
+          </a>
+        </div>`,
+      ),
+    );
+  }
+  };
 
 const registrationConfirmAppHandler = async (request, response) => {
   logRegistrationEvent("registrationConfirmApp:request", {

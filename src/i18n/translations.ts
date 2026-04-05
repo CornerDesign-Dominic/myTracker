@@ -261,10 +261,11 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "In OctoVault bestätigst du die E-Mail und vergibst direkt dein Passwort.",
       confirmLinkTitle: "E-Mail in OctoVault bestätigen",
       confirmLinkDescription:
-        "Dieser Link gehört zu deiner laufenden Registrierung. Bestätige jetzt die E-Mail und lege direkt dein Passwort fest.",
+        "Deine E-Mail wurde in OctoVault bestätigt. Lege jetzt dein Passwort fest, um dein Konto fertig zu verknüpfen.",
       confirmLinkHint:
-        "Die Bestätigung ist an deine aktuelle anonyme App-Sitzung gebunden. Öffne den Link auf demselben Gerät, auf dem du die Registrierung gestartet hast.",
-      confirmLinkSubmit: "Bestätigen und Passwort setzen",
+        "Diese Registrierung gehört zu deiner aktuellen anonymen App-Sitzung. Wenn du die Registrierung auf einem anderen Gerät gestartet hast, öffne den Link bitte dort.",
+      confirmLinkSubmit: "Passwort festlegen",
+      confirmLinkOpeningApp: "E-Mail wird in OctoVault geprüft...",
       confirmLinkInvalidTitle: "Link ungültig",
       confirmLinkInvalidDescription:
         "Dieser Bestätigungslink ist unvollständig oder nicht mehr gültig.",
@@ -763,10 +764,11 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Inside OctoVault you will confirm the email and set your password directly.",
       confirmLinkTitle: "Confirm email in OctoVault",
       confirmLinkDescription:
-        "This link belongs to your pending registration. Confirm the email now and set your password right away.",
+        "Your email has been confirmed in OctoVault. Set your password now to finish linking your account.",
       confirmLinkHint:
-        "The confirmation is tied to your current anonymous app session. Open this link on the same device where you started the registration.",
-      confirmLinkSubmit: "Confirm and set password",
+        "This registration belongs to your current anonymous app session. If you started the registration on another device, open the link there.",
+      confirmLinkSubmit: "Set password",
+      confirmLinkOpeningApp: "Checking your email in OctoVault...",
       confirmLinkInvalidTitle: "Invalid link",
       confirmLinkInvalidDescription:
         "This confirmation link is incomplete or no longer valid.",

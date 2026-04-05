@@ -58,8 +58,8 @@ type AuthContextValue = {
   startPendingRegistration: (email: string) => Promise<void>;
   resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
   cancelPendingRegistration: () => Promise<void>;
+  confirmPendingRegistrationLink: (token: string) => Promise<{ email: string; status: "confirmed" }>;
   completePendingRegistration: (password: string) => Promise<void>;
-  confirmPendingRegistrationWithPassword: (token: string, password: string) => Promise<void>;
   signInAnonymous: () => Promise<void>;
   upgradeAnonymousAccount: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -613,61 +613,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const completePendingRegistration = async (password: string) => {
-    const userId = currentUser?.uid;
-
-    if (!userId || !currentUser?.isAnonymous || !pendingRegistration) {
-      throw new Error("No confirmed pending registration available.");
-    }
-
-    if (pendingRegistration.status !== "confirmed") {
-      const error = new Error("Pending registration is not confirmed.");
-      (error as Error & { code?: string }).code = "pending-registration-not-confirmed";
-      throw error;
-    }
-
-    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
-      const error = new Error("Pending registration expired.");
-      (error as Error & { code?: string }).code = "pending-registration-expired";
-      throw error;
-    }
-
-    console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:start`, {
-      uid: userId,
-      email: pendingRegistration.pendingEmail,
-      status: pendingRegistration.status,
-    });
-
-    try {
-      const idToken = await currentUser.getIdToken();
-      const finalizeResponse = await finalizePendingRegistrationRequest({ idToken });
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:finalize-success`, {
-        uid: userId,
-        email: finalizeResponse.email,
-      });
-
-      await upgradeAnonymousAccount(finalizeResponse.email, password);
-      await updateUserPendingRegistration(userId, null);
-      setPendingRegistration(null);
-      analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {
-        uid: userId,
-        emailDomain: finalizeResponse.email.split("@")[1] ?? null,
-      });
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:success`, {
-        uid: userId,
-        email: finalizeResponse.email,
-      });
-    } catch (error) {
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:error`, {
-        uid: userId,
-        email: pendingRegistration.pendingEmail,
-        message: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  };
-
-  const confirmPendingRegistrationWithPassword = async (token: string, password: string) => {
+  const confirmPendingRegistrationLink = async (token: string) => {
     const userId = currentUser?.uid;
 
     if (!userId || !currentUser?.isAnonymous) {
@@ -682,18 +628,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       throw error;
     }
 
-    if (password.length < 6) {
-      const error = new Error("Password must be at least 6 characters long.");
-      (error as Error & { code?: string }).code = "auth/weak-password";
-      throw error;
-    }
-
     console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:start`, {
       uid: userId,
       localStatus: pendingRegistration?.status ?? null,
       pendingEmail: pendingRegistration?.pendingEmail ?? null,
       tokenLength: trimmedToken.length,
-      passwordLength: password.length,
     });
 
     try {
@@ -702,28 +641,25 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         idToken,
         token: trimmedToken,
       });
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:confirmed`, {
-        uid: userId,
-        email: confirmResponse.email,
-      });
 
-      const finalizeResponse = await finalizePendingRegistrationRequest({ idToken });
-      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:finalize-success`, {
-        uid: userId,
-        email: finalizeResponse.email,
-      });
+      setPendingRegistration((previous) =>
+        previous
+          ? {
+              ...previous,
+              status: "confirmed",
+              pendingEmail: confirmResponse.email,
+              confirmedAt: new Date().toISOString(),
+            }
+          : previous,
+      );
 
-      await upgradeAnonymousAccount(finalizeResponse.email, password);
-      await updateUserPendingRegistration(userId, null);
-      setPendingRegistration(null);
-      analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {
-        uid: userId,
-        emailDomain: finalizeResponse.email.split("@")[1] ?? null,
-      });
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:success`, {
         uid: userId,
-        email: finalizeResponse.email,
+        email: confirmResponse.email,
+        status: confirmResponse.status,
       });
+
+      return confirmResponse;
     } catch (error) {
       console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:confirm-link:error`, {
         uid: userId,
@@ -749,6 +685,48 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           typeof (error as { body?: unknown }).body === "string"
             ? (error as { body: string }).body
             : null,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
+  const completePendingRegistration = async (password: string) => {
+    const userId = currentUser?.uid;
+
+    if (!userId || !currentUser?.isAnonymous) {
+      throw new Error("No pending registration available.");
+    }
+
+    console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:start`, {
+      uid: userId,
+      email: pendingRegistration?.pendingEmail ?? null,
+      status: pendingRegistration?.status ?? null,
+    });
+
+    try {
+      const idToken = await currentUser.getIdToken();
+      const finalizeResponse = await finalizePendingRegistrationRequest({ idToken });
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:finalize-success`, {
+        uid: userId,
+        email: finalizeResponse.email,
+      });
+
+      await upgradeAnonymousAccount(finalizeResponse.email, password);
+      await updateUserPendingRegistration(userId, null);
+      setPendingRegistration(null);
+      analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {
+        uid: userId,
+        emailDomain: finalizeResponse.email.split("@")[1] ?? null,
+      });
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:success`, {
+        uid: userId,
+        email: finalizeResponse.email,
+      });
+    } catch (error) {
+      console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:error`, {
+        uid: userId,
+        email: pendingRegistration?.pendingEmail ?? null,
         message: error instanceof Error ? error.message : String(error),
       });
       throw error;
@@ -787,15 +765,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       register,
       requestPasswordReset,
       changePassword,
-      startPendingRegistration,
-      resendPendingRegistration,
-      cancelPendingRegistration,
-      completePendingRegistration,
-      confirmPendingRegistrationWithPassword,
-      signInAnonymous,
-      upgradeAnonymousAccount,
-      logout,
-    }),
+        startPendingRegistration,
+        resendPendingRegistration,
+        cancelPendingRegistration,
+        confirmPendingRegistrationLink,
+        completePendingRegistration,
+        signInAnonymous,
+        upgradeAnonymousAccount,
+        logout,
+      }),
     [currentUser, isInitializing, isLoggingOut, pendingRegistration],
   );
 

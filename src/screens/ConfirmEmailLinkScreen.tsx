@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,6 +18,16 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "ConfirmEmailLink">;
 
+type LinkState =
+  | "checking"
+  | "ready"
+  | "invalid"
+  | "expired"
+  | "session-mismatch"
+  | "cancelled"
+  | "already-linked"
+  | "error";
+
 export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
   const { colors, typography } = useAppTheme();
   const { t } = useI18n();
@@ -30,49 +40,106 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
     authIsReady,
     currentUser,
     isAnonymous,
-    pendingRegistration,
-    confirmPendingRegistrationWithPassword,
+    confirmPendingRegistrationLink,
+    completePendingRegistration,
   } = useAuth();
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmingLink, setIsConfirmingLink] = useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [linkState, setLinkState] = useState<LinkState>("checking");
+  const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
   const token = typeof route.params?.token === "string" ? route.params.token.trim() : "";
 
-  const pendingState = useMemo(() => {
-    if (!pendingRegistration) {
-      return "missing" as const;
+  useEffect(() => {
+    if (!authIsReady) {
+      return;
     }
 
-    if (pendingRegistration.status === "cancelled") {
-      return "cancelled" as const;
+    if (!token) {
+      setLinkState("invalid");
+      return;
     }
 
-    if (pendingRegistration.status === "expired") {
-      return "expired" as const;
+    if (!isAnonymous) {
+      setLinkState("already-linked");
+      return;
     }
 
-    if (new Date(pendingRegistration.expiresAt).getTime() <= Date.now()) {
-      return "expired" as const;
-    }
+    let isActive = true;
 
-    return pendingRegistration.status;
-  }, [pendingRegistration]);
+    const confirmLink = async () => {
+      try {
+        setIsConfirmingLink(true);
+        setError(null);
+        const result = await confirmPendingRegistrationLink(token);
+
+        if (!isActive) {
+          return;
+        }
+
+        setConfirmedEmail(result.email);
+        setLinkState("ready");
+      } catch (confirmationError) {
+        if (!isActive) {
+          return;
+        }
+
+        const errorCode =
+          typeof confirmationError === "object" &&
+          confirmationError !== null &&
+          "code" in confirmationError &&
+          typeof (confirmationError as { code?: unknown }).code === "string"
+            ? (confirmationError as { code: string }).code
+            : null;
+
+        if (
+          errorCode === "registration-session-mismatch" ||
+          errorCode === "registration-token-mismatch" ||
+          errorCode === "registration-not-pending"
+        ) {
+          setLinkState("session-mismatch");
+        } else if (
+          errorCode === "pending-registration-expired" ||
+          errorCode === "invalid-registration-token"
+        ) {
+          setLinkState("expired");
+        } else if (errorCode === "registration-cancelled") {
+          setLinkState("cancelled");
+        } else {
+          setLinkState("error");
+          setError(t("auth.confirmLinkGenericError"));
+        }
+      } finally {
+        if (isActive) {
+          setIsConfirmingLink(false);
+        }
+      }
+    };
+
+    confirmLink();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authIsReady, confirmPendingRegistrationLink, isAnonymous, t, token]);
+
+  const canSubmit = useMemo(
+    () => linkState === "ready" && !isSubmittingPassword && !isConfirmingLink,
+    [isConfirmingLink, isSubmittingPassword, linkState],
+  );
 
   const handleSubmit = async () => {
     console.log("[AuthDebug] ConfirmEmailLinkScreen:submit", {
-      hasToken: token.length > 0,
-      pendingStatus: pendingRegistration?.status ?? null,
+      tokenLength: token.length,
+      linkState,
+      confirmedEmail,
       uid: currentUser?.uid ?? null,
       isAnonymous,
       passwordLength: password.length,
       repeatLength: passwordRepeat.length,
     });
-
-    if (!token) {
-      setError(t("auth.confirmLinkInvalidDescription"));
-      return;
-    }
 
     if (password.length < 6) {
       setError(t("auth.passwordError"));
@@ -85,15 +152,12 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
     }
 
     try {
-      setIsSubmitting(true);
+      setIsSubmittingPassword(true);
       setError(null);
-      await confirmPendingRegistrationWithPassword(token, password);
+      await completePendingRegistration(password);
       navigation.reset({
         index: 1,
-        routes: [
-          { name: "Tabs" },
-          { name: "Settings" },
-        ],
+        routes: [{ name: "Tabs" }, { name: "Settings" }],
       });
     } catch (submissionError) {
       const errorCode =
@@ -109,38 +173,33 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
         message: submissionError instanceof Error ? submissionError.message : String(submissionError),
       });
 
-      if (
-        errorCode === "registration-session-mismatch" ||
-        errorCode === "registration-token-mismatch" ||
-        errorCode === "registration-not-pending"
-      ) {
-        setError(t("auth.confirmLinkSessionMismatchDescription"));
-      } else if (
-        errorCode === "pending-registration-expired" ||
-        errorCode === "invalid-registration-token"
-      ) {
-        setError(t("auth.confirmLinkExpiredDescription"));
-      } else if (errorCode === "auth/email-already-in-use") {
+      if (errorCode === "auth/email-already-in-use") {
         setError(t("auth.emailInUseError"));
+      } else if (errorCode === "pending-registration-expired") {
+        setError(t("auth.confirmLinkExpiredDescription"));
+      } else if (errorCode === "pending-registration-not-confirmed") {
+        setError(t("settings.pendingFinalizeNotConfirmed"));
       } else {
         setError(t("auth.confirmLinkGenericError"));
       }
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingPassword(false);
     }
   };
 
   const renderBody = () => {
-    if (!authIsReady) {
+    if (!authIsReady || isConfirmingLink || linkState === "checking") {
       return (
         <View style={styles.centeredState}>
           <ActivityIndicator size="small" color={colors.accent} />
-          <Text style={[typography.secondary, styles.bodyText]}>{t("common.loading")}</Text>
+          <Text style={[typography.secondary, styles.bodyText]}>
+            {t("auth.confirmLinkOpeningApp")}
+          </Text>
         </View>
       );
     }
 
-    if (!token) {
+    if (linkState === "invalid") {
       return (
         <View style={styles.stack}>
           <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkInvalidTitle")}</Text>
@@ -151,7 +210,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
       );
     }
 
-    if (!isAnonymous) {
+    if (linkState === "already-linked") {
       return (
         <View style={styles.stack}>
           <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkAlreadyLinkedTitle")}</Text>
@@ -168,7 +227,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
       );
     }
 
-    if (pendingState === "expired") {
+    if (linkState === "expired") {
       return (
         <View style={styles.stack}>
           <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkExpiredTitle")}</Text>
@@ -179,12 +238,34 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
       );
     }
 
-    if (pendingState === "cancelled") {
+    if (linkState === "cancelled") {
       return (
         <View style={styles.stack}>
           <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkCancelledTitle")}</Text>
           <Text style={[typography.secondary, styles.bodyText]}>
             {t("auth.confirmLinkCancelledDescription")}
+          </Text>
+        </View>
+      );
+    }
+
+    if (linkState === "session-mismatch") {
+      return (
+        <View style={styles.stack}>
+          <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkSessionMismatchTitle")}</Text>
+          <Text style={[typography.secondary, styles.bodyText]}>
+            {t("auth.confirmLinkSessionMismatchDescription")}
+          </Text>
+        </View>
+      );
+    }
+
+    if (linkState === "error") {
+      return (
+        <View style={styles.stack}>
+          <Text style={[typography.cardTitle, styles.titleText]}>{t("common.actionFailed")}</Text>
+          <Text style={[typography.secondary, styles.bodyText]}>
+            {error ?? t("auth.confirmLinkGenericError")}
           </Text>
         </View>
       );
@@ -196,10 +277,10 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
           <Text style={[typography.cardTitle, styles.titleText]}>{t("auth.confirmLinkTitle")}</Text>
           <Text style={[typography.secondary, styles.bodyText]}>{t("auth.confirmLinkDescription")}</Text>
         </View>
-        {pendingRegistration?.pendingEmail ? (
+        {confirmedEmail ? (
           <View style={styles.emailCard}>
             <Text style={[typography.meta, styles.emailLabel]}>{t("auth.email")}</Text>
-            <Text style={[typography.body, styles.emailValue]}>{pendingRegistration.pendingEmail}</Text>
+            <Text style={[typography.body, styles.emailValue]}>{confirmedEmail}</Text>
           </View>
         ) : null}
         <View style={styles.stack}>
@@ -210,7 +291,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
             secureTextEntry
             autoCapitalize="none"
             style={[inputs.input, styles.input]}
-            editable={!isSubmitting}
+            editable={canSubmit}
           />
         </View>
         <View style={styles.stack}>
@@ -221,7 +302,7 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
             secureTextEntry
             autoCapitalize="none"
             style={[inputs.input, styles.input]}
-            editable={!isSubmitting}
+            editable={canSubmit}
           />
         </View>
         <Text style={[typography.meta, styles.hintText]}>{t("auth.confirmLinkHint")}</Text>
@@ -230,12 +311,12 @@ export const ConfirmEmailLinkScreen = ({ navigation, route }: Props) => {
           style={[
             buttons.buttonBase,
             buttons.primaryButton,
-            isSubmitting ? styles.primaryButtonDisabled : null,
+            !canSubmit ? styles.primaryButtonDisabled : null,
           ]}
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={!canSubmit}
         >
-          {isSubmitting ? (
+          {isSubmittingPassword ? (
             <ActivityIndicator size="small" color={colors.accent} />
           ) : (
             <Text style={[typography.button, styles.primaryButtonText]}>

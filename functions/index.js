@@ -16,7 +16,7 @@ const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
-const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only";
+const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only-r2";
 const PUBLIC_HTTP_OPTIONS = { region: REGION, invoker: "public" };
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
@@ -135,7 +135,12 @@ const getRegistrationConfig = () => ({
     process.env.REGISTRATION_APP_CONFIRMATION_DEEP_LINK_URL || DEFAULT_APP_CONFIRM_DEEP_LINK_URL,
   resendApiKey: process.env.RESEND_API_KEY,
   registrationMailFrom: process.env.REGISTRATION_MAIL_FROM,
-  supportMailTo: process.env.SUPPORT_MAIL_TO || process.env.REGISTRATION_MAIL_FROM,
+  supportMailTo: process.env.SUPPORT_MAIL_TO,
+  supportMailFrom: process.env.SUPPORT_MAIL_FROM || process.env.REGISTRATION_MAIL_FROM,
+  supportMailReplyTo:
+    process.env.SUPPORT_MAIL_REPLY_TO ||
+    process.env.SUPPORT_MAIL_TO ||
+    process.env.REGISTRATION_MAIL_FROM,
 });
 
 const buildDeepLinkUrl = (baseUrl, token) =>
@@ -290,14 +295,25 @@ const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listIt
   </html>
 `;
 
-const sendResendEmail = async ({ email, to, subject, html, errorLogEvent, errorMessage, replyTo }) => {
+const sendResendEmail = async ({
+  email,
+  to,
+  from,
+  subject,
+  html,
+  errorLogEvent,
+  errorMessage,
+  replyTo,
+}) => {
   const { resendApiKey, registrationMailFrom, confirmationBaseUrl } = getRegistrationConfig();
   const recipient = to || email;
+  const sender = from || registrationMailFrom;
 
-  if (!resendApiKey || !registrationMailFrom || !recipient) {
+  if (!resendApiKey || !sender || !recipient) {
     logger.error("registration:mail-config-missing", {
       hasResendApiKey: Boolean(resendApiKey),
       hasRegistrationMailFrom: Boolean(registrationMailFrom),
+      hasSender: Boolean(sender),
       hasRecipient: Boolean(recipient),
       confirmationBaseUrl,
     });
@@ -312,11 +328,11 @@ const sendResendEmail = async ({ email, to, subject, html, errorLogEvent, errorM
       Authorization: `Bearer ${resendApiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from: registrationMailFrom,
-      to: recipient,
-      subject,
-      html,
+      body: JSON.stringify({
+        from: sender,
+        to: recipient,
+        subject,
+        html,
       reply_to: replyTo ? [replyTo] : undefined,
     }),
   });
@@ -540,10 +556,20 @@ const sendSupportContactEmail = async ({
   theme,
   occurredAt,
 }) => {
-  const { supportMailTo } = getRegistrationConfig();
+  const { supportMailTo, supportMailFrom, registrationMailFrom } = getRegistrationConfig();
+  const supportRecipient = supportMailTo || registrationMailFrom;
+
+  if (!supportMailTo) {
+    logger.error("contact:missing-support-mail-to", {
+      hasSupportMailTo: false,
+      fallbackRecipient: supportRecipient,
+      note: "SUPPORT_MAIL_TO is not configured. Falling back to REGISTRATION_MAIL_FROM.",
+    });
+  }
 
   await sendResendEmail({
-    to: supportMailTo,
+    to: supportRecipient,
+    from: supportMailFrom,
     subject: `[OctoVault][${categoryLabel}] ${subject}`,
     html: renderSupportMailHtml({
       categoryLabel,
@@ -565,8 +591,12 @@ const sendSupportContactEmail = async ({
 };
 
 const sendContactConfirmationEmail = async ({ email, categoryLabel, subject }) => {
+  const { supportMailFrom, supportMailReplyTo } = getRegistrationConfig();
+
   await sendResendEmail({
     email,
+    from: supportMailFrom,
+    replyTo: supportMailReplyTo,
     subject: "Wir haben deine Nachricht erhalten",
     html: renderEmailCard({
       title: "Vielen Dank für deine Nachricht",

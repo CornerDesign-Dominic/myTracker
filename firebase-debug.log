@@ -1,0 +1,16 @@
+[debug] [2026-04-06T21:15:28.578Z] ----------------------------------------------------------------------
+[debug] [2026-04-06T21:15:28.586Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions
+[debug] [2026-04-06T21:15:28.587Z] CLI Version:   15.13.0
+[debug] [2026-04-06T21:15:28.587Z] Platform:      win32
+[debug] [2026-04-06T21:15:28.587Z] Node Version:  v20.18.0
+[debug] [2026-04-06T21:15:28.587Z] Time:          Mon Apr 06 2026 23:15:28 GMT+0200 (Mitteleuropäische Sommerzeit)
+[debug] [2026-04-06T21:15:28.587Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-06T21:15:53.881Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-06T21:15:53.881Z] > authorizing via signed-in user (dominicfranz4@gmail.com)
+[debug] [2026-04-06T21:15:53.881Z] [iam] checking project mytracker-0 for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-04-06T21:15:53.883Z] Checked if tokens are valid: false, expires at: 1775504831192
+[debug] [2026-04-06T21:15:53.883Z] Checked if tokens are valid: false, expires at: 1775504831192
+[debug] [2026-04-06T21:15:53.883Z] > refreshing access token with scopes: []
+[debug] [2026-04-06T21:15:53.886Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-04-06T21:15:53.886Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]

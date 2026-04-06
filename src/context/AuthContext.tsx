@@ -1,12 +1,13 @@
 import {
   EmailAuthProvider,
   User,
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   linkWithCredential,
   onAuthStateChanged,
   reauthenticateWithCredential,
-  sendPasswordResetEmail,
+  verifyPasswordResetCode,
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
@@ -33,6 +34,7 @@ import {
   resendPendingRegistrationRequest,
   startPendingRegistrationRequest,
 } from "@/services/auth/pendingRegistrationApi";
+import { passwordResetStartRequest } from "@/services/auth/passwordResetApi";
 import { crashlyticsService } from "@/services/crashlytics/crashlytics";
 import {
   PendingRegistrationDocument,
@@ -58,6 +60,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  completePasswordReset: (oobCode: string, password: string) => Promise<{ email: string }>;
   changePassword: (currentPassword: string, nextPassword: string) => Promise<void>;
   startPendingRegistration: (email: string) => Promise<void>;
   resendPendingRegistration: () => Promise<"resent" | "confirmed" | "blocked">;
@@ -342,12 +345,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   };
 
   const requestPasswordReset = async (email: string) => {
-    const auth = ensureAuth();
     const trimmedEmail = email.trim();
     console.log(`${AUTH_DEBUG_PREFIX} passwordReset:start`, { email: trimmedEmail });
 
     try {
-      await sendPasswordResetEmail(auth, trimmedEmail);
+      await passwordResetStartRequest({
+        email: trimmedEmail,
+        source: "AuthContext.requestPasswordReset",
+      });
       analyticsService.track(analyticsEventNames.passwordResetRequested, {
         emailDomain: trimmedEmail.split("@")[1] ?? null,
       });
@@ -359,6 +364,78 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       });
       throw error;
     }
+  };
+
+  const completePasswordReset = async (oobCode: string, password: string) => {
+    const auth = ensureAuth();
+    const trimmedCode = oobCode.trim();
+
+    if (!trimmedCode) {
+      const error = new Error("Password reset code is invalid.");
+      (error as Error & { code?: string }).code = "auth/invalid-action-code";
+      throw error;
+    }
+
+    console.log(`${AUTH_DEBUG_PREFIX} passwordReset:complete:start`, {
+      oobCodeLength: trimmedCode.length,
+      passwordLength: password.length,
+    });
+
+    const email = await verifyPasswordResetCode(auth, trimmedCode);
+    await confirmPasswordReset(auth, trimmedCode, password);
+
+    console.log(`${AUTH_DEBUG_PREFIX} passwordReset:complete:confirmed`, {
+      email,
+      oobCodeLength: trimmedCode.length,
+    });
+
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      setCurrentUser(credential.user);
+      await syncUserDocument(credential.user);
+
+      try {
+        const refreshedIdToken = await credential.user.getIdToken(true);
+        await accountMailEventRequest({
+          idToken: refreshedIdToken,
+          eventType: "password-reset-completed",
+          idempotencyKey: `password-reset-completed-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+          source: "AuthContext.completePasswordReset",
+          occurredAt: new Date().toISOString(),
+        });
+        console.log(`${AUTH_DEBUG_PREFIX} passwordReset:complete:mail-event:success`, {
+          uid: credential.user.uid,
+          email,
+        });
+      } catch (mailError) {
+        console.log(`${AUTH_DEBUG_PREFIX} passwordReset:complete:mail-event:error`, {
+          email,
+          uid: credential.user.uid,
+          code:
+            typeof mailError === "object" &&
+            mailError !== null &&
+            "code" in mailError &&
+            typeof (mailError as { code?: unknown }).code === "string"
+              ? (mailError as { code: string }).code
+              : null,
+          message: mailError instanceof Error ? mailError.message : String(mailError),
+        });
+      }
+    } catch (signInError) {
+      console.log(`${AUTH_DEBUG_PREFIX} passwordReset:complete:sign-in-after-reset:error`, {
+        email,
+        code:
+          typeof signInError === "object" &&
+          signInError !== null &&
+          "code" in signInError &&
+          typeof (signInError as { code?: unknown }).code === "string"
+            ? (signInError as { code: string }).code
+            : null,
+        message: signInError instanceof Error ? signInError.message : String(signInError),
+      });
+    }
+
+    return { email };
   };
 
   const changePassword = async (currentPassword: string, nextPassword: string) => {
@@ -890,6 +967,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       login,
       register,
       requestPasswordReset,
+      completePasswordReset,
       changePassword,
         startPendingRegistration,
         resendPendingRegistration,

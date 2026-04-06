@@ -172,6 +172,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountCurrentPasswordWrong: "Das aktuelle Passwort ist nicht korrekt.",
       accountChangePasswordConfirm: "aktualisieren",
       accountPasswordChangedSuccess: "Dein Passwort wurde erfolgreich gespeichert.",
+      accountForgotPasswordSent:
+        "Wir haben dir einen Link geschickt, über den du dein Passwort in der App neu vergeben kannst.",
       accountChangePasswordError:
         "Das Passwort konnte gerade nicht geändert werden.",
       loggedInBadge: "Eingeloggt",
@@ -201,6 +203,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "Die E-Mail-Bestätigung ist noch nicht abgeschlossen.",
       pendingExpiresLabel: "Gültig bis",
       pendingResendAction: "Mail erneut senden",
+      pendingResendSuccessTitle: "E-Mail erneut gesendet",
       pendingCancelAction: "Abbrechen",
       pendingResendQueued:
         "Eine neue Bestätigungs-Mail wurde angestoßen.",
@@ -323,6 +326,25 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordResetSuccess:
         "Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.",
       passwordResetError: "Der Reset-Link konnte gerade nicht gesendet werden.",
+      passwordResetScreenTitle: "Neues Passwort vergeben",
+      passwordResetScreenDescription:
+        "Lege jetzt ein neues Passwort für dein OctoVault Konto fest.",
+      passwordResetScreenChecking: "Link wird geprüft...",
+      passwordResetScreenEmailLabel: "E-Mail",
+      passwordResetScreenInvalidTitle: "Link ungültig",
+      passwordResetScreenInvalidDescription:
+        "Dieser Passwort-Link ist ungültig oder unvollständig.",
+      passwordResetScreenExpiredTitle: "Link abgelaufen",
+      passwordResetScreenExpiredDescription:
+        "Dieser Passwort-Link ist nicht mehr gültig. Fordere bitte einen neuen Link an.",
+      passwordResetScreenHint:
+        "Nach dem Speichern erhältst du eine Bestätigung per E-Mail.",
+      passwordResetScreenSubmit: "Neues Passwort speichern",
+      passwordResetScreenSuccessTitle: "Passwort gespeichert",
+      passwordResetScreenSuccessDescription:
+        "Dein neues Passwort ist jetzt aktiv. Du bist wieder in OctoVault angemeldet.",
+      passwordResetScreenGenericError:
+        "Das neue Passwort konnte gerade nicht gespeichert werden.",
       loginSwitch: "Noch kein Konto? Registrieren",
       loginError: "Login fehlgeschlagen.",
       loginInvalidCredentials: "E-Mail oder Passwort ist nicht korrekt.",
@@ -762,6 +784,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       accountCurrentPasswordWrong: "The current password is incorrect.",
       accountChangePasswordConfirm: "Update password",
       accountPasswordChangedSuccess: "Your password was changed successfully.",
+      accountForgotPasswordSent:
+        "We sent you a link so you can set a new password directly in the app.",
       accountChangePasswordError:
         "The password could not be changed right now.",
       loggedInBadge: "Signed in",
@@ -791,6 +815,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
         "The email confirmation has not been completed yet.",
       pendingExpiresLabel: "Valid until",
       pendingResendAction: "Send email again",
+      pendingResendSuccessTitle: "Email sent again",
       pendingCancelAction: "Cancel",
       pendingResendQueued:
         "A new confirmation email has been triggered.",
@@ -912,6 +937,25 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordResetSuccess:
         "If an account with this email exists, a reset link has been sent.",
       passwordResetError: "The reset link could not be sent right now.",
+      passwordResetScreenTitle: "Set a new password",
+      passwordResetScreenDescription:
+        "Choose a new password for your OctoVault account now.",
+      passwordResetScreenChecking: "Checking link...",
+      passwordResetScreenEmailLabel: "Email",
+      passwordResetScreenInvalidTitle: "Invalid link",
+      passwordResetScreenInvalidDescription:
+        "This password link is invalid or incomplete.",
+      passwordResetScreenExpiredTitle: "Link expired",
+      passwordResetScreenExpiredDescription:
+        "This password link is no longer valid. Please request a new one.",
+      passwordResetScreenHint:
+        "After saving, you will receive a confirmation email.",
+      passwordResetScreenSubmit: "Save new password",
+      passwordResetScreenSuccessTitle: "Password saved",
+      passwordResetScreenSuccessDescription:
+        "Your new password is now active. You are signed in to OctoVault again.",
+      passwordResetScreenGenericError:
+        "The new password could not be saved right now.",
       loginSwitch: "No account yet? Register",
       loginError: "Login failed.",
       loginInvalidCredentials: "Email or password is incorrect.",

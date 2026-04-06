@@ -33,6 +33,7 @@ export const AccountScreen = ({ navigation }: Props) => {
     pendingRegistration,
     changePassword,
     completePendingRegistration,
+    requestPasswordReset,
     logout,
   } = useAuth();
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
@@ -43,6 +44,8 @@ export const AccountScreen = ({ navigation }: Props) => {
   const [nextPasswordRepeat, setNextPasswordRepeat] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSendingResetLink, setIsSendingResetLink] = useState(false);
+  const [resetLinkInfo, setResetLinkInfo] = useState<string | null>(null);
   const hasConfirmedPendingRegistration =
     isAnonymous && pendingRegistration?.status === "confirmed";
   const email =
@@ -59,6 +62,27 @@ export const AccountScreen = ({ navigation }: Props) => {
     setNextPassword("");
     setNextPasswordRepeat("");
     setPasswordError(null);
+    setResetLinkInfo(null);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setPasswordError(t("settings.accountChangePasswordError"));
+      return;
+    }
+
+    try {
+      setIsSendingResetLink(true);
+      setPasswordError(null);
+      setResetLinkInfo(null);
+      await requestPasswordReset(email);
+      setResetLinkInfo(t("settings.accountForgotPasswordSent"));
+    } catch {
+      setPasswordError(t("auth.passwordResetError"));
+      setResetLinkInfo(null);
+    } finally {
+      setIsSendingResetLink(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -85,6 +109,7 @@ export const AccountScreen = ({ navigation }: Props) => {
     try {
       setIsChangingPassword(true);
       setPasswordError(null);
+      setResetLinkInfo(null);
       if (hasConfirmedPendingRegistration) {
         await completePendingRegistration(nextPassword);
       } else {
@@ -254,6 +279,15 @@ export const AccountScreen = ({ navigation }: Props) => {
                     autoCapitalize="none"
                     style={[inputs.input, styles.input]}
                   />
+                  <Pressable
+                    onPress={handleForgotPassword}
+                    disabled={isSendingResetLink || isChangingPassword}
+                    style={styles.forgotPasswordRow}
+                  >
+                    <Text style={[typography.secondary, styles.forgotPasswordLink]}>
+                      {isSendingResetLink ? t("auth.passwordResetSubmit") : t("auth.passwordForgot")}
+                    </Text>
+                  </Pressable>
                 </>
               ) : null}
               <Text style={[typography.meta, styles.inputLabel]}>{t("settings.accountNewPasswordLabel")}</Text>
@@ -276,6 +310,9 @@ export const AccountScreen = ({ navigation }: Props) => {
               />
               {passwordError ? (
                 <Text style={[typography.secondary, styles.errorText]}>{passwordError}</Text>
+              ) : null}
+              {resetLinkInfo ? (
+                <Text style={[typography.secondary, styles.successText]}>{resetLinkInfo}</Text>
               ) : null}
             </View>
             <View style={styles.modalActions}>
@@ -390,6 +427,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     passwordForm: {
       gap: spacing.xs,
     },
+    forgotPasswordRow: {
+      alignItems: "flex-end",
+      marginTop: -spacing.xxs,
+      marginBottom: spacing.xs,
+    },
+    forgotPasswordLink: {
+      color: colors.accent,
+      textAlign: "right",
+    },
     primaryButtonText: {
       color: colors.accent,
     },
@@ -451,5 +497,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     errorText: {
       color: colors.danger,
+    },
+    successText: {
+      color: colors.accent,
+      lineHeight: 21,
     },
   });

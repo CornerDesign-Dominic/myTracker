@@ -14,6 +14,7 @@ const auth = admin.auth();
 
 const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 24 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
 const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only-r2";
@@ -21,6 +22,9 @@ const PUBLIC_HTTP_OPTIONS = { region: REGION, invoker: "public" };
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
 const DEFAULT_APP_CONFIRM_DEEP_LINK_URL = "octovault://confirm-email";
+const DEFAULT_PASSWORD_RESET_OPEN_URL =
+  "https://europe-west1-mytracker-0.cloudfunctions.net/passwordResetOpen";
+const DEFAULT_APP_RESET_PASSWORD_DEEP_LINK_URL = "octovault://reset-password";
 const PASSWORD_REMINDER_STAGES = [
   {
     key: "after-24h",
@@ -133,6 +137,10 @@ const getRegistrationConfig = () => ({
     process.env.REGISTRATION_CONFIRMATION_URL || DEFAULT_CONFIRMATION_URL,
   appConfirmationDeepLinkUrl:
     process.env.REGISTRATION_APP_CONFIRMATION_DEEP_LINK_URL || DEFAULT_APP_CONFIRM_DEEP_LINK_URL,
+  passwordResetOpenUrl:
+    process.env.PASSWORD_RESET_OPEN_URL || DEFAULT_PASSWORD_RESET_OPEN_URL,
+  appResetPasswordDeepLinkUrl:
+    process.env.APP_RESET_PASSWORD_DEEP_LINK_URL || DEFAULT_APP_RESET_PASSWORD_DEEP_LINK_URL,
   resendApiKey: process.env.RESEND_API_KEY,
   registrationMailFrom: process.env.REGISTRATION_MAIL_FROM,
   supportMailTo: process.env.SUPPORT_MAIL_TO,
@@ -251,7 +259,17 @@ const renderEmailLinkBlock = ({ intro, url }) => `
   </div>
 `;
 
-const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listItems = [], linkIntro, linkUrl, footerNote }) => `
+const renderEmailCard = ({
+  eyebrow = "OctoVault",
+  title,
+  paragraphs = [],
+  listItems = [],
+  linkIntro,
+  linkUrl,
+  secondaryLinkIntro,
+  secondaryLinkUrl,
+  footerNote,
+}) => `
   <!doctype html>
   <html lang="de">
     <head>
@@ -277,6 +295,14 @@ const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listIt
                       ? renderEmailLinkBlock({
                           intro: linkIntro,
                           url: linkUrl,
+                        })
+                      : ""
+                  }
+                  ${
+                    secondaryLinkIntro && secondaryLinkUrl
+                      ? renderEmailLinkBlock({
+                          intro: secondaryLinkIntro,
+                          url: secondaryLinkUrl,
                         })
                       : ""
                   }
@@ -495,6 +521,56 @@ const sendPasswordChangedEmail = async ({ email, occurredAt }) => {
   });
 };
 
+const sendPasswordResetCompletedEmail = async ({ email, occurredAt }) => {
+  const occurredLabel = formatDateTimeLabel(occurredAt);
+
+  await sendResendEmail({
+    email,
+    subject: "Dein Passwort wurde erfolgreich zurückgesetzt",
+    html: renderEmailCard({
+      title: "Dein neues Passwort ist jetzt aktiv",
+      paragraphs: [
+        "Für dein OctoVault Konto wurde soeben ein neues Passwort festgelegt.",
+        `Zeitpunkt: ${occurredLabel}`,
+      ],
+      listItems: [
+        "Wenn du das nicht selbst warst, kontaktiere uns bitte umgehend.",
+      ],
+      footerNote:
+        "Diese Sicherheitsmail wird nur nach einem erfolgreich abgeschlossenen Passwort-Reset versendet.",
+    }),
+    errorLogEvent: "password-reset-completed:send-email-failed",
+    errorMessage: "Failed to send password reset completed email.",
+  });
+};
+
+const sendPasswordResetLinkEmail = async ({ email, appResetUrl, browserResetUrl }) => {
+  await sendResendEmail({
+    email,
+    subject: "Setze ein neues Passwort für OctoVault",
+    html: renderEmailCard({
+      title: "Setze ein neues Passwort",
+      paragraphs: [
+        "Wir haben eine Anfrage erhalten, ein neues Passwort für dein OctoVault Konto zu vergeben.",
+        "Öffne den Link am besten direkt auf deinem Handy. Dort kannst du dein neues Passwort in der App festlegen.",
+      ],
+      listItems: [
+        "Der Link ist 24 Stunden gültig.",
+        "Wenn du diese Anfrage nicht selbst gestartet hast, kannst du diese Nachricht ignorieren.",
+      ],
+      linkIntro: "Öffne OctoVault direkt über diesen Link:",
+      linkUrl: appResetUrl,
+      secondaryLinkIntro:
+        "Falls der direkte App-Link auf diesem Gerät nicht funktioniert, nutze diesen Browser-Link:",
+      secondaryLinkUrl: browserResetUrl,
+      footerNote:
+        "Das neue Passwort legst du direkt in OctoVault fest. Es wird nicht per E-Mail abgefragt.",
+    }),
+    errorLogEvent: "password-reset-link:send-email-failed",
+    errorMessage: "Failed to send password reset email.",
+  });
+};
+
 const escapeHtmlWithBreaks = (value) => escapeHtml(value).replace(/\n/g, "<br />");
 
 const renderSupportMailHtml = ({
@@ -648,6 +724,73 @@ const verifyOptionalCaller = async (request) => {
     nextError.code = "invalid-auth-token";
     throw nextError;
   }
+};
+
+const findConfirmedPendingRegistrationByEmail = async (email) => {
+  const snapshot = await db
+    .collection("users")
+    .where("pendingRegistration.pendingEmail", "==", email)
+    .where("pendingRegistration.status", "==", "confirmed")
+    .limit(2)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  if (snapshot.size > 1) {
+    logger.warn("passwordReset:multiple-confirmed-pending-registrations", {
+      email,
+      userIds: snapshot.docs.map((doc) => doc.id),
+    });
+  }
+
+  return snapshot.docs[0];
+};
+
+const ensurePendingUserHasPasswordSignIn = async ({ userId, email }) => {
+  const temporaryPassword = crypto.randomBytes(24).toString("base64url");
+
+  await auth.updateUser(userId, {
+    email,
+    password: temporaryPassword,
+    emailVerified: true,
+  });
+
+  await db.collection("users").doc(userId).set(
+    {
+      email,
+      isAnonymous: false,
+      providerIds: ["password"],
+      upgradedAt: admin.firestore.FieldValue.serverTimestamp(),
+      pendingRegistration: admin.firestore.FieldValue.delete(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  await getReservationRef(email).set(
+    {
+      status: "completed",
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+};
+
+const buildPasswordResetAppUrl = (oobCode) => {
+  const { appResetPasswordDeepLinkUrl } = getRegistrationConfig();
+  const baseUrl = String(appResetPasswordDeepLinkUrl || DEFAULT_APP_RESET_PASSWORD_DEEP_LINK_URL);
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}oobCode=${encodeURIComponent(oobCode)}&mode=resetPassword`;
+};
+
+const buildPasswordResetBrowserUrl = (oobCode) => {
+  const { passwordResetOpenUrl } = getRegistrationConfig();
+  const baseUrl = String(passwordResetOpenUrl || DEFAULT_PASSWORD_RESET_OPEN_URL);
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}oobCode=${encodeURIComponent(oobCode)}&mode=resetPassword`;
 };
 
 const renderHtml = (title, message, content = "") => `<!doctype html>
@@ -1811,7 +1954,7 @@ const accountMailEventHandler = async (request, response) => {
       return;
     }
 
-    if (!eventType || !["account-linked", "password-changed"].includes(eventType)) {
+      if (!eventType || !["account-linked", "password-changed", "password-reset-completed"].includes(eventType)) {
       jsonError(response, 400, "invalid-mail-event-type", "Mail event type is invalid.");
       return;
     }
@@ -1849,17 +1992,22 @@ const accountMailEventHandler = async (request, response) => {
       return;
     }
 
-    if (eventType === "account-linked") {
-      await sendAccountLinkedEmail({
-        email,
-        openAppUrl: buildAppHomeUrl(),
-      });
-    } else if (eventType === "password-changed") {
-      await sendPasswordChangedEmail({
-        email,
-        occurredAt,
-      });
-    }
+      if (eventType === "account-linked") {
+        await sendAccountLinkedEmail({
+          email,
+          openAppUrl: buildAppHomeUrl(),
+        });
+      } else if (eventType === "password-changed") {
+        await sendPasswordChangedEmail({
+          email,
+          occurredAt,
+        });
+      } else if (eventType === "password-reset-completed") {
+        await sendPasswordResetCompletedEmail({
+          email,
+          occurredAt,
+        });
+      }
 
     await userRef.set(
       {
@@ -1908,6 +2056,131 @@ const accountMailEventHandler = async (request, response) => {
             : 500;
     jsonError(response, status, code, error.message || "Account mail event failed.");
   }
+};
+
+const passwordResetStartHandler = async (request, response) => {
+  setCors(response);
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    jsonError(response, 405, "method-not-allowed", "Only POST is allowed.");
+    return;
+  }
+
+  try {
+    const email = normalizeEmail(request.body?.email);
+    const source = String(request.body?.source ?? "").trim() || "unknown";
+
+    if (!validateEmail(email)) {
+      jsonError(response, 400, "invalid-email", "Email is invalid.");
+      return;
+    }
+
+    let userRecord = null;
+    let pendingUserDoc = null;
+
+    try {
+      userRecord = await auth.getUserByEmail(email);
+    } catch (error) {
+      if (error.code !== "auth/user-not-found") {
+        throw error;
+      }
+    }
+
+    if (!userRecord) {
+      pendingUserDoc = await findConfirmedPendingRegistrationByEmail(email);
+
+      if (pendingUserDoc) {
+        await ensurePendingUserHasPasswordSignIn({
+          userId: pendingUserDoc.id,
+          email,
+        });
+        userRecord = await auth.getUser(pendingUserDoc.id);
+        logRegistrationEvent("passwordResetStart:pending-user-upgraded", {
+          email,
+          uid: pendingUserDoc.id,
+          source,
+        });
+      }
+    }
+
+    if (!userRecord?.email) {
+      logRegistrationEvent("passwordResetStart:no-match", {
+        email,
+        source,
+      });
+      response.status(200).json({ ok: true });
+      return;
+    }
+
+    const firebaseResetLink = await auth.generatePasswordResetLink(userRecord.email);
+    const generatedUrl = new URL(firebaseResetLink);
+    const oobCode = generatedUrl.searchParams.get("oobCode");
+
+    if (!oobCode) {
+      const error = new Error("Missing password reset code.");
+      error.code = "missing-password-reset-code";
+      throw error;
+    }
+
+    const appResetUrl = buildPasswordResetAppUrl(oobCode);
+    const browserResetUrl = buildPasswordResetBrowserUrl(oobCode);
+
+    await sendPasswordResetLinkEmail({
+      email: userRecord.email,
+      appResetUrl,
+      browserResetUrl,
+    });
+
+    logRegistrationEvent("passwordResetStart:sent", {
+      email,
+      uid: userRecord.uid,
+      source,
+      hasPendingUpgrade: Boolean(pendingUserDoc),
+    });
+
+    response.status(200).json({ ok: true });
+  } catch (error) {
+    logger.error("passwordResetStart", {
+      code: error.code || "password-reset-start-failed",
+      message: error.message || "Password reset start failed.",
+      stack: error.stack || null,
+    });
+    const code = error.code || "password-reset-start-failed";
+    const status = code === "invalid-email" ? 400 : 500;
+    jsonError(response, status, code, error.message || "Password reset start failed.");
+  }
+};
+
+const passwordResetOpenHandler = async (request, response) => {
+  if (request.method !== "GET") {
+    response.status(405).send(renderHtml("Nur Link öffnen", "Dieser Link kann nur geöffnet werden."));
+    return;
+  }
+
+  const oobCode = String(request.query.oobCode ?? "").trim();
+  if (!oobCode) {
+    response.status(400).send(renderHtml("Link ungültig", "Der Passwort-Link ist unvollständig."));
+    return;
+  }
+
+  const openAppUrl = buildPasswordResetAppUrl(oobCode);
+
+  response.status(200).send(
+    renderHtml(
+      "OctoVault öffnen",
+      "Öffne OctoVault auf deinem Handy und lege dort dein neues Passwort fest.",
+      `<div class="actions">
+        <a href="${openAppUrl}">
+          OctoVault öffnen
+        </a>
+      </div>
+      <p class="note">Das neue Passwort wird direkt in der App vergeben.</p>`,
+    ),
+  );
 };
 
 const contactSubmitHandler = async (request, response) => {
@@ -2098,6 +2371,8 @@ exports.registrationCancel = onRequest(PUBLIC_HTTP_OPTIONS, registrationCancelHa
 exports.registrationConfirm = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmHandler);
 exports.registrationConfirmApp = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmAppHandler);
 exports.registrationFinalize = onRequest(PUBLIC_HTTP_OPTIONS, registrationFinalizeHandler);
+exports.passwordResetStart = onRequest(PUBLIC_HTTP_OPTIONS, passwordResetStartHandler);
+exports.passwordResetOpen = onRequest(PUBLIC_HTTP_OPTIONS, passwordResetOpenHandler);
 exports.accountMailEvent = onRequest(PUBLIC_HTTP_OPTIONS, accountMailEventHandler);
 exports.contactSubmit = onRequest(PUBLIC_HTTP_OPTIONS, contactSubmitHandler);
 exports.registrationPasswordReminder = onSchedule(

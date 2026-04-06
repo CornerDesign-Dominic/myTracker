@@ -24,6 +24,7 @@ import { LegalPlaceholderScreen } from "@/screens/LegalPlaceholderScreen";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { MonthlyCostPreviewScreen } from "@/screens/MonthlyCostPreviewScreen";
 import { RegisterScreen } from "@/screens/RegisterScreen";
+import { ResetPasswordLinkScreen } from "@/screens/ResetPasswordLinkScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { SavingsScreen } from "@/screens/SavingsScreen";
 import { StatsScreen } from "@/screens/StatsScreen";
@@ -250,8 +251,8 @@ export const AppNavigator = ({
         />
         <Stack.Screen
           name="ResetPasswordLink"
-          component={DeepLinkPlaceholderScreen}
-          options={{ title: "Reset password" }}
+          component={ResetPasswordLinkScreen}
+          options={{ title: t("auth.passwordResetScreenTitle") }}
         />
         <Stack.Screen
           name="ConfirmEmailLink"

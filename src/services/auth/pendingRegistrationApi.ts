@@ -262,7 +262,7 @@ export const finalizePendingRegistrationRequest = async (params: {
 
 export const accountMailEventRequest = async (params: {
   idToken: string;
-  eventType: "account-linked" | "password-changed";
+  eventType: "account-linked" | "password-changed" | "password-reset-completed";
   idempotencyKey: string;
   source: string;
   occurredAt?: string;

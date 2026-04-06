@@ -122,6 +122,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [isCompletingRegistration, setIsCompletingRegistration] = useState(false);
   const [isResendingPendingRegistration, setIsResendingPendingRegistration] = useState(false);
+  const [isResendSuccessModalVisible, setIsResendSuccessModalVisible] = useState(false);
   const [isSendingNotificationTest, setIsSendingNotificationTest] = useState(false);
   const lifetimePremiumPrice = lifetimePremiumProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasPremiumAccents;
@@ -252,7 +253,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
       });
 
       if (resendResult === "resent") {
-        Alert.alert(t("settings.pendingStatusTitle"), t("settings.pendingResendQueued"));
+        setIsResendSuccessModalVisible(true);
       } else if (resendResult === "confirmed") {
         Alert.alert(t("settings.pendingConfirmedTitle"), t("settings.pendingConfirmedDescription"));
       }
@@ -823,6 +824,44 @@ export const SettingsScreen = ({ navigation }: Props) => {
       <Modal
         animationType="fade"
         transparent
+        visible={isResendSuccessModalVisible}
+        onRequestClose={() => setIsResendSuccessModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setIsResendSuccessModalVisible(false)}
+          />
+          <View style={[surfaces.panel, styles.confirmationSheet]}>
+            <View style={styles.purchaseSheetHeader}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>
+                {t("settings.pendingResendSuccessTitle")}
+              </Text>
+              <Pressable onPress={() => setIsResendSuccessModalVisible(false)} hitSlop={10}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <View style={styles.pendingResendSuccessRow}>
+              <View style={styles.pendingResendSuccessIconWrap}>
+                <Ionicons name="mail-outline" size={18} color={colors.accent} />
+              </View>
+              <Text style={[typography.secondary, styles.confirmationText]}>
+                {t("settings.pendingResendQueued")}
+              </Text>
+            </View>
+            <Pressable
+              style={[buttons.buttonBase, buttons.primaryButton]}
+              onPress={() => setIsResendSuccessModalVisible(false)}
+            >
+              <Text style={[typography.button, styles.purchasePrimaryText]}>{t("common.okay")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
         visible={isPremiumModalVisible}
         onRequestClose={closePremiumModal}
       >
@@ -1100,6 +1139,19 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     confirmationText: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    pendingResendSuccessRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    pendingResendSuccessIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
     },
     confirmationActions: {
       flexDirection: "row",

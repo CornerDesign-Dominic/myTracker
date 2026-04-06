@@ -1,23 +1,34 @@
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { FAQCard } from "@/components/FAQCard";
+import { SectionHeader } from "@/components/SectionHeader";
+import { getFAQSections } from "@/content/faqContent";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 
 export const FAQScreen = () => {
   const { colors, typography } = useAppTheme();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
+  const sections = getFAQSections(language);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() =>
+    sections.flatMap((section) => section.items).reduce<Record<string, boolean>>((result, item) => {
+      result[item.id] = true;
+      return result;
+    }, {}),
+  );
 
-  const items = [
-    { question: t("faq.registrationQuestion"), answer: t("faq.registrationAnswer") },
-    { question: t("faq.passwordQuestion"), answer: t("faq.passwordAnswer") },
-    { question: t("faq.premiumQuestion"), answer: t("faq.premiumAnswer") },
-    { question: t("faq.dataQuestion"), answer: t("faq.dataAnswer") },
-  ];
+  const toggleItem = (id: string) => {
+    setExpandedItems((current) => ({
+      ...current,
+      [id]: !current[id],
+    }));
+  };
 
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
@@ -27,10 +38,19 @@ export const FAQScreen = () => {
           <Text style={[typography.secondary, styles.introText]}>{t("faq.introText")}</Text>
         </View>
 
-        {items.map((item) => (
-          <View key={item.question} style={[surfaces.panel, styles.itemCard]}>
-            <Text style={[typography.cardTitle, styles.question]}>{item.question}</Text>
-            <Text style={[typography.secondary, styles.answer]}>{item.answer}</Text>
+        {sections.map((section) => (
+          <View key={section.id} style={styles.section}>
+            <SectionHeader title={section.title} subtitle={section.subtitle} />
+            <View style={styles.cardList}>
+              {section.items.map((item) => (
+                <FAQCard
+                  key={item.id}
+                  item={item}
+                  expanded={expandedItems[item.id] ?? true}
+                  onToggle={() => toggleItem(item.id)}
+                />
+              ))}
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -48,9 +68,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     introCard: {
       gap: spacing.sm,
     },
-    itemCard: {
-      gap: spacing.sm,
-    },
     title: {
       color: colors.textPrimary,
     },
@@ -58,11 +75,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textSecondary,
       lineHeight: 22,
     },
-    question: {
-      color: colors.textPrimary,
+    section: {
+      gap: spacing.md,
     },
-    answer: {
-      color: colors.textSecondary,
-      lineHeight: 22,
+    cardList: {
+      gap: spacing.sm,
     },
   });

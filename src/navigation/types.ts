@@ -22,6 +22,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Account: undefined;
   FAQ: undefined;
+  Contact: undefined;
   Terms: undefined;
   Privacy: undefined;
   Imprint: undefined;

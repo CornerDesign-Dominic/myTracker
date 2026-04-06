@@ -15,6 +15,7 @@ import { AddPaymentScreen } from "@/screens/AddPaymentScreen";
 import { AccountScreen } from "@/screens/AccountScreen";
 import { CalendarScreen } from "@/screens/CalendarScreen";
 import { ConfirmEmailLinkScreen } from "@/screens/ConfirmEmailLinkScreen";
+import { ContactScreen } from "@/screens/ContactScreen";
 import { DeepLinkPlaceholderScreen } from "@/screens/DeepLinkPlaceholderScreen";
 import { BillingFrequencyScreen } from "@/screens/BillingFrequencyScreen";
 import { FAQScreen } from "@/screens/FAQScreen";
@@ -241,6 +242,11 @@ export const AppNavigator = ({
           name="Register"
           component={RegisterScreen}
           options={{ title: t("common.register") }}
+        />
+        <Stack.Screen
+          name="Contact"
+          component={ContactScreen}
+          options={{ title: t("settings.contactTitle") }}
         />
         <Stack.Screen
           name="ResetPasswordLink"

@@ -39,6 +39,14 @@ const PASSWORD_REMINDER_STAGES = [
     delayMs: 14 * 24 * 60 * 60 * 1000,
   },
 ];
+const CONTACT_CATEGORIES = {
+  suggestion: "Verbesserungsvorschlag",
+  bug: "Bug",
+  question: "Anfrage",
+  other: "Sonstiges",
+};
+const CONTACT_SUBJECT_MAX_LENGTH = 120;
+const CONTACT_MESSAGE_MAX_LENGTH = 3000;
 
 const setCors = (response) => {
   response.set("Access-Control-Allow-Origin", "*");
@@ -127,6 +135,7 @@ const getRegistrationConfig = () => ({
     process.env.REGISTRATION_APP_CONFIRMATION_DEEP_LINK_URL || DEFAULT_APP_CONFIRM_DEEP_LINK_URL,
   resendApiKey: process.env.RESEND_API_KEY,
   registrationMailFrom: process.env.REGISTRATION_MAIL_FROM,
+  supportMailTo: process.env.SUPPORT_MAIL_TO || process.env.REGISTRATION_MAIL_FROM,
 });
 
 const buildDeepLinkUrl = (baseUrl, token) =>
@@ -281,13 +290,15 @@ const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listIt
   </html>
 `;
 
-const sendResendEmail = async ({ email, subject, html, errorLogEvent, errorMessage }) => {
+const sendResendEmail = async ({ email, to, subject, html, errorLogEvent, errorMessage, replyTo }) => {
   const { resendApiKey, registrationMailFrom, confirmationBaseUrl } = getRegistrationConfig();
+  const recipient = to || email;
 
-  if (!resendApiKey || !registrationMailFrom) {
+  if (!resendApiKey || !registrationMailFrom || !recipient) {
     logger.error("registration:mail-config-missing", {
       hasResendApiKey: Boolean(resendApiKey),
       hasRegistrationMailFrom: Boolean(registrationMailFrom),
+      hasRecipient: Boolean(recipient),
       confirmationBaseUrl,
     });
     const error = new Error("Mail transport is not configured.");
@@ -303,16 +314,17 @@ const sendResendEmail = async ({ email, subject, html, errorLogEvent, errorMessa
     },
     body: JSON.stringify({
       from: registrationMailFrom,
-      to: email,
+      to: recipient,
       subject,
       html,
+      reply_to: replyTo ? [replyTo] : undefined,
     }),
   });
 
   if (!response.ok) {
     const body = await response.text();
     logger.error(errorLogEvent, {
-      email,
+      email: recipient,
       status: response.status,
       body,
     });
@@ -467,6 +479,110 @@ const sendPasswordChangedEmail = async ({ email, occurredAt }) => {
   });
 };
 
+const escapeHtmlWithBreaks = (value) => escapeHtml(value).replace(/\n/g, "<br />");
+
+const renderSupportMailHtml = ({
+  categoryLabel,
+  subject,
+  message,
+  senderEmail,
+  userId,
+  userStatus,
+  platform,
+  appVersion,
+  language,
+  theme,
+  occurredAt,
+}) => `<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(subject)}</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f4f6f8;color:#111827;font-family:Arial,sans-serif">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:20px">
+      <tr>
+        <td style="padding:28px">
+          <div style="margin:0 0 10px;color:#15803D;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">OctoVault Kontakt</div>
+          <h1 style="margin:0 0 18px;color:#111827;font-size:24px;line-height:1.25">${escapeHtml(subject)}</h1>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;border-collapse:collapse">
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px;width:150px">Kategorie</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(categoryLabel)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">Absender-E-Mail</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(senderEmail)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">User-ID</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(userId || "-")}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">Nutzerstatus</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(userStatus)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">Plattform</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(platform)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">App-Version</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(appVersion)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">Sprache</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(language)}</td></tr>
+            <tr><td style="padding:0 0 8px;color:#6b7280;font-size:13px">Theme</td><td style="padding:0 0 8px;color:#111827;font-size:14px">${escapeHtml(theme)}</td></tr>
+            <tr><td style="padding:0;color:#6b7280;font-size:13px">Zeitpunkt</td><td style="padding:0;color:#111827;font-size:14px">${escapeHtml(formatDateTimeLabel(occurredAt))}</td></tr>
+          </table>
+          <div style="padding:18px;border:1px solid #e5e7eb;border-radius:16px;background:#f8fafc">
+            <div style="margin:0 0 10px;color:#111827;font-size:14px;font-weight:600">Nachricht</div>
+            <div style="color:#374151;font-size:14px;line-height:1.7">${escapeHtmlWithBreaks(message)}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+const sendSupportContactEmail = async ({
+  categoryLabel,
+  subject,
+  message,
+  senderEmail,
+  userId,
+  userStatus,
+  platform,
+  appVersion,
+  language,
+  theme,
+  occurredAt,
+}) => {
+  const { supportMailTo } = getRegistrationConfig();
+
+  await sendResendEmail({
+    to: supportMailTo,
+    subject: `[OctoVault][${categoryLabel}] ${subject}`,
+    html: renderSupportMailHtml({
+      categoryLabel,
+      subject,
+      message,
+      senderEmail,
+      userId,
+      userStatus,
+      platform,
+      appVersion,
+      language,
+      theme,
+      occurredAt,
+    }),
+    replyTo: senderEmail,
+    errorLogEvent: "contact:send-support-email-failed",
+    errorMessage: "Failed to send support contact email.",
+  });
+};
+
+const sendContactConfirmationEmail = async ({ email, categoryLabel, subject }) => {
+  await sendResendEmail({
+    email,
+    subject: "Wir haben deine Nachricht erhalten",
+    html: renderEmailCard({
+      title: "Vielen Dank für deine Nachricht",
+      paragraphs: [
+        "Wir haben deine Anfrage erhalten und kümmern uns schnellstmöglich darum.",
+        `Kategorie: ${categoryLabel}`,
+        `Betreff: ${subject}`,
+      ],
+      footerNote:
+        "Dies ist eine automatische Eingangsbestätigung. Bitte antworte nicht direkt auf diese Nachricht.",
+    }),
+    errorLogEvent: "contact:send-confirmation-email-failed",
+    errorMessage: "Failed to send contact confirmation email.",
+  });
+};
+
 const buildAppHomeUrl = () => {
   const { appConfirmationDeepLinkUrl } = getRegistrationConfig();
   const normalized = String(appConfirmationDeepLinkUrl || DEFAULT_APP_CONFIRM_DEEP_LINK_URL);
@@ -487,6 +603,21 @@ const verifyAuthenticatedCaller = async (request) => {
   }
 
   return auth.verifyIdToken(idToken);
+};
+
+const verifyOptionalCaller = async (request) => {
+  const idToken = getBearerToken(request);
+  if (!idToken) {
+    return null;
+  }
+
+  try {
+    return await auth.verifyIdToken(idToken);
+  } catch (error) {
+    const nextError = new Error("Invalid bearer token.");
+    nextError.code = "invalid-auth-token";
+    throw nextError;
+  }
 };
 
 const renderHtml = (title, message, content = "") => `<!doctype html>
@@ -1749,6 +1880,111 @@ const accountMailEventHandler = async (request, response) => {
   }
 };
 
+const contactSubmitHandler = async (request, response) => {
+  setCors(response);
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    jsonError(response, 405, "method-not-allowed", "Only POST is allowed.");
+    return;
+  }
+
+  try {
+    const decodedToken = await verifyOptionalCaller(request);
+    const category = String(request.body?.category ?? "").trim();
+    const subject = String(request.body?.subject ?? "").trim();
+    const message = String(request.body?.message ?? "").trim();
+    const senderEmail = String(request.body?.email ?? "").trim().toLowerCase();
+    const appVersion = String(request.body?.appVersion ?? "").trim() || "unknown";
+    const platform = String(request.body?.platform ?? "").trim() || "unknown";
+    const language = String(request.body?.language ?? "").trim() || "de";
+    const theme = String(request.body?.theme ?? "").trim() || "unknown";
+    const occurredAt = String(request.body?.occurredAt ?? "").trim() || new Date().toISOString();
+    const categoryLabel = CONTACT_CATEGORIES[category];
+
+    if (!categoryLabel) {
+      jsonError(response, 400, "invalid-contact-category", "Contact category is invalid.");
+      return;
+    }
+
+    if (!subject || subject.length > CONTACT_SUBJECT_MAX_LENGTH) {
+      jsonError(response, 400, "invalid-contact-subject", "Contact subject is invalid.");
+      return;
+    }
+
+    if (!message || message.length > CONTACT_MESSAGE_MAX_LENGTH) {
+      jsonError(response, 400, "invalid-contact-message", "Contact message is invalid.");
+      return;
+    }
+
+    if (!validateEmail(senderEmail)) {
+      jsonError(response, 400, "invalid-contact-email", "Contact email is invalid.");
+      return;
+    }
+
+    const userStatus = decodedToken
+      ? decodedToken.firebase?.sign_in_provider === "anonymous"
+        ? "anonym"
+        : "eingeloggt"
+      : "nicht eingeloggt";
+    const userId = decodedToken?.uid ?? null;
+
+    await sendSupportContactEmail({
+      categoryLabel,
+      subject,
+      message,
+      senderEmail,
+      userId,
+      userStatus,
+      platform,
+      appVersion,
+      language,
+      theme,
+      occurredAt,
+    });
+
+    await sendContactConfirmationEmail({
+      email: senderEmail,
+      categoryLabel,
+      subject,
+    });
+
+    logger.info("contactSubmit:sent", {
+      category,
+      categoryLabel,
+      senderEmail,
+      userId,
+      userStatus,
+      platform,
+      appVersion,
+      language,
+      theme,
+    });
+
+    response.status(200).json({ ok: true });
+  } catch (error) {
+    logger.error("contactSubmit", {
+      code: error.code || "contact-submit-failed",
+      message: error.message || "Contact submit failed.",
+      stack: error.stack || null,
+    });
+    const code = error.code || "contact-submit-failed";
+    const status =
+      code === "invalid-auth-token"
+        ? 401
+        : code === "invalid-contact-category" ||
+            code === "invalid-contact-subject" ||
+            code === "invalid-contact-message" ||
+            code === "invalid-contact-email"
+          ? 400
+          : 500;
+    jsonError(response, status, code, error.message || "Contact submit failed.");
+  }
+};
+
 const sendPendingPasswordReminderHandler = async () => {
   const now = Date.now();
   const snapshot = await db
@@ -1833,6 +2069,7 @@ exports.registrationConfirm = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirm
 exports.registrationConfirmApp = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmAppHandler);
 exports.registrationFinalize = onRequest(PUBLIC_HTTP_OPTIONS, registrationFinalizeHandler);
 exports.accountMailEvent = onRequest(PUBLIC_HTTP_OPTIONS, accountMailEventHandler);
+exports.contactSubmit = onRequest(PUBLIC_HTTP_OPTIONS, contactSubmitHandler);
 exports.registrationPasswordReminder = onSchedule(
   {
     region: REGION,

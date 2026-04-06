@@ -116,7 +116,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
   } = usePurchases();
   const { subscriptions } = useSubscriptions();
   const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
-  const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [isCompleteRegistrationModalVisible, setIsCompleteRegistrationModalVisible] = useState(false);
   const [completionPassword, setCompletionPassword] = useState("");
   const [completionPasswordRepeat, setCompletionPasswordRepeat] = useState("");
@@ -746,7 +745,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <Pressable style={styles.legalRow} onPress={() => navigation.navigate("FAQ")}>
             <Text style={[typography.secondary, styles.legalLink]}>{t("common.faq")}</Text>
           </Pressable>
-          <Pressable style={styles.legalRow} onPress={() => setIsContactModalVisible(true)}>
+          <Pressable style={styles.legalRow} onPress={() => navigation.navigate("Contact")}>
             <Text style={[typography.secondary, styles.legalLink]}>{t("settings.contactTitle")}</Text>
           </Pressable>
         </View>
@@ -972,78 +971,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
       </Modal>
 
-      <Modal
-        animationType="fade"
-        transparent
-        visible={isContactModalVisible}
-        onRequestClose={() => setIsContactModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsContactModalVisible(false)} />
-          <View style={[surfaces.panel, styles.purchaseSheet]}>
-            <ScrollView
-              style={styles.purchaseScroll}
-              contentContainerStyle={styles.purchaseScrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.purchaseSheetHeader}>
-                <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.contactTitle")}</Text>
-                <Pressable onPress={() => setIsContactModalVisible(false)} hitSlop={10}>
-                  <Ionicons name="close" size={20} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-              <View style={styles.contactIntroCard}>
-                <View style={styles.contactIntroHeader}>
-                  <View style={styles.purchaseIconWrap}>
-                    <Ionicons name="mail-outline" size={18} color={colors.accent} />
-                  </View>
-                  <Text style={[typography.secondary, styles.contactIntroText]}>
-                    {t("settings.contactModalDescription")}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.contactActionList}>
-                <View style={styles.contactActionRow}>
-                  <View style={styles.contactActionLead}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.textSecondary} />
-                    <View style={styles.contactActionCopy}>
-                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactFeedback")}</Text>
-                      <Text style={[typography.meta, styles.contactActionMeta]}>
-                        {t("settings.contactPreparedDescription")}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
-                </View>
-                <View style={styles.contactActionRow}>
-                  <View style={styles.contactActionLead}>
-                    <Ionicons name="bug-outline" size={16} color={colors.textSecondary} />
-                    <View style={styles.contactActionCopy}>
-                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactBug")}</Text>
-                      <Text style={[typography.meta, styles.contactActionMeta]}>
-                        {t("settings.contactPreparedDescription")}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
-                </View>
-                <View style={styles.contactActionRow}>
-                  <View style={styles.contactActionLead}>
-                    <Ionicons name="mail-open-outline" size={16} color={colors.textSecondary} />
-                    <View style={styles.contactActionCopy}>
-                      <Text style={[typography.secondary, styles.contactActionText]}>{t("settings.contactEmail")}</Text>
-                      <Text style={[typography.meta, styles.contactActionMeta]}>
-                        {t("settings.contactPreparedDescription")}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[typography.meta, styles.contactPreparedBadge]}>{t("settings.contactPrepared")}</Text>
-                </View>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };

@@ -232,6 +232,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumUnlimited: "Unbegrenzt viele Abos",
       premiumLearnMore: "Mehr erfahren",
       premiumViewBenefits: "Vorteile ansehen",
+      premiumDebugTitle: "Premium testen",
       premiumModalTitle: "Mehr mit OctoVault Premium",
       premiumModalDescription:
         "Verwalte alle deine Abos ohne Limit.",
@@ -843,6 +844,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumUnlimited: "Unlimited subscriptions",
       premiumLearnMore: "Learn more",
       premiumViewBenefits: "View benefits",
+      premiumDebugTitle: "Test premium",
       premiumModalTitle: "Get more with OctoVault Premium",
       premiumModalDescription:
         "Manage all your subscriptions without a limit.",

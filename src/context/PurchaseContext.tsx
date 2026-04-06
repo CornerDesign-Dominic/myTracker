@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
 import { ErrorCode, Product, PurchaseError, useIAP } from "react-native-iap";
@@ -28,17 +29,21 @@ type PurchaseContextValue = {
   hasPremiumAccents: boolean;
   hasLifetimePremium: boolean;
   isPremium: boolean;
+  isPremiumOverrideEnabled: boolean;
   isHydrated: boolean;
   isPurchasing: boolean;
   isRefreshing: boolean;
   isStoreConnected: boolean;
   purchaseError: string | null;
   lifetimePremiumProduct: PurchaseProductDetails | null;
+  setPremiumOverrideEnabled: (enabled: boolean) => Promise<void>;
   purchaseLifetimePremium: () => Promise<void>;
   refreshPurchases: () => Promise<void>;
   restorePurchases: () => Promise<void>;
   clearPurchaseError: () => void;
 };
+
+const PREMIUM_OVERRIDE_STORAGE_KEY = "tracker.purchase-premium-override";
 
 const PurchaseContext = createContext<PurchaseContextValue | null>(null);
 
@@ -46,12 +51,14 @@ const DEFAULT_VALUE: PurchaseContextValue = {
   hasPremiumAccents: false,
   hasLifetimePremium: false,
   isPremium: false,
+  isPremiumOverrideEnabled: false,
   isHydrated: true,
   isPurchasing: false,
   isRefreshing: false,
   isStoreConnected: false,
   purchaseError: null,
   lifetimePremiumProduct: null,
+  setPremiumOverrideEnabled: async () => undefined,
   purchaseLifetimePremium: async () => undefined,
   refreshPurchases: async () => undefined,
   restorePurchases: async () => undefined,
@@ -62,6 +69,7 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
   const { currentUser } = useAuth();
   const scope = getPurchaseScope(currentUser?.uid);
   const [snapshot, setSnapshot] = useState<PurchaseSnapshot>(createEmptyPurchaseSnapshot("android"));
+  const [isPremiumOverrideEnabled, setIsPremiumOverrideEnabledState] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -125,6 +133,28 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
       });
     },
   });
+
+  useEffect(() => {
+    let isActive = true;
+
+    AsyncStorage.getItem(PREMIUM_OVERRIDE_STORAGE_KEY)
+      .then((value) => {
+        if (!isActive) {
+          return;
+        }
+
+        setIsPremiumOverrideEnabledState(value === "enabled");
+      })
+      .catch(() => {
+        if (isActive) {
+          setIsPremiumOverrideEnabledState(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -202,6 +232,36 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
     [products],
   );
 
+  const setPremiumOverrideEnabled = async (enabled: boolean) => {
+    setIsPremiumOverrideEnabledState(enabled);
+
+    if (enabled) {
+      await AsyncStorage.setItem(PREMIUM_OVERRIDE_STORAGE_KEY, "enabled");
+      return;
+    }
+
+    await AsyncStorage.removeItem(PREMIUM_OVERRIDE_STORAGE_KEY);
+  };
+
+  const effectiveSnapshot = useMemo<PurchaseSnapshot>(() => {
+    if (!__DEV__ || !isPremiumOverrideEnabled) {
+      return snapshot;
+    }
+
+    return {
+      ...snapshot,
+      entitlements: {
+        hasPremiumAccents: true,
+        hasLifetimePremium: true,
+        isPremium: true,
+        state: "active",
+        source: "backend-override",
+      },
+      premiumSource: "backend-override",
+      verificationSource: "local-cache",
+    };
+  }, [isPremiumOverrideEnabled, snapshot]);
+
   const refreshPurchases = async () => {
     setPurchaseError(null);
     setIsRefreshing(true);
@@ -258,21 +318,32 @@ const AndroidPurchaseProvider = ({ children }: PropsWithChildren) => {
 
   const value = useMemo<PurchaseContextValue>(
     () => ({
-      hasPremiumAccents: snapshot.entitlements.hasPremiumAccents,
-      hasLifetimePremium: snapshot.entitlements.hasLifetimePremium,
-      isPremium: snapshot.entitlements.isPremium,
+      hasPremiumAccents: effectiveSnapshot.entitlements.hasPremiumAccents,
+      hasLifetimePremium: effectiveSnapshot.entitlements.hasLifetimePremium,
+      isPremium: effectiveSnapshot.entitlements.isPremium,
+      isPremiumOverrideEnabled,
       isHydrated,
       isPurchasing,
       isRefreshing,
       isStoreConnected: connected,
       purchaseError,
       lifetimePremiumProduct,
+      setPremiumOverrideEnabled,
       purchaseLifetimePremium,
       refreshPurchases,
       restorePurchases,
       clearPurchaseError: () => setPurchaseError(null),
     }),
-    [connected, isHydrated, isPurchasing, isRefreshing, purchaseError, snapshot, lifetimePremiumProduct],
+    [
+      connected,
+      effectiveSnapshot,
+      isHydrated,
+      isPremiumOverrideEnabled,
+      isPurchasing,
+      isRefreshing,
+      lifetimePremiumProduct,
+      purchaseError,
+    ],
   );
 
   return <PurchaseContext.Provider value={value}>{children}</PurchaseContext.Provider>;

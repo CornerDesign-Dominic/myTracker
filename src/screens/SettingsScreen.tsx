@@ -105,11 +105,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
     hasPremiumAccents,
     hasLifetimePremium,
     isPremium,
+    isPremiumOverrideEnabled,
     isPurchasing,
     isRefreshing,
     isStoreConnected,
     purchaseError,
     lifetimePremiumProduct,
+    setPremiumOverrideEnabled,
     purchaseLifetimePremium,
     restorePurchases,
     clearPurchaseError,
@@ -127,6 +129,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const lifetimePremiumPrice = lifetimePremiumProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasPremiumAccents;
   const showNotificationTestTools = __DEV__;
+  const showPremiumTestTools = __DEV__;
   const pendingRegistrationState = useMemo(() => {
     if (!isAnonymous || !pendingRegistration) {
       return "idle" as const;
@@ -614,6 +617,22 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </Text>
           </Pressable>
         </View>
+
+        {showPremiumTestTools ? (
+          <OptionGroup
+            title={t("settings.premiumDebugTitle")}
+            value={isPremiumOverrideEnabled ? "enabled" : "disabled"}
+            options={["disabled", "enabled"] as const}
+            formatLabel={(value) =>
+              value === "enabled"
+                ? t("settings.notificationsEnabled")
+                : t("settings.notificationsDisabled")
+            }
+            onChange={(value) => {
+              void setPremiumOverrideEnabled(value === "enabled");
+            }}
+          />
+        ) : null}
 
         <OptionGroup
           title={t("settings.language")}

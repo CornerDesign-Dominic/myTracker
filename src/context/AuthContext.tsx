@@ -26,6 +26,7 @@ import { firebaseAuth, hasRequiredFirebaseConfig } from "@/firebase/config";
 import { analyticsEventNames } from "@/services/analytics/events";
 import { analyticsService } from "@/services/analytics/service";
 import {
+  accountMailEventRequest,
   cancelPendingRegistrationRequest,
   confirmPendingRegistrationRequest,
   finalizePendingRegistrationRequest,
@@ -43,6 +44,9 @@ import { logFirestoreError } from "@/utils/firestoreDebug";
 
 const PENDING_REGISTRATION_WINDOW_MS = 72 * 60 * 60 * 1000;
 const AUTH_DEBUG_PREFIX = "[AuthDebug]";
+
+const buildMailEventIdempotencyKey = (eventType: "account-linked" | "password-changed") =>
+  `${eventType}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 type AuthContextValue = {
   currentUser: User | null;
@@ -382,6 +386,49 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         uid: user.uid,
         email: user.email,
       });
+
+      try {
+        const refreshedIdToken = await user.getIdToken(true);
+        await accountMailEventRequest({
+          idToken: refreshedIdToken,
+          eventType: "password-changed",
+          idempotencyKey: buildMailEventIdempotencyKey("password-changed"),
+          source: "AuthContext.changePassword",
+          occurredAt: new Date().toISOString(),
+        });
+        console.log(`${AUTH_DEBUG_PREFIX} changePassword:mail-event:success`, {
+          uid: user.uid,
+          email: user.email,
+          eventType: "password-changed",
+        });
+      } catch (mailError) {
+        console.log(`${AUTH_DEBUG_PREFIX} changePassword:mail-event:error`, {
+          uid: user.uid,
+          email: user.email,
+          code:
+            typeof mailError === "object" &&
+            mailError !== null &&
+            "code" in mailError &&
+            typeof (mailError as { code?: unknown }).code === "string"
+              ? (mailError as { code: string }).code
+              : null,
+          status:
+            typeof mailError === "object" &&
+            mailError !== null &&
+            "status" in mailError &&
+            typeof (mailError as { status?: unknown }).status === "number"
+              ? (mailError as { status: number }).status
+              : null,
+          body:
+            typeof mailError === "object" &&
+            mailError !== null &&
+            "body" in mailError &&
+            typeof (mailError as { body?: unknown }).body === "string"
+              ? (mailError as { body: string }).body
+              : null,
+          message: mailError instanceof Error ? mailError.message : String(mailError),
+        });
+      }
     } catch (error) {
       console.log(`${AUTH_DEBUG_PREFIX} changePassword:error`, {
         uid: user.uid,
@@ -772,6 +819,26 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       });
 
       await upgradeAnonymousAccount(finalizeResponse.email, password);
+
+      try {
+        const linkedIdToken = await ensureAuth().currentUser?.getIdToken(true);
+        if (linkedIdToken) {
+          await accountMailEventRequest({
+            idToken: linkedIdToken,
+            eventType: "account-linked",
+            idempotencyKey: buildMailEventIdempotencyKey("account-linked"),
+            source: "AuthContext.completePendingRegistration",
+            occurredAt: new Date().toISOString(),
+          });
+        }
+      } catch (mailError) {
+        console.log(`${AUTH_DEBUG_PREFIX} pendingRegistration:complete:mail-event:error`, {
+          uid: userId,
+          email: finalizeResponse.email,
+          message: mailError instanceof Error ? mailError.message : String(mailError),
+        });
+      }
+
       await updateUserPendingRegistration(userId, null);
       setPendingRegistration(null);
       analyticsService.track(analyticsEventNames.pendingRegistrationCompleted, {

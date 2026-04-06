@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { AppSettingsProvider } from "./src/context/AppSettingsContext";
 import { PurchaseProvider, usePurchases } from "./src/context/PurchaseContext";
 import { useAppSettings } from "./src/context/AppSettingsContext";
+import { DailyDueNotificationsSync } from "./src/context/DailyDueNotificationsSync";
 import { UserStatsMirrorSync } from "./src/context/UserStatsMirrorSync";
 import { useAppTheme } from "./src/hooks/useAppTheme";
 import { trackDeepLinkOpen } from "./src/navigation/linking";
@@ -126,6 +127,7 @@ export default function App() {
           <PurchaseProvider>
             <AppSettingsProvider>
               <UserStatsMirrorSync />
+              <DailyDueNotificationsSync />
               <AppContent />
             </AppSettingsProvider>
           </PurchaseProvider>

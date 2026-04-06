@@ -167,6 +167,10 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
       ),
     [selectedDate, selectedDateKey, subscriptions],
   );
+  const dueSubscriptionsTotal = useMemo(
+    () => dueSubscriptions.reduce((sum, subscription) => sum + subscription.amount, 0),
+    [dueSubscriptions],
+  );
   const dueDateKeys = useMemo(
     () => {
       const dueDates = new Set<string>();
@@ -300,6 +304,14 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
             <Text style={[typography.cardTitle, styles.dueTitle]}>
               {t("calendar.dueOn", { date: selectedDayLabel })}
             </Text>
+            <View style={styles.dueSummaryRow}>
+              <Text style={[typography.secondary, styles.dueSummaryLabel]}>
+                {t("calendar.totalLabel")}
+              </Text>
+              <Text style={[typography.body, styles.dueSummaryAmount]}>
+                {formatCurrency(dueSubscriptionsTotal, currency)}
+              </Text>
+            </View>
             <View style={styles.dueList}>
               <View style={styles.dueListDivider} />
               {dueSubscriptions.map((subscription, index) => (
@@ -496,6 +508,18 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "center",
     },
     dueTitle: {
+      color: colors.textPrimary,
+    },
+    dueSummaryRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    dueSummaryLabel: {
+      color: colors.textSecondary,
+    },
+    dueSummaryAmount: {
       color: colors.textPrimary,
     },
     dueList: {

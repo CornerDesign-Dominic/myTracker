@@ -15,6 +15,7 @@ export type UserSettingsDocument = {
   currency: "EUR" | "Dollar";
   theme: "Dark" | "Light";
   weekStart?: "monday" | "sunday";
+  notificationsEnabled?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
 };

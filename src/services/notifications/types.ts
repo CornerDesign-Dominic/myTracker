@@ -6,6 +6,8 @@ export type NotificationPermissionState =
   | "undetermined";
 
 export type LocalNotificationScenario =
+  | "daily-due-today"
+  | "daily-due-today-test"
   | "event-in-three-days"
   | "cancellation-window-ending"
   | "renewal-tomorrow"

@@ -39,6 +39,19 @@ export const scheduleLocalNotification = async ({
   });
 };
 
+export const cancelScheduledNotificationsForScenario = async (scenario: LocalNotificationScenario) => {
+  const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+  const matchingNotifications = scheduledNotifications.filter(
+    (notification) => notification.content.data?.scenario === scenario,
+  );
+
+  await Promise.all(
+    matchingNotifications.map((notification) =>
+      Notifications.cancelScheduledNotificationAsync(notification.identifier),
+    ),
+  );
+};
+
 export const scheduleTestNotification = async (secondsFromNow = 5) =>
   scheduleLocalNotification({
     scenario: "test-notification",

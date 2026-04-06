@@ -259,3 +259,50 @@ export const finalizePendingRegistrationRequest = async (params: {
   });
   return body;
 };
+
+export const accountMailEventRequest = async (params: {
+  idToken: string;
+  eventType: "account-linked" | "password-changed";
+  idempotencyKey: string;
+  source: string;
+  occurredAt?: string;
+}) => {
+  console.log("[AuthDebug] pendingRegistrationApi:account-mail-event:request", {
+    url: `${REGISTRATION_API_BASE_URL}/accountMailEvent`,
+    method: "POST",
+    eventType: params.eventType,
+    source: params.source,
+    idempotencyKey: params.idempotencyKey,
+  });
+
+  const response = await fetch(`${REGISTRATION_API_BASE_URL}/accountMailEvent`, {
+    method: "POST",
+    headers: buildHeaders(params.idToken),
+    body: JSON.stringify({
+      eventType: params.eventType,
+      idempotencyKey: params.idempotencyKey,
+      source: params.source,
+      occurredAt: params.occurredAt ?? null,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorDetails = await parseErrorResponse(response);
+    const code = errorDetails.code ?? "account-mail-event-failed";
+    console.log("[AuthDebug] pendingRegistrationApi:account-mail-event:error-response", {
+      url: `${REGISTRATION_API_BASE_URL}/accountMailEvent`,
+      status: errorDetails.status,
+      code,
+      message: errorDetails.message,
+      contentType: errorDetails.contentType,
+      body: errorDetails.body,
+      eventType: params.eventType,
+    });
+    throw createApiError(code, errorDetails);
+  }
+
+  console.log("[AuthDebug] pendingRegistrationApi:account-mail-event:success-response", {
+    url: `${REGISTRATION_API_BASE_URL}/accountMailEvent`,
+    eventType: params.eventType,
+  });
+};

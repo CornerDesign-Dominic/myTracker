@@ -202,6 +202,20 @@ const deSections: FAQSection[] = [
         ],
       },
       {
+        id: "paid-total-not-correct",
+        title: "Warum stimmt meine Bezahlt-Summe nicht?",
+        content: [
+          {
+            type: "paragraph",
+            text: "Prüfe in der Abo-Historie, ob Zahlungen versehentlich doppelt erfasst wurden.",
+          },
+          {
+            type: "paragraph",
+            text: "Das kann vor allem dann passieren, wenn frühere Zahlungen manuell verändert oder zusätzliche Einträge in der Historie angelegt wurden.",
+          },
+        ],
+      },
+      {
         id: "data-loss-on-delete",
         title: "Was passiert, wenn ich die App lösche?",
         content: [
@@ -569,6 +583,20 @@ const enSections: FAQSection[] = [
           {
             type: "paragraph",
             text: "It only shows the subscription data you entered or the dates calculated from it so you can keep track of your subscriptions.",
+          },
+        ],
+      },
+      {
+        id: "paid-total-not-correct",
+        title: "Why does my paid total look wrong?",
+        content: [
+          {
+            type: "paragraph",
+            text: "Check the subscription history to see whether payments were recorded twice by mistake.",
+          },
+          {
+            type: "paragraph",
+            text: "This can happen especially when older payments were changed manually or additional history entries were created.",
           },
         ],
       },

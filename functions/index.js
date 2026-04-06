@@ -14,7 +14,6 @@ const auth = admin.auth();
 
 const REGION = "europe-west1";
 const TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
-const PASSWORD_REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const REGISTRATION_COLLECTION = "registrationConfirmations";
 const REGISTRATION_EMAIL_RESERVATIONS_COLLECTION = "registrationEmailReservations";
 const REGISTRATION_FLOW_VERSION = "pending-registration-v3-app-confirm-only";
@@ -22,6 +21,24 @@ const PUBLIC_HTTP_OPTIONS = { region: REGION, invoker: "public" };
 const DEFAULT_CONFIRMATION_URL =
   "https://europe-west1-mytracker-0.cloudfunctions.net/registrationConfirm";
 const DEFAULT_APP_CONFIRM_DEEP_LINK_URL = "octovault://confirm-email";
+const PASSWORD_REMINDER_STAGES = [
+  {
+    key: "after-24h",
+    delayMs: 24 * 60 * 60 * 1000,
+  },
+  {
+    key: "after-72h",
+    delayMs: 72 * 60 * 60 * 1000,
+  },
+  {
+    key: "after-7d",
+    delayMs: 7 * 24 * 60 * 60 * 1000,
+  },
+  {
+    key: "after-14d",
+    delayMs: 14 * 24 * 60 * 60 * 1000,
+  },
+];
 
 const setCors = (response) => {
   response.set("Access-Control-Allow-Origin", "*");
@@ -55,6 +72,7 @@ const buildPendingRegistrationState = (email, now, status = "pending") => ({
   lastRequestedAt: now.toISOString(),
   reminderCount: 0,
   reminderLastSentAt: null,
+  reminderStagesSent: [],
 });
 
 const buildReservationState = ({
@@ -207,7 +225,19 @@ const renderEmailBulletList = (items) => `
   </table>
 `;
 
-const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listItems = [], ctaLabel, ctaUrl, fallbackLabel, footerNote }) => `
+const renderEmailLinkBlock = ({ intro, url }) => `
+  <div style="margin:22px 0 18px;padding:14px 16px;border:1px solid #dce4ef;border-radius:16px;background:#f8fafc">
+    <p style="margin:0 0 10px;color:#111827;font-size:14px;font-weight:600;line-height:1.5">${escapeHtml(intro)}</p>
+    <p style="margin:0 0 8px;word-break:break-all">
+      <a href="${escapeHtml(url)}" style="color:#15803D;font-size:14px;line-height:1.7;text-decoration:underline">${escapeHtml(url)}</a>
+    </p>
+    <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.6">
+      Falls dein Mailprogramm den Link nicht direkt öffnet, kopiere ihn bitte in deinen Browser.
+    </p>
+  </div>
+`;
+
+const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listItems = [], linkIntro, linkUrl, footerNote }) => `
   <!doctype html>
   <html lang="de">
     <head>
@@ -228,23 +258,14 @@ const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listIt
                   <h1 style="margin:0 0 16px;color:#111827;font-size:28px;line-height:1.2;font-weight:700">${escapeHtml(title)}</h1>
                   ${paragraphs.map(renderEmailParagraph).join("")}
                   ${listItems.length ? renderEmailBulletList(listItems) : ""}
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 20px">
-                    <tr>
-                      <td>
-                        <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#15803D;color:#ffffff;font-size:15px;font-weight:700;line-height:1;text-decoration:none">
-                          ${escapeHtml(ctaLabel)}
-                        </a>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="margin:0 0 10px;color:#6b7280;font-size:13px;line-height:1.65">
-                    Falls der Button nicht funktioniert, öffne diesen Link direkt:
-                  </p>
-                  <p style="margin:0 0 18px;word-break:break-all">
-                    <a href="${escapeHtml(ctaUrl)}" style="color:#15803D;font-size:13px;line-height:1.65;text-decoration:underline">
-                      ${escapeHtml(fallbackLabel || ctaUrl)}
-                    </a>
-                  </p>
+                  ${
+                    linkIntro && linkUrl
+                      ? renderEmailLinkBlock({
+                          intro: linkIntro,
+                          url: linkUrl,
+                        })
+                      : ""
+                  }
                   ${
                     footerNote
                       ? `<p style="margin:0;padding-top:18px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px;line-height:1.65">${escapeHtml(footerNote)}</p>`
@@ -309,14 +330,14 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
       title: "Bestätige deine E-Mail",
       paragraphs: [
         "Deine Registrierung wurde vorbereitet. Bestätige jetzt deine E-Mail, damit du dein Konto sicher mit deiner aktuellen App-Sitzung verknüpfen kannst.",
-        "Auf dem Handy bringt dich der Button direkt in OctoVault. Wenn du die Mail am Computer öffnest, kannst du die E-Mail zuerst im Browser bestätigen und danach in der App dein Passwort festlegen.",
+        "Auf dem Handy führt dich der Link direkt nach OctoVault. Wenn du die Mail am Computer öffnest, kannst du die E-Mail zuerst im Browser bestätigen und danach in der App dein Passwort festlegen.",
       ],
       listItems: [
         "Der Bestätigungslink ist 72 Stunden gültig.",
         "Erst nach Bestätigung und gesetztem Passwort ist dein Konto vollständig einsatzbereit.",
       ],
-      ctaLabel: "E-Mail bestätigen",
-      ctaUrl: confirmationUrl,
+      linkIntro: "Bestätige deine E-Mail über diesen Link:",
+      linkUrl: confirmationUrl,
       footerNote:
         "Wenn du diese Registrierung nicht selbst gestartet hast, kannst du diese Nachricht ignorieren.",
     }),
@@ -325,27 +346,63 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
   });
 };
 
-const sendSetPasswordReminderEmail = async ({ email, openAppUrl, isFirstReminder = false }) => {
-  const subject = isFirstReminder
-    ? "Lege jetzt dein Passwort in OctoVault fest"
-    : "Erinnerung: Passwort in OctoVault festlegen";
+const formatDateTimeLabel = (value) =>
+  new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Berlin",
+  }).format(new Date(value));
 
-  const title = isFirstReminder ? "Dein nächster Schritt" : "Passwort noch ausstehend";
-  const paragraphs = isFirstReminder
-    ? [
-        "Deine E-Mail ist jetzt bestätigt. Öffne OctoVault und lege direkt als Nächstes dein Passwort fest.",
-      ]
-    : [
-        "Deine E-Mail ist bereits bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar und wiederherstellbar ist.",
-      ];
-  const listItems = isFirstReminder
-    ? [
-        "Das Passwort legst du direkt in der App fest.",
-        "Danach kannst du dein Konto später auf neuen Geräten wiederherstellen.",
-      ]
-    : [
-        "Solange kein Passwort hinterlegt ist, ist dein Konto auf neuen Geräten noch nicht vollständig nutzbar.",
-      ];
+const getReminderStagesSent = (pendingRegistration) =>
+  Array.isArray(pendingRegistration?.reminderStagesSent)
+    ? pendingRegistration.reminderStagesSent.filter((entry) => typeof entry === "string")
+    : [];
+
+const sendSetPasswordReminderEmail = async ({ email, openAppUrl, stage = "after-24h" }) => {
+  let subject = "Erinnerung: Passwort in OctoVault festlegen";
+  let title = "Passwort noch ausstehend";
+  let paragraphs = [
+    "Deine E-Mail ist bereits bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar und wiederherstellbar ist.",
+  ];
+  let listItems = [
+    "Solange kein Passwort hinterlegt ist, ist dein Konto auf neuen Geräten noch nicht vollständig nutzbar.",
+  ];
+
+  if (stage === "immediate-browser-confirm") {
+    subject = "Lege jetzt dein Passwort in OctoVault fest";
+    title = "Dein nächster Schritt";
+    paragraphs = [
+      "Deine E-Mail ist jetzt bestätigt. Öffne OctoVault und lege direkt als Nächstes dein Passwort fest.",
+    ];
+    listItems = [
+      "Das Passwort legst du direkt in der App fest.",
+      "Danach kannst du dein Konto später auf neuen Geräten wiederherstellen.",
+    ];
+  } else if (stage === "after-24h") {
+    subject = "Lege jetzt noch dein Passwort in OctoVault fest";
+    title = "Dein Konto ist fast fertig";
+    paragraphs = [
+      "Deine E-Mail ist bereits bestätigt. Es fehlt nur noch dein Passwort, damit dein Konto vollständig eingerichtet ist.",
+    ];
+  } else if (stage === "after-72h") {
+    subject = "Erinnerung: Dein Passwort in OctoVault fehlt noch";
+    title = "Passwort noch nicht festgelegt";
+    paragraphs = [
+      "Deine E-Mail ist schon bestätigt. Lege jetzt noch dein Passwort fest, damit du dein Konto später zuverlässig wiederherstellen kannst.",
+    ];
+  } else if (stage === "after-7d") {
+    subject = "OctoVault: Passwort noch festlegen";
+    title = "Du kannst den Schritt jetzt abschließen";
+    paragraphs = [
+      "Dein Konto ist vorbereitet. Lege noch dein Passwort fest, damit der Zugriff später auf neuen Geräten möglich bleibt.",
+    ];
+  } else if (stage === "after-14d") {
+    subject = "Letzte Erinnerung: Passwort in OctoVault festlegen";
+    title = "Letzte freundliche Erinnerung";
+    paragraphs = [
+      "Deine E-Mail ist weiterhin bestätigt, aber dein Passwort fehlt noch. Wenn du dein Konto wiederherstellen möchtest, lege es jetzt in der App fest.",
+    ];
+  }
 
   await sendResendEmail({
     email,
@@ -354,13 +411,59 @@ const sendSetPasswordReminderEmail = async ({ email, openAppUrl, isFirstReminder
       title,
       paragraphs,
       listItems,
-      ctaLabel: "OctoVault öffnen",
-      ctaUrl: openAppUrl,
+      linkIntro: "Öffne OctoVault über diesen Link:",
+      linkUrl: openAppUrl,
       footerNote:
         "Wenn du diese Änderung nicht erwartest, öffne OctoVault bitte nur auf deinem eigenen Gerät.",
     }),
     errorLogEvent: "registration:send-password-reminder-failed",
     errorMessage: "Failed to send password reminder email.",
+  });
+};
+
+const sendAccountLinkedEmail = async ({ email, openAppUrl }) => {
+  await sendResendEmail({
+    email,
+    subject: "Dein OctoVault Account ist jetzt vollständig eingerichtet",
+    html: renderEmailCard({
+      title: "Dein Account wurde erfolgreich verbunden",
+      paragraphs: [
+        "Dein OctoVault Konto ist jetzt vollständig eingerichtet.",
+        "Deine E-Mail-Adresse und dein Passwort sind ab sofort aktiv mit deinem Konto verknüpft.",
+      ],
+      listItems: [
+        "Du kannst dein Konto jetzt bei Bedarf auf einem neuen Gerät wiederherstellen.",
+      ],
+      linkIntro: "Du kannst OctoVault direkt über diesen Link öffnen:",
+      linkUrl: openAppUrl,
+      footerNote:
+        "Falls du das nicht selbst warst, kontaktiere uns bitte umgehend.",
+    }),
+    errorLogEvent: "account-linked:send-email-failed",
+    errorMessage: "Failed to send account linked email.",
+  });
+};
+
+const sendPasswordChangedEmail = async ({ email, occurredAt }) => {
+  const occurredLabel = formatDateTimeLabel(occurredAt);
+
+  await sendResendEmail({
+    email,
+    subject: "Dein Passwort wurde geändert",
+    html: renderEmailCard({
+      title: "Dein Passwort wurde geändert",
+      paragraphs: [
+        "Für dein OctoVault Konto wurde das Passwort erfolgreich geändert.",
+        `Zeitpunkt der Änderung: ${occurredLabel}`,
+      ],
+      listItems: [
+        "Wenn du diese Änderung nicht selbst vorgenommen hast, kontaktiere uns bitte umgehend.",
+      ],
+      footerNote:
+        "Diese Sicherheitsmail wird nur nach einer erfolgreich abgeschlossenen Passwortänderung versendet.",
+    }),
+    errorLogEvent: "password-changed:send-email-failed",
+    errorMessage: "Failed to send password changed email.",
   });
 };
 
@@ -373,6 +476,17 @@ const buildAppHomeUrl = () => {
   }
 
   return normalized;
+};
+
+const verifyAuthenticatedCaller = async (request) => {
+  const idToken = getBearerToken(request);
+  if (!idToken) {
+    const error = new Error("Missing bearer token.");
+    error.code = "missing-auth-token";
+    throw error;
+  }
+
+  return auth.verifyIdToken(idToken);
 };
 
 const renderHtml = (title, message, content = "") => `<!doctype html>
@@ -1111,6 +1225,7 @@ const registrationConfirmHandler = async (request, response) => {
             confirmedAt: new Date().toISOString(),
             reminderCount: 1,
             reminderLastSentAt: reminderSentAt,
+            reminderStagesSent: ["immediate-browser-confirm"],
           },
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
@@ -1138,7 +1253,7 @@ const registrationConfirmHandler = async (request, response) => {
     await sendSetPasswordReminderEmail({
       email,
       openAppUrl: buildAppHomeUrl(),
-      isFirstReminder: true,
+      stage: "immediate-browser-confirm",
     });
 
     response.status(200).send(
@@ -1498,6 +1613,142 @@ const registrationFinalizeHandler = async (request, response) => {
   }
 };
 
+const accountMailEventHandler = async (request, response) => {
+  logRegistrationEvent("accountMailEvent:request", {
+    method: request.method,
+    hasAuthorization: Boolean(request.headers.authorization),
+    userAgent: request.headers["user-agent"] ?? null,
+    eventType: typeof request.body?.eventType === "string" ? request.body.eventType : null,
+  });
+  setCors(response);
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    jsonError(response, 405, "method-not-allowed", "Only POST is allowed.");
+    return;
+  }
+
+  try {
+    const decodedToken = await verifyAuthenticatedCaller(request);
+    if (decodedToken.firebase?.sign_in_provider === "anonymous") {
+      jsonError(response, 403, "linked-account-required", "A linked account is required.");
+      return;
+    }
+
+    const eventType = String(request.body?.eventType ?? "").trim();
+    const idempotencyKey = String(request.body?.idempotencyKey ?? "").trim();
+    const source = String(request.body?.source ?? "").trim() || "unknown";
+    const occurredAt = String(request.body?.occurredAt ?? "").trim() || new Date().toISOString();
+    const userRecord = await auth.getUser(decodedToken.uid);
+    const email = normalizeEmail(userRecord.email);
+
+    if (!email) {
+      jsonError(response, 409, "missing-account-email", "No linked email found for account.");
+      return;
+    }
+
+    if (!eventType || !["account-linked", "password-changed"].includes(eventType)) {
+      jsonError(response, 400, "invalid-mail-event-type", "Mail event type is invalid.");
+      return;
+    }
+
+    if (!idempotencyKey) {
+      jsonError(response, 400, "missing-idempotency-key", "Idempotency key is required.");
+      return;
+    }
+
+    const userRef = db.collection("users").doc(decodedToken.uid);
+    const userSnapshot = await userRef.get();
+    const userData = userSnapshot.data() ?? {};
+    const mailEvents = userData.mailEvents ?? {};
+    const eventState = mailEvents[eventType] ?? {};
+
+    if (eventType === "account-linked" && eventState.sentAt) {
+      logRegistrationEvent("accountMailEvent:skip-account-linked-already-sent", {
+        uid: decodedToken.uid,
+        email,
+        source,
+      });
+      response.status(200).json({ ok: true, skipped: true, reason: "already-sent" });
+      return;
+    }
+
+    if (eventState.lastIdempotencyKey === idempotencyKey) {
+      logRegistrationEvent("accountMailEvent:skip-duplicate-idempotency", {
+        uid: decodedToken.uid,
+        email,
+        eventType,
+        source,
+        idempotencyKey,
+      });
+      response.status(200).json({ ok: true, skipped: true, reason: "duplicate-idempotency" });
+      return;
+    }
+
+    if (eventType === "account-linked") {
+      await sendAccountLinkedEmail({
+        email,
+        openAppUrl: buildAppHomeUrl(),
+      });
+    } else if (eventType === "password-changed") {
+      await sendPasswordChangedEmail({
+        email,
+        occurredAt,
+      });
+    }
+
+    await userRef.set(
+      {
+        mailEvents: {
+          ...mailEvents,
+          [eventType]: {
+            ...eventState,
+            lastIdempotencyKey: idempotencyKey,
+            lastSource: source,
+            lastOccurredAt: occurredAt,
+            sentAt:
+              eventType === "account-linked"
+                ? eventState.sentAt ?? new Date().toISOString()
+                : new Date().toISOString(),
+            lastSentAt: new Date().toISOString(),
+          },
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    logRegistrationEvent("accountMailEvent:sent", {
+      uid: decodedToken.uid,
+      email,
+      eventType,
+      source,
+      idempotencyKey,
+    });
+
+    response.status(200).json({ ok: true });
+  } catch (error) {
+    logger.error("accountMailEvent", {
+      code: error.code || "account-mail-event-failed",
+      message: error.message || "Account mail event failed.",
+      stack: error.stack || null,
+    });
+    const code = error.code || "account-mail-event-failed";
+    const status =
+      code === "missing-auth-token" || code === "invalid-mail-event-type" || code === "missing-idempotency-key"
+        ? 400
+        : code === "linked-account-required"
+          ? 403
+          : code === "missing-account-email"
+            ? 409
+            : 500;
+    jsonError(response, status, code, error.message || "Account mail event failed.");
+  }
+};
+
 const sendPendingPasswordReminderHandler = async () => {
   const now = Date.now();
   const snapshot = await db
@@ -1517,16 +1768,22 @@ const sendPendingPasswordReminderHandler = async () => {
     if (!(expiresAt instanceof Date) || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now) {
       continue;
     }
-
-    const lastSentAt = pendingRegistration.reminderLastSentAt
-      ? new Date(String(pendingRegistration.reminderLastSentAt))
+    const confirmedAt = pendingRegistration.confirmedAt
+      ? new Date(String(pendingRegistration.confirmedAt))
       : null;
 
-    if (
-      lastSentAt instanceof Date &&
-      !Number.isNaN(lastSentAt.getTime()) &&
-      now - lastSentAt.getTime() < PASSWORD_REMINDER_INTERVAL_MS
-    ) {
+    if (!(confirmedAt instanceof Date) || Number.isNaN(confirmedAt.getTime())) {
+      continue;
+    }
+
+    const reminderStagesSent = getReminderStagesSent(pendingRegistration);
+    const nextReminderStage = PASSWORD_REMINDER_STAGES.find(
+      (stage) =>
+        !reminderStagesSent.includes(stage.key) &&
+        now - confirmedAt.getTime() >= stage.delayMs,
+    );
+
+    if (!nextReminderStage) {
       continue;
     }
 
@@ -1534,7 +1791,7 @@ const sendPendingPasswordReminderHandler = async () => {
       await sendSetPasswordReminderEmail({
         email: normalizeEmail(pendingRegistration.pendingEmail),
         openAppUrl: buildAppHomeUrl(),
-        isFirstReminder: false,
+        stage: nextReminderStage.key,
       });
 
       await userDoc.ref.set(
@@ -1543,6 +1800,7 @@ const sendPendingPasswordReminderHandler = async () => {
             ...pendingRegistration,
             reminderCount: Number(pendingRegistration.reminderCount ?? 0) + 1,
             reminderLastSentAt: new Date().toISOString(),
+            reminderStagesSent: [...reminderStagesSent, nextReminderStage.key],
           },
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
@@ -1553,6 +1811,7 @@ const sendPendingPasswordReminderHandler = async () => {
         uid: userDoc.id,
         email: normalizeEmail(pendingRegistration.pendingEmail),
         reminderCount: Number(pendingRegistration.reminderCount ?? 0) + 1,
+        reminderStage: nextReminderStage.key,
         flowVersion: REGISTRATION_FLOW_VERSION,
       });
     } catch (error) {
@@ -1573,6 +1832,7 @@ exports.registrationCancel = onRequest(PUBLIC_HTTP_OPTIONS, registrationCancelHa
 exports.registrationConfirm = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmHandler);
 exports.registrationConfirmApp = onRequest(PUBLIC_HTTP_OPTIONS, registrationConfirmAppHandler);
 exports.registrationFinalize = onRequest(PUBLIC_HTTP_OPTIONS, registrationFinalizeHandler);
+exports.accountMailEvent = onRequest(PUBLIC_HTTP_OPTIONS, accountMailEventHandler);
 exports.registrationPasswordReminder = onSchedule(
   {
     region: REGION,

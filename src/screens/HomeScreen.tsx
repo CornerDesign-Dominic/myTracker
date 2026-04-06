@@ -84,7 +84,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
         </View>
 
         {!hasResolvedInitialHomeData ? (
-          <View style={styles.skeletonLayout}>
+          <>
             <View style={[surfaces.mainPanel, styles.summaryCard]}>
               <View style={[styles.skeletonBlock, styles.skeletonMonth]} />
               <View style={styles.summaryRow}>
@@ -131,79 +131,87 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
                 </View>
               ))}
             </View>
-          </View>
+          </>
         ) : (
-          <Animated.View style={[styles.loadedContent, { opacity: contentOpacity }]}>
+          <>
             {showPasswordPendingNotice ? (
-              <Pressable
-                style={[surfaces.mainSubtlePanel, styles.passwordPendingCard]}
-                onPress={() => navigation.navigate("Settings")}
-              >
-                <View style={styles.passwordPendingHeader}>
-                  <View style={styles.passwordPendingCopy}>
-                    <View style={styles.passwordPendingTitleRow}>
-                      <Ionicons
-                        name="alert-circle-outline"
-                        size={16}
-                        color={colors.accent}
-                      />
-                      <Text style={[typography.meta, styles.passwordPendingTitle]}>
-                        {t("home.passwordPendingTitle")}
+              <Animated.View style={{ opacity: contentOpacity }}>
+                <Pressable
+                  style={[surfaces.mainSubtlePanel, styles.passwordPendingCard]}
+                  onPress={() => navigation.navigate("Settings")}
+                >
+                  <View style={styles.passwordPendingHeader}>
+                    <View style={styles.passwordPendingCopy}>
+                      <View style={styles.passwordPendingTitleRow}>
+                        <Ionicons
+                          name="alert-circle-outline"
+                          size={16}
+                          color={colors.accent}
+                        />
+                        <Text style={[typography.meta, styles.passwordPendingTitle]}>
+                          {t("home.passwordPendingTitle")}
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward-outline"
+                      size={18}
+                      color={colors.accent}
+                    />
+                  </View>
+                </Pressable>
+              </Animated.View>
+            ) : null}
+
+            <Animated.View style={{ opacity: contentOpacity }}>
+              <View style={[surfaces.mainPanel, styles.summaryCard]}>
+                <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryPrimaryBlock}>
+                    <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>
+                    <Text style={[typography.metric, styles.summaryAmount]}>
+                      {formatCurrency(monthlySummary.totalAmount, currency)}
+                    </Text>
+                    <Pressable onPress={() => navigation.navigate("MonthlyPreview")}>
+                      <Text style={[typography.secondary, styles.summaryLink]}>
+                        {t("home.monthlyPreviewLink")}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.summarySecondaryBlock}>
+                    <View style={styles.summarySecondaryItem}>
+                      <Text style={[typography.meta, styles.summaryLabel]}>{t("home.due")}</Text>
+                      <Text style={[typography.body, styles.summaryDueValue]}>
+                        {formatCurrency(monthlySummary.dueAmount, currency)}
+                      </Text>
+                    </View>
+                    <View style={styles.summarySecondaryItem}>
+                      <Text style={[typography.meta, styles.summaryLabel]}>{t("home.paid")}</Text>
+                      <Text style={[typography.body, styles.summarySecondaryValue]}>
+                        {formatCurrency(monthlySummary.paidAmount, currency)}
                       </Text>
                     </View>
                   </View>
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={18}
-                    color={colors.accent}
-                  />
-                </View>
-              </Pressable>
-            ) : null}
-
-            <View style={[surfaces.mainPanel, styles.summaryCard]}>
-              <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryPrimaryBlock}>
-                  <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>
-                  <Text style={[typography.metric, styles.summaryAmount]}>
-                    {formatCurrency(monthlySummary.totalAmount, currency)}
-                  </Text>
-                  <Pressable onPress={() => navigation.navigate("MonthlyPreview")}>
-                    <Text style={[typography.secondary, styles.summaryLink]}>
-                      {t("home.monthlyPreviewLink")}
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.summarySecondaryBlock}>
-                  <View style={styles.summarySecondaryItem}>
-                    <Text style={[typography.meta, styles.summaryLabel]}>{t("home.due")}</Text>
-                    <Text style={[typography.body, styles.summaryDueValue]}>
-                      {formatCurrency(monthlySummary.dueAmount, currency)}
-                    </Text>
-                  </View>
-                  <View style={styles.summarySecondaryItem}>
-                    <Text style={[typography.meta, styles.summaryLabel]}>{t("home.paid")}</Text>
-                    <Text style={[typography.body, styles.summarySecondaryValue]}>
-                      {formatCurrency(monthlySummary.paidAmount, currency)}
-                    </Text>
-                  </View>
                 </View>
               </View>
-            </View>
+            </Animated.View>
 
-            <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
-              <Text style={[typography.meta, styles.monthMarkerText]}>
-                {t("home.currentMonthMarker")}
-              </Text>
-            </View>
+            <Animated.View style={{ opacity: contentOpacity }}>
+              <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
+                <Text style={[typography.meta, styles.monthMarkerText]}>
+                  {t("home.currentMonthMarker")}
+                </Text>
+              </View>
+            </Animated.View>
 
             {errorMessage ? (
-              <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
+              <Animated.View style={{ opacity: contentOpacity }}>
+                <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
+              </Animated.View>
             ) : null}
 
-            <View style={styles.sections}>
+            <Animated.View style={[styles.sections, { opacity: contentOpacity }]}>
               <View style={styles.section}>
                 {dueSections.currentMonthUpcoming.length === 0 ? (
                   <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
@@ -282,8 +290,8 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
                   />
                 </View>
               </Pressable>
-            </View>
-          </Animated.View>
+            </Animated.View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -314,12 +322,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     summaryCard: {
       gap: spacing.sm,
-    },
-    loadedContent: {
-      gap: spacing.lg,
-    },
-    skeletonLayout: {
-      gap: spacing.lg,
     },
     skeletonBlock: {
       borderRadius: 999,

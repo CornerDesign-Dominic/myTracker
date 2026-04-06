@@ -26,6 +26,7 @@ type LanguageOption = AppLanguage;
 type CurrencyOption = "EUR" | "Dollar";
 type ThemeOption = "Dark" | "Light";
 type WeekStartOption = "monday" | "sunday";
+type NotificationsOption = "enabled" | "disabled";
 
 const STORAGE_KEY = "tracker.app-settings";
 const FALLBACK_LANGUAGE: LanguageOption = "de";
@@ -70,12 +71,15 @@ interface AppSettingsContextValue {
   currency: CurrencyOption;
   theme: ThemeOption;
   weekStart: WeekStartOption;
+  notifications: NotificationsOption;
+  notificationsEnabled: boolean;
   accentColor: AccentColor;
   isHydrated: boolean;
   setLanguage: (value: LanguageOption) => void;
   setCurrency: (value: CurrencyOption) => void;
   setTheme: (value: ThemeOption) => void;
   setWeekStart: (value: WeekStartOption) => void;
+  setNotifications: (value: NotificationsOption) => void;
   setAccentColor: (value: AccentColor) => void;
 }
 
@@ -88,6 +92,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
   const [theme, setThemeState] = useState<ThemeOption>(() => getSystemTheme());
   const [weekStart, setWeekStartState] = useState<WeekStartOption>("monday");
+  const [notifications, setNotificationsState] = useState<NotificationsOption>("enabled");
   const [accentColor, setAccentColorState] = useState<AccentColor>(FREE_ACCENT_COLOR);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -105,6 +110,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
           currency: CurrencyOption;
           theme: ThemeOption;
           weekStart: WeekStartOption;
+          notificationsEnabled: boolean;
           accentColor: AccentColor;
         }>;
 
@@ -124,6 +130,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
 
         if (parsedSettings.weekStart) {
           setWeekStartState(parsedSettings.weekStart);
+        }
+
+        if (typeof parsedSettings.notificationsEnabled === "boolean") {
+          setNotificationsState(parsedSettings.notificationsEnabled ? "enabled" : "disabled");
         }
 
         if (parsedSettings.accentColor) {
@@ -160,7 +170,13 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
 
     let isActive = true;
 
-    const defaults = { language, currency, theme, weekStart };
+    const defaults = {
+      language,
+      currency,
+      theme,
+      weekStart,
+      notificationsEnabled: notifications === "enabled",
+    };
 
     const syncInitialSettings = async () => {
       console.log("[Settings] ensureSettingsDocument:start", {
@@ -203,6 +219,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         if (settings.weekStart) {
           setWeekStartState(settings.weekStart);
         }
+
+        if (typeof settings.notificationsEnabled === "boolean") {
+          setNotificationsState(settings.notificationsEnabled ? "enabled" : "disabled");
+        }
       },
       (error) => {
         logFirestoreError("Settings.subscribeToUserSettings", error, {
@@ -215,7 +235,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       isActive = false;
       unsubscribe();
     };
-  }, [authIsReady, currentUser, isHydrated]);
+  }, [authIsReady, currentUser, currency, isHydrated, language, notifications, theme, weekStart]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -229,12 +249,13 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         currency,
         theme,
         weekStart,
+        notificationsEnabled: notifications === "enabled",
         accentColor,
       }),
     ).catch(() => {
       // Ignore persistence errors and keep the in-memory app state usable.
     });
-  }, [accentColor, currency, isHydrated, language, theme, weekStart]);
+  }, [accentColor, currency, isHydrated, language, notifications, theme, weekStart]);
 
   const setLanguage = (value: LanguageOption) => {
     setLanguageState(value);
@@ -284,6 +305,18 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
+  const setNotifications = (value: NotificationsOption) => {
+    setNotificationsState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { notificationsEnabled: value === "enabled" }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.notificationsEnabled", error, {
+          userId: currentUser.uid,
+          notificationsEnabled: value === "enabled",
+        });
+      });
+    }
+  };
+
   const setAccentColor = (value: AccentColor) => {
     if (!canUseAccentColor(value, hasPremiumAccents)) {
       return;
@@ -298,15 +331,18 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       currency,
       theme,
       weekStart,
+      notifications,
+      notificationsEnabled: notifications === "enabled",
       accentColor,
       isHydrated,
       setLanguage,
       setCurrency,
       setTheme,
       setWeekStart,
+      setNotifications,
       setAccentColor,
     }),
-    [accentColor, currency, isHydrated, language, theme, weekStart],
+    [accentColor, currency, isHydrated, language, notifications, theme, weekStart],
   );
 
   return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;

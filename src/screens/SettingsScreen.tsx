@@ -11,6 +11,8 @@ import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { RootStackParamList } from "@/navigation/types";
 import { FREE_ACCENT_COLORS } from "@/services/purchases/constants";
+import { notificationsService } from "@/services/notifications/service";
+import { scheduleDailyDueTestNotification } from "@/services/notifications/dailyDue";
 import { canUseAccentColor } from "@/services/purchases/entitlements";
 import {
   accentColorOptions,
@@ -23,6 +25,7 @@ import {
   spacing,
 } from "@/theme";
 import { AccentColor } from "@/theme";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -81,11 +84,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
     currency,
     theme,
     weekStart,
+    notifications,
     accentColor,
     setLanguage,
     setCurrency,
     setTheme,
     setWeekStart,
+    setNotifications,
     setAccentColor,
   } = useAppSettings();
   const {
@@ -109,6 +114,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
     restorePurchases,
     clearPurchaseError,
   } = usePurchases();
+  const { subscriptions } = useSubscriptions();
   const [isPremiumModalVisible, setIsPremiumModalVisible] = useState(false);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
   const [isCompleteRegistrationModalVisible, setIsCompleteRegistrationModalVisible] = useState(false);
@@ -117,8 +123,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [isCompletingRegistration, setIsCompletingRegistration] = useState(false);
   const [isResendingPendingRegistration, setIsResendingPendingRegistration] = useState(false);
+  const [isSendingNotificationTest, setIsSendingNotificationTest] = useState(false);
   const lifetimePremiumPrice = lifetimePremiumProduct?.displayPrice ?? null;
   const hasLockedAccents = !hasPremiumAccents;
+  const showNotificationTestTools = __DEV__;
   const pendingRegistrationState = useMemo(() => {
     if (!isAnonymous || !pendingRegistration) {
       return "idle" as const;
@@ -354,6 +362,44 @@ export const SettingsScreen = ({ navigation }: Props) => {
     }
   };
 
+  const handleSendNotificationTest = async () => {
+    if (isSendingNotificationTest) {
+      return;
+    }
+
+    try {
+      setIsSendingNotificationTest(true);
+      await notificationsService.initializeAsync();
+
+      let permissionState = await notificationsService.getPermissionStateAsync();
+      if (permissionState === "undetermined") {
+        permissionState = await notificationsService.requestPermissionAsync();
+      }
+
+      if (permissionState !== "granted") {
+        Alert.alert(t("common.actionFailed"), t("settings.notificationTestPermissionDenied"));
+        return;
+      }
+
+      const result = await scheduleDailyDueTestNotification({
+        subscriptions,
+        language: uiLanguage,
+        secondsFromNow: 5,
+      });
+
+      if (!result) {
+        Alert.alert(t("settings.notificationTestNoDueTitle"), t("settings.notificationTestNoDueDescription"));
+        return;
+      }
+
+      Alert.alert(t("settings.notificationTestScheduledTitle"), t("settings.notificationTestScheduledDescription"));
+    } catch {
+      Alert.alert(t("common.actionFailed"), t("settings.notificationTestFailed"));
+    } finally {
+      setIsSendingNotificationTest(false);
+    }
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView
@@ -557,7 +603,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
             style={[buttons.buttonBase, buttons.primaryButton, styles.actionButtonSingle]}
             onPress={openPremiumModal}
           >
-            <Text style={[typography.button, styles.purchasePrimaryText]}>
+            <Text
+              style={[
+                typography.button,
+                styles.purchasePrimaryText,
+                !isPremium && mode === "light" ? styles.premiumLearnMoreLightText : null,
+              ]}
+            >
               {isPremium ? t("settings.premiumViewBenefits") : t("settings.premiumLearnMore")}
             </Text>
           </Pressable>
@@ -584,17 +636,52 @@ export const SettingsScreen = ({ navigation }: Props) => {
           formatLabel={(option) => (option === "Dark" ? t("settings.themeDark") : t("settings.themeLight"))}
           onChange={setTheme}
         />
-        <OptionGroup
-          title={t("settings.weekStart")}
-          value={weekStart}
-          options={["monday", "sunday"] as const}
-          formatLabel={(option) =>
-            option === "monday" ? t("settings.weekStartMonday") : t("settings.weekStartSunday")
-          }
-          onChange={setWeekStart}
-        />
+          <OptionGroup
+            title={t("settings.weekStart")}
+            value={weekStart}
+            options={["monday", "sunday"] as const}
+            formatLabel={(option) =>
+              option === "monday" ? t("settings.weekStartMonday") : t("settings.weekStartSunday")
+            }
+            onChange={setWeekStart}
+          />
+          <OptionGroup
+            title={t("settings.notifications")}
+            value={notifications}
+            options={["enabled", "disabled"] as const}
+            formatLabel={(option) =>
+              option === "enabled" ? t("settings.notificationsEnabled") : t("settings.notificationsDisabled")
+            }
+            onChange={setNotifications}
+          />
+          {showNotificationTestTools ? (
+            <View style={[surfaces.panel, styles.groupCard]}>
+              <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.notificationTestTitle")}</Text>
+              <Text style={[typography.body, styles.groupDescription]}>
+                {t("settings.notificationTestDescription")}
+              </Text>
+              <Pressable
+                style={[
+                  buttons.buttonBase,
+                  buttons.secondaryButton,
+                  styles.notificationTestButton,
+                  isSendingNotificationTest ? styles.notificationTestButtonDisabled : null,
+                ]}
+                onPress={handleSendNotificationTest}
+                disabled={isSendingNotificationTest}
+              >
+                {isSendingNotificationTest ? (
+                  <ActivityIndicator color={colors.textPrimary} />
+                ) : (
+                  <Text style={[typography.button, { color: colors.textPrimary }]}>
+                    {t("settings.notificationTestButton")}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          ) : null}
 
-        <View style={[surfaces.panel, styles.groupCard]}>
+          <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.cardHeaderRow}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
             <Ionicons name="lock-closed" size={16} color={colors.accent} />
@@ -1059,6 +1146,10 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     groupTitle: {
       color: colors.textPrimary,
     },
+    groupDescription: {
+      color: colors.textSecondary,
+      lineHeight: 20,
+    },
     cardHeaderRow: {
       flexDirection: "row",
       alignItems: "flex-start",
@@ -1182,6 +1273,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     actionButtonSingle: {
       minWidth: 176,
+    },
+    notificationTestButton: {
+      alignSelf: "flex-start",
+      minWidth: 220,
+    },
+    notificationTestButtonDisabled: {
+      opacity: 0.7,
     },
     optionButton: {
       minWidth: 92,
@@ -1382,6 +1480,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     purchasePrimaryText: {
       color: "#FFFFFF",
+    },
+    premiumLearnMoreLightText: {
+      color: "#111111",
     },
     purchaseErrorText: {
       color: colors.danger,

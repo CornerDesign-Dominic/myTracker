@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -291,11 +291,15 @@ export const AccountScreen = ({ navigation }: Props) => {
                 onPress={handleChangePassword}
                 disabled={isChangingPassword}
               >
-                <Text style={[typography.button, styles.primaryButtonText]}>
-                  {hasConfirmedPendingRegistration
-                    ? t("settings.pendingFinalizeSubmit")
-                    : t("settings.accountChangePasswordConfirm")}
-                </Text>
+                {isChangingPassword ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Text style={[typography.button, styles.primaryButtonText]}>
+                    {hasConfirmedPendingRegistration
+                      ? t("settings.pendingFinalizeSubmit")
+                      : t("settings.accountChangePasswordConfirm")}
+                  </Text>
+                )}
               </Pressable>
             </View>
           </View>

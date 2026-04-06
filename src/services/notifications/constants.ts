@@ -22,6 +22,8 @@ export const notificationChannelDefinitions: Record<
 };
 
 export const notificationScenarioChannelMap: Record<LocalNotificationScenario, NotificationChannelId> = {
+  "daily-due-today": "general-reminders",
+  "daily-due-today-test": "debug",
   "event-in-three-days": "general-reminders",
   "cancellation-window-ending": "billing-deadlines",
   "renewal-tomorrow": "billing-deadlines",
@@ -35,6 +37,14 @@ export const notificationScenarioDefaults: Record<
     body: string;
   }
 > = {
+  "daily-due-today": {
+    title: "1 Zahlung heute",
+    body: "Heute faellig: Abonnement",
+  },
+  "daily-due-today-test": {
+    title: "1 Zahlung heute",
+    body: "Heute faellig: Abonnement",
+  },
   "event-in-three-days": {
     title: "Upcoming subscription event",
     body: "TODO: Replace with the final reminder copy for events due in 3 days.",

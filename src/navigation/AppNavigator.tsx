@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useCallback, useEffect, useRef } from "react";
+import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -122,9 +124,64 @@ export const AppNavigator = ({
 }: AppNavigatorProps) => {
   const { colors, navigationTheme, typography } = useAppTheme();
   const { t } = useI18n();
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const lastHandledNotificationIdRef = useRef<string | null>(null);
+
+  const handleNotificationResponse = useCallback(
+    (response: Notifications.NotificationResponse | null) => {
+      if (!response) {
+        return;
+      }
+
+      const identifier = response.notification.request.identifier;
+      if (lastHandledNotificationIdRef.current === identifier) {
+        return;
+      }
+
+      const scenario = response.notification.request.content.data?.scenario;
+      if (scenario !== "daily-due-today" && scenario !== "daily-due-today-test") {
+        return;
+      }
+
+      const openCalendar = () => {
+        if (!navigationRef.isReady()) {
+          return false;
+        }
+
+        (
+          navigationRef as unknown as {
+            navigate: (name: string, params?: unknown) => void;
+          }
+        ).navigate("Tabs", { screen: "Calendar" });
+        return true;
+      };
+
+      lastHandledNotificationIdRef.current = identifier;
+      if (!openCalendar()) {
+        setTimeout(() => {
+          openCalendar();
+        }, 250);
+      }
+    },
+    [navigationRef],
+  );
+
+  useEffect(() => {
+    Notifications.getLastNotificationResponseAsync()
+      .then(handleNotificationResponse)
+      .catch(() => undefined);
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationResponse(response);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [handleNotificationResponse]);
 
   return (
-    <NavigationContainer linking={appLinking} theme={navigationTheme}>
+    <NavigationContainer linking={appLinking} theme={navigationTheme} ref={navigationRef}>
       <Stack.Navigator
         initialRouteName={showOnboarding ? "Onboarding" : "Tabs"}
         screenOptions={{

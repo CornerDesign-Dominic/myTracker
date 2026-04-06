@@ -275,8 +275,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactMetaPlatform: "Plattform",
       contactMetaVersion: "App-Version",
       contactSubmitAction: "Absenden",
-      contactSubmitSuccess:
-        "Deine Nachricht wurde gesendet. Du erhältst in Kürze eine Eingangsbestätigung per E-Mail.",
+      contactSubmitSuccessTitle: "E-Mail ist raus",
+      contactSubmitSuccess: "Die Bestätigung folgt per E-Mail.",
       contactSubmitError:
         "Deine Nachricht konnte gerade nicht gesendet werden. Bitte versuche es erneut.",
       contactValidationCategory: "Bitte wähle eine Kategorie aus.",
@@ -325,6 +325,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordResetError: "Der Reset-Link konnte gerade nicht gesendet werden.",
       loginSwitch: "Noch kein Konto? Registrieren",
       loginError: "Login fehlgeschlagen.",
+      loginInvalidCredentials: "E-Mail oder Passwort ist nicht korrekt.",
+      loginTooManyRequests: "Zu viele Versuche. Bitte warte kurz und versuche es erneut.",
       registerTitle: "Registrierung",
       registerSubmit: "Konto erstellen",
       registerSwitch: "Bereits ein Konto? Einloggen",
@@ -862,8 +864,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       contactMetaPlatform: "Platform",
       contactMetaVersion: "App version",
       contactSubmitAction: "Send",
-      contactSubmitSuccess:
-        "Your message has been sent. You will receive a confirmation email shortly.",
+      contactSubmitSuccessTitle: "Email sent",
+      contactSubmitSuccess: "A confirmation email will follow shortly.",
       contactSubmitError:
         "Your message could not be sent right now. Please try again.",
       contactValidationCategory: "Please choose a category.",
@@ -912,6 +914,8 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       passwordResetError: "The reset link could not be sent right now.",
       loginSwitch: "No account yet? Register",
       loginError: "Login failed.",
+      loginInvalidCredentials: "Email or password is incorrect.",
+      loginTooManyRequests: "Too many attempts. Please wait a moment and try again.",
       registerTitle: "Register",
       registerSubmit: "Create account",
       registerSwitch: "Already have an account? Sign in",

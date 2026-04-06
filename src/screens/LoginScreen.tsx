@@ -64,11 +64,32 @@ export const LoginScreen = ({ navigation }: Props) => {
       console.log("[AuthDebug] LoginScreen:submit:success", { email: email.trim() });
       navigation.goBack();
     } catch (submissionError) {
+      const errorCode =
+        typeof submissionError === "object" &&
+        submissionError !== null &&
+        "code" in submissionError &&
+        typeof (submissionError as { code?: unknown }).code === "string"
+          ? (submissionError as { code: string }).code
+          : null;
+
       console.log("[AuthDebug] LoginScreen:submit:error", {
         email: email.trim(),
+        code: errorCode,
         message: submissionError instanceof Error ? submissionError.message : String(submissionError),
       });
-      setError(submissionError instanceof Error ? submissionError.message : t("auth.loginError"));
+
+      if (
+        errorCode === "auth/invalid-credential" ||
+        errorCode === "auth/wrong-password" ||
+        errorCode === "auth/user-not-found" ||
+        errorCode === "auth/invalid-login-credentials"
+      ) {
+        setError(t("auth.loginInvalidCredentials"));
+      } else if (errorCode === "auth/too-many-requests") {
+        setError(t("auth.loginTooManyRequests"));
+      } else {
+        setError(t("auth.loginError"));
+      }
     }
   };
 

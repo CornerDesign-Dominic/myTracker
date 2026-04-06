@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -55,8 +56,8 @@ export const ContactScreen = ({ navigation }: Props) => {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState(linkedEmail);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
 
   useEffect(() => {
     if (!email.trim() && linkedEmail) {
@@ -141,7 +142,6 @@ export const ContactScreen = ({ navigation }: Props) => {
     try {
       setIsSubmitting(true);
       setErrorMessage(null);
-      setSuccessMessage(null);
 
       const idToken = currentUser ? await currentUser.getIdToken() : null;
 
@@ -161,7 +161,7 @@ export const ContactScreen = ({ navigation }: Props) => {
       });
 
       resetForm();
-      setSuccessMessage(t("settings.contactSubmitSuccess"));
+      setIsSuccessModalVisible(true);
     } catch (error) {
       const errorCode =
         typeof error === "object" &&
@@ -228,9 +228,6 @@ export const ContactScreen = ({ navigation }: Props) => {
                 if (errorMessage) {
                   setErrorMessage(null);
                 }
-                if (successMessage) {
-                  setSuccessMessage(null);
-                }
               }}
               maxLength={CONTACT_SUBJECT_MAX_LENGTH}
               placeholder={t("settings.contactSubjectPlaceholder")}
@@ -247,9 +244,6 @@ export const ContactScreen = ({ navigation }: Props) => {
                 setMessage(value);
                 if (errorMessage) {
                   setErrorMessage(null);
-                }
-                if (successMessage) {
-                  setSuccessMessage(null);
                 }
               }}
               maxLength={CONTACT_MESSAGE_MAX_LENGTH}
@@ -270,9 +264,6 @@ export const ContactScreen = ({ navigation }: Props) => {
                 if (errorMessage) {
                   setErrorMessage(null);
                 }
-                if (successMessage) {
-                  setSuccessMessage(null);
-                }
               }}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -283,25 +274,8 @@ export const ContactScreen = ({ navigation }: Props) => {
             />
           </View>
 
-          <View style={styles.metaCard}>
-            <View style={styles.metaRow}>
-              <Text style={[typography.meta, styles.metaLabel]}>{t("settings.contactMetaPlatform")}</Text>
-              <Text style={[typography.secondary, styles.metaValue]}>{Platform.OS}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={[typography.meta, styles.metaLabel]}>{t("settings.contactMetaVersion")}</Text>
-              <Text style={[typography.secondary, styles.metaValue]}>{appVersion}</Text>
-            </View>
-          </View>
-
           {errorMessage ? (
             <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
-          ) : null}
-          {successMessage ? (
-            <View style={styles.successRow}>
-              <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
-              <Text style={[typography.secondary, styles.successText]}>{successMessage}</Text>
-            </View>
           ) : null}
 
           <View style={styles.actions}>
@@ -328,6 +302,59 @@ export const ContactScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isSuccessModalVisible}
+        onRequestClose={() => {
+          setIsSuccessModalVisible(false);
+          navigation.navigate("Tabs", { screen: "Home" });
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setIsSuccessModalVisible(false);
+              navigation.navigate("Tabs", { screen: "Home" });
+            }}
+          />
+          <View style={[surfaces.panel, styles.successSheet]}>
+            <View style={styles.modalHeader}>
+              <Text style={[typography.cardTitle, styles.modalTitle]}>
+                {t("settings.contactSubmitSuccessTitle")}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setIsSuccessModalVisible(false);
+                  navigation.navigate("Tabs", { screen: "Home" });
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <View style={styles.successLead}>
+              <View style={styles.successIconWrap}>
+                <Ionicons name="checkmark" size={18} color={colors.accent} />
+              </View>
+              <Text style={[typography.secondary, styles.modalText]}>
+                {t("settings.contactSubmitSuccess")}
+              </Text>
+            </View>
+            <Pressable
+              style={[buttons.buttonBase, buttons.primaryButton]}
+              onPress={() => {
+                setIsSuccessModalVisible(false);
+                navigation.navigate("Tabs", { screen: "Home" });
+              }}
+            >
+              <Text style={[typography.button, styles.primaryButtonText]}>{t("common.okay")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -389,39 +416,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     messageInput: {
       minHeight: 168,
     },
-    metaCard: {
-      gap: spacing.xs,
-      padding: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-    },
-    metaRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
-    },
-    metaLabel: {
-      color: colors.textSecondary,
-      textTransform: "uppercase",
-    },
-    metaValue: {
-      color: colors.textPrimary,
-    },
     errorText: {
       color: colors.danger,
-      lineHeight: 21,
-    },
-    successRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.xs,
-    },
-    successText: {
-      color: colors.textSecondary,
-      flex: 1,
       lineHeight: 21,
     },
     actions: {
@@ -436,5 +432,45 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     primaryButtonText: {
       color: colors.accent,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15, 23, 42, 0.38)",
+      padding: spacing.lg,
+      justifyContent: "center",
+    },
+    successSheet: {
+      gap: spacing.lg,
+      width: "100%",
+      maxWidth: 420,
+      alignSelf: "center",
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    modalTitle: {
+      color: colors.textPrimary,
+      flex: 1,
+    },
+    modalText: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    successLead: {
+      gap: spacing.md,
+      alignItems: "flex-start",
+    },
+    successIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
     },
   });

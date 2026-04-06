@@ -176,6 +176,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       theme,
       weekStart,
       notificationsEnabled: notifications === "enabled",
+      accentColor,
     };
 
     const syncInitialSettings = async () => {
@@ -223,6 +224,10 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
         if (typeof settings.notificationsEnabled === "boolean") {
           setNotificationsState(settings.notificationsEnabled ? "enabled" : "disabled");
         }
+
+        if (settings.accentColor) {
+          setAccentColorState(getSafeAccentColor(settings.accentColor, hasPremiumAccents));
+        }
       },
       (error) => {
         logFirestoreError("Settings.subscribeToUserSettings", error, {
@@ -235,7 +240,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       isActive = false;
       unsubscribe();
     };
-  }, [authIsReady, currentUser, currency, isHydrated, language, notifications, theme, weekStart]);
+  }, [accentColor, authIsReady, currentUser, currency, hasPremiumAccents, isHydrated, language, notifications, theme, weekStart]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -323,6 +328,14 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
     }
 
     setAccentColorState(value);
+    if (currentUser) {
+      updateUserSettings(currentUser.uid, { accentColor: value }).catch((error) => {
+        logFirestoreError("Settings.updateUserSettings.accentColor", error, {
+          userId: currentUser.uid,
+          accentColor: value,
+        });
+      });
+    }
   };
 
   const value = useMemo(

@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 
 import { firestoreDb } from "@/firebase/config";
+import { AccentColor } from "@/theme";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 export type UserSettingsDocument = {
@@ -16,6 +17,7 @@ export type UserSettingsDocument = {
   theme: "Dark" | "Light";
   weekStart?: "monday" | "sunday";
   notificationsEnabled?: boolean;
+  accentColor?: AccentColor;
   createdAt?: unknown;
   updatedAt?: unknown;
 };

@@ -182,7 +182,85 @@ const releasePreviousReservationIfNeeded = async ({ userId, pendingRegistration,
   );
 };
 
-const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const renderEmailParagraph = (text) =>
+  `<p style="margin:0 0 14px;color:#4b5563;font-size:15px;line-height:1.65">${escapeHtml(text)}</p>`;
+
+const renderEmailBulletList = (items) => `
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:8px 0 0">
+    ${items
+      .map(
+        (item) => `
+          <tr>
+            <td valign="top" style="width:18px;padding:0 0 10px;color:#15803D;font-size:14px;line-height:1.6">•</td>
+            <td valign="top" style="padding:0 0 10px;color:#4b5563;font-size:14px;line-height:1.6">${escapeHtml(item)}</td>
+          </tr>`,
+      )
+      .join("")}
+  </table>
+`;
+
+const renderEmailCard = ({ eyebrow = "OctoVault", title, paragraphs = [], listItems = [], ctaLabel, ctaUrl, fallbackLabel, footerNote }) => `
+  <!doctype html>
+  <html lang="de">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="color-scheme" content="light only" />
+      <meta name="supported-color-schemes" content="light only" />
+      <title>${escapeHtml(title)}</title>
+    </head>
+    <body style="margin:0;padding:0;background:#f4f6f8;color:#111827">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f6f8">
+        <tr>
+          <td style="padding:32px 16px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:24px">
+              <tr>
+                <td style="padding:32px 28px 28px">
+                  <div style="margin:0 0 14px;color:#15803D;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">${escapeHtml(eyebrow)}</div>
+                  <h1 style="margin:0 0 16px;color:#111827;font-size:28px;line-height:1.2;font-weight:700">${escapeHtml(title)}</h1>
+                  ${paragraphs.map(renderEmailParagraph).join("")}
+                  ${listItems.length ? renderEmailBulletList(listItems) : ""}
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 20px">
+                    <tr>
+                      <td>
+                        <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#15803D;color:#ffffff;font-size:15px;font-weight:700;line-height:1;text-decoration:none">
+                          ${escapeHtml(ctaLabel)}
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:0 0 10px;color:#6b7280;font-size:13px;line-height:1.65">
+                    Falls der Button nicht funktioniert, öffne diesen Link direkt:
+                  </p>
+                  <p style="margin:0 0 18px;word-break:break-all">
+                    <a href="${escapeHtml(ctaUrl)}" style="color:#15803D;font-size:13px;line-height:1.65;text-decoration:underline">
+                      ${escapeHtml(fallbackLabel || ctaUrl)}
+                    </a>
+                  </p>
+                  ${
+                    footerNote
+                      ? `<p style="margin:0;padding-top:18px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px;line-height:1.65">${escapeHtml(footerNote)}</p>`
+                      : ""
+                  }
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+`;
+
+const sendResendEmail = async ({ email, subject, html, errorLogEvent, errorMessage }) => {
   const { resendApiKey, registrationMailFrom, confirmationBaseUrl } = getRegistrationConfig();
 
   if (!resendApiKey || !registrationMailFrom) {
@@ -205,87 +283,85 @@ const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
     body: JSON.stringify({
       from: registrationMailFrom,
       to: email,
-      subject: "Best\u00e4tige deine E-Mail f\u00fcr OctoVault",
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-          <p>Deine Registrierung wurde vorbereitet. Best\u00e4tige jetzt deine E-Mail innerhalb von 72 Stunden.</p>
-          <p style="margin:24px 0">
-            <a href="${confirmationUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-              OctoVault \u00f6ffnen
-            </a>
-          </p>
-          <p>Auf dem Handy bringt dich der Button direkt in die App. Wenn du die Mail am Computer ge\u00f6ffnet hast, kannst du deine E-Mail zuerst im Browser best\u00e4tigen und danach in der App dein Passwort festlegen.</p>
-          <p style="margin-top:16px;font-size:13px;color:#6b7280">Erst nach der Best\u00e4tigung und einem gesetzten Passwort ist dein Konto vollst\u00e4ndig einsatzbereit.</p>
-        </div>
-      `,
+      subject,
+      html,
     }),
   });
 
   if (!response.ok) {
     const body = await response.text();
-    logger.error("registration:send-email-failed", {
+    logger.error(errorLogEvent, {
       email,
       status: response.status,
       body,
     });
-    const error = new Error("Failed to send confirmation email.");
+    const error = new Error(errorMessage);
     error.code = "registration-mail-send-failed";
     throw error;
   }
 };
 
+const sendConfirmationEmail = async ({ email, confirmationUrl }) => {
+  await sendResendEmail({
+    email,
+    subject: "Bestätige deine E-Mail für OctoVault",
+    html: renderEmailCard({
+      title: "Bestätige deine E-Mail",
+      paragraphs: [
+        "Deine Registrierung wurde vorbereitet. Bestätige jetzt deine E-Mail, damit du dein Konto sicher mit deiner aktuellen App-Sitzung verknüpfen kannst.",
+        "Auf dem Handy bringt dich der Button direkt in OctoVault. Wenn du die Mail am Computer öffnest, kannst du die E-Mail zuerst im Browser bestätigen und danach in der App dein Passwort festlegen.",
+      ],
+      listItems: [
+        "Der Bestätigungslink ist 72 Stunden gültig.",
+        "Erst nach Bestätigung und gesetztem Passwort ist dein Konto vollständig einsatzbereit.",
+      ],
+      ctaLabel: "E-Mail bestätigen",
+      ctaUrl: confirmationUrl,
+      footerNote:
+        "Wenn du diese Registrierung nicht selbst gestartet hast, kannst du diese Nachricht ignorieren.",
+    }),
+    errorLogEvent: "registration:send-email-failed",
+    errorMessage: "Failed to send confirmation email.",
+  });
+};
+
 const sendSetPasswordReminderEmail = async ({ email, openAppUrl, isFirstReminder = false }) => {
-  const { resendApiKey, registrationMailFrom } = getRegistrationConfig();
-
-  if (!resendApiKey || !registrationMailFrom) {
-    const error = new Error("Mail transport is not configured.");
-    error.code = "registration-mail-not-configured";
-    throw error;
-  }
-
   const subject = isFirstReminder
     ? "Lege jetzt dein Passwort in OctoVault fest"
     : "Erinnerung: Passwort in OctoVault festlegen";
 
-  const intro = isFirstReminder
-    ? "Deine E-Mail ist jetzt bestätigt. Öffne OctoVault und lege als nächsten Schritt dein Passwort fest."
-    : "Deine E-Mail ist bereits bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar ist.";
+  const title = isFirstReminder ? "Dein nächster Schritt" : "Passwort noch ausstehend";
+  const paragraphs = isFirstReminder
+    ? [
+        "Deine E-Mail ist jetzt bestätigt. Öffne OctoVault und lege direkt als Nächstes dein Passwort fest.",
+      ]
+    : [
+        "Deine E-Mail ist bereits bestätigt. Lege jetzt noch dein Passwort fest, damit dein Konto vollständig nutzbar und wiederherstellbar ist.",
+      ];
+  const listItems = isFirstReminder
+    ? [
+        "Das Passwort legst du direkt in der App fest.",
+        "Danach kannst du dein Konto später auf neuen Geräten wiederherstellen.",
+      ]
+    : [
+        "Solange kein Passwort hinterlegt ist, ist dein Konto auf neuen Geräten noch nicht vollständig nutzbar.",
+      ];
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: registrationMailFrom,
-      to: email,
-      subject,
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-          <p>${intro}</p>
-          <p style="margin:24px 0">
-            <a href="${openAppUrl}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#15803D;color:#ffffff;text-decoration:none;font-weight:600">
-              OctoVault öffnen
-            </a>
-          </p>
-          <p>Solange kein Passwort hinterlegt ist, kannst du dein Konto auf neuen Geräten noch nicht vollständig verwenden.</p>
-        </div>
-      `,
+  await sendResendEmail({
+    email,
+    subject,
+    html: renderEmailCard({
+      title,
+      paragraphs,
+      listItems,
+      ctaLabel: "OctoVault öffnen",
+      ctaUrl: openAppUrl,
+      footerNote:
+        "Wenn du diese Änderung nicht erwartest, öffne OctoVault bitte nur auf deinem eigenen Gerät.",
     }),
+    errorLogEvent: "registration:send-password-reminder-failed",
+    errorMessage: "Failed to send password reminder email.",
   });
-
-  if (!response.ok) {
-    const body = await response.text();
-    logger.error("registration:send-password-reminder-failed", {
-      email,
-      status: response.status,
-      body,
-    });
-    const error = new Error("Failed to send password reminder email.");
-    error.code = "registration-mail-send-failed";
-    throw error;
-  }
 };
 
 const buildAppHomeUrl = () => {

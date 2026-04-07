@@ -84,6 +84,7 @@ export const buildHomeMonthlyCardProjection = (
 ) => ({
   ...buildHomeMonthlySummary(subscriptions, history, now),
   monthLabel: new Intl.DateTimeFormat(getLocale(language), {
+    day: "numeric",
     month: "long",
   }).format(now),
 });

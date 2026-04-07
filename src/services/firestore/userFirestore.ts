@@ -92,15 +92,6 @@ export const ensureUserDocument = async (params: {
   upgradedAt?: boolean;
   providerIds?: string[];
 }) => {
-  console.log("[Firestore] setDoc users/{userId}:start", {
-    path: `users/${params.userId}`,
-    userId: params.userId,
-    email: params.email,
-    isAnonymous: params.isAnonymous,
-    providerIds: params.providerIds ?? [],
-    upgradedAt: Boolean(params.upgradedAt),
-  });
-
   try {
     await setDoc(
       userDocRef(params.userId),
@@ -118,49 +109,9 @@ export const ensureUserDocument = async (params: {
     logFirestoreError("userFirestore.ensureUserDocument", error, {
       path: `users/${params.userId}`,
       userId: params.userId,
-    });
+      });
     throw error;
   }
-
-  console.log("[Firestore] setDoc users/{userId}:success", {
-    path: `users/${params.userId}`,
-    userId: params.userId,
-  });
-};
-
-export const ensureSettingsDocument = async (
-  userId: string,
-  settings: Omit<UserSettingsDocument, "createdAt" | "updatedAt">,
-) => {
-  console.log("[Firestore] setDoc users/{userId}/settings/app:start", {
-    path: `users/${userId}/settings/app`,
-    userId,
-    settings,
-  });
-
-  try {
-    await setDoc(
-      settingsDocRef(userId),
-      {
-        ...settings,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
-  } catch (error) {
-    logFirestoreError("userFirestore.ensureSettingsDocument", error, {
-      path: `users/${userId}/settings/app`,
-      userId,
-      settings,
-    });
-    throw error;
-  }
-
-  console.log("[Firestore] setDoc users/{userId}/settings/app:success", {
-    path: `users/${userId}/settings/app`,
-    userId,
-  });
 };
 
 export const subscribeToUserDocument = (

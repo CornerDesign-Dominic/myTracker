@@ -87,8 +87,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       appName: APP_NAME,
       deepLinkScheme: APP_SCHEME,
       universalLinkHost: HAS_UNIVERSAL_LINK_HOST ? APP_LINK_HOST : null,
-      // TODO: Replace placeholder PNG assets in assets/app before release branding freeze.
-      assetsReadyForRelease: false,
+      assetsReadyForRelease: true,
       analyticsDebugEnabled: process.env.EXPO_PUBLIC_ANALYTICS_DEBUG === "1",
       notificationDebugEnabled: process.env.EXPO_PUBLIC_NOTIFICATIONS_DEBUG === "1",
     },

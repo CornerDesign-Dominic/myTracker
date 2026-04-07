@@ -233,22 +233,6 @@ class LocalFirstSettingsStore {
     return { ...this.state.settings };
   }
 
-  getPendingOperations(userId?: string | null) {
-    if (!userId) {
-      return [];
-    }
-
-    return [...(this.state.outboxByUser[userId] ?? [])];
-  }
-
-  hasPendingOperation(userId: string | null | undefined, key: LocalFirstSettingKey) {
-    if (!userId) {
-      return false;
-    }
-
-    return (this.state.outboxByUser[userId] ?? []).some((operation) => operation.key === key);
-  }
-
   async enqueueChange<T extends LocalFirstSettingKey>(
     userId: string | null | undefined,
     key: T,
@@ -450,13 +434,3 @@ export const mergeRemoteLocalFirstSettings = async (
 
 export const retryPendingSettingsSync = async (userId: string) =>
   localFirstSettingsStore.retryPending(userId);
-
-export const getLocalFirstSettingsSnapshot = () => localFirstSettingsStore.getSettings();
-
-export const getPendingLocalFirstSettingsOperations = (userId?: string | null) =>
-  localFirstSettingsStore.getPendingOperations(userId);
-
-export const hasPendingLocalFirstSetting = (
-  userId: string | null | undefined,
-  key: LocalFirstSettingKey,
-) => localFirstSettingsStore.hasPendingOperation(userId, key);

@@ -191,6 +191,14 @@ export const ContactScreen = ({ navigation }: Props) => {
         <View style={[surfaces.mainPanel, styles.introCard]}>
           <Text style={[typography.cardTitle, styles.title]}>{t("settings.contactTitle")}</Text>
           <Text style={[typography.secondary, styles.introText]}>{t("settings.contactScreenIntro")}</Text>
+          <View style={styles.legalLinksRow}>
+            <Pressable onPress={() => navigation.navigate("Terms")}>
+              <Text style={[typography.button, styles.legalLink]}>{t("common.terms")}</Text>
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate("Privacy")}>
+              <Text style={[typography.button, styles.legalLink]}>{t("common.privacy")}</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={[surfaces.panel, styles.formCard]}>
@@ -370,6 +378,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     introText: {
       color: colors.textSecondary,
       lineHeight: 22,
+    },
+    legalLinksRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+    },
+    legalLink: {
+      color: colors.accent,
     },
     formCard: {
       gap: spacing.md,

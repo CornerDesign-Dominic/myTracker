@@ -27,7 +27,7 @@ const androidIntentFilters = HAS_UNIVERSAL_LINK_HOST
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: APP_NAME,
-  slug: "octovault",
+  slug: "subscription-tracker-mvp",
   version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "light",

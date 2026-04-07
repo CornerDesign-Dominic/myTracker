@@ -1,10 +1,10 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
   PropsWithChildren,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Appearance } from "react-native";
@@ -12,23 +12,29 @@ import { Appearance } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { usePurchases } from "@/context/PurchaseContext";
 import { AppLanguage } from "@/i18n/translations";
+import { subscribeToUserSettings } from "@/services/firestore/userFirestore";
 import {
-  ensureSettingsDocument,
-  subscribeToUserSettings,
-  updateUserSettings,
-} from "@/services/firestore/userFirestore";
+  enqueueAllLocalFirstSettingsForSync,
+  enqueueLocalFirstSettingChange,
+  hydrateLocalFirstSettings,
+  LocalFirstAppSettings,
+  LocalFirstCurrencyOption,
+  LocalFirstThemeOption,
+  LocalFirstWeekStartOption,
+  mergeRemoteLocalFirstSettings,
+  retryPendingSettingsSync,
+} from "@/services/settings/localFirstStore";
 import { FREE_ACCENT_COLOR } from "@/services/purchases/constants";
 import { canUseAccentColor, getSafeAccentColor } from "@/services/purchases/entitlements";
 import { AccentColor } from "@/theme";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
 type LanguageOption = AppLanguage;
-type CurrencyOption = "EUR" | "Dollar";
-type ThemeOption = "Dark" | "Light";
-type WeekStartOption = "monday" | "sunday";
+type CurrencyOption = LocalFirstCurrencyOption;
+type ThemeOption = LocalFirstThemeOption;
+type WeekStartOption = LocalFirstWeekStartOption;
 type NotificationsOption = "enabled" | "disabled";
 
-const STORAGE_KEY = "tracker.app-settings";
 const FALLBACK_LANGUAGE: LanguageOption = "de";
 
 const getSystemLanguage = (): LanguageOption => {
@@ -66,6 +72,38 @@ const normalizeStoredLanguage = (
   return value;
 };
 
+const mapRemoteSettings = (settings: {
+  language?: LanguageOption | "DE" | "EN";
+  currency?: CurrencyOption;
+  theme?: ThemeOption;
+  weekStart?: WeekStartOption;
+  notificationsEnabled?: boolean;
+  accentColor?: AccentColor;
+} | null): Partial<LocalFirstAppSettings> | null => {
+  if (!settings) {
+    return null;
+  }
+
+  const language = normalizeStoredLanguage(settings.language);
+
+  return {
+    language,
+    currency: settings.currency,
+    theme: settings.theme,
+    weekStart: settings.weekStart,
+    notificationsEnabled: settings.notificationsEnabled,
+    accentColor: settings.accentColor,
+  };
+};
+
+const getSafeSettings = (
+  settings: LocalFirstAppSettings,
+  hasPremiumAccents: boolean,
+): LocalFirstAppSettings => ({
+  ...settings,
+  accentColor: getSafeAccentColor(settings.accentColor, hasPremiumAccents),
+});
+
 interface AppSettingsContextValue {
   language: LanguageOption;
   currency: CurrencyOption;
@@ -88,146 +126,129 @@ const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
   const { currentUser, authIsReady } = useAuth();
   const { hasPremiumAccents } = usePurchases();
-  const [language, setLanguageState] = useState<LanguageOption>(() => getSystemLanguage());
-  const [currency, setCurrencyState] = useState<CurrencyOption>("EUR");
-  const [theme, setThemeState] = useState<ThemeOption>(() => getSystemTheme());
-  const [weekStart, setWeekStartState] = useState<WeekStartOption>("monday");
-  const [notifications, setNotificationsState] = useState<NotificationsOption>("enabled");
-  const [accentColor, setAccentColorState] = useState<AccentColor>(FREE_ACCENT_COLOR);
+  const defaultSettingsRef = useRef<LocalFirstAppSettings>({
+    language: getSystemLanguage(),
+    currency: "EUR",
+    theme: getSystemTheme(),
+    weekStart: "monday",
+    notificationsEnabled: true,
+    accentColor: FREE_ACCENT_COLOR,
+  });
+  const missingRemoteSyncStartedRef = useRef<Record<string, boolean>>({});
+  const settingsRef = useRef<LocalFirstAppSettings>(defaultSettingsRef.current);
+  const [settings, setSettings] = useState<LocalFirstAppSettings>(defaultSettingsRef.current);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const hydrateLocalSettings = async () => {
-      try {
-        const storedSettings = await AsyncStorage.getItem(STORAGE_KEY);
+    settingsRef.current = settings;
+  }, [settings]);
 
-        if (!storedSettings) {
+  useEffect(() => {
+    let isActive = true;
+
+    hydrateLocalFirstSettings(defaultSettingsRef.current)
+      .then((nextSettings) => {
+        if (!isActive) {
           return;
         }
 
-        const parsedSettings = JSON.parse(storedSettings) as Partial<{
-          language: LanguageOption | "DE" | "EN";
-          currency: CurrencyOption;
-          theme: ThemeOption;
-          weekStart: WeekStartOption;
-          notificationsEnabled: boolean;
-          accentColor: AccentColor;
-        }>;
-
-        const storedLanguage = normalizeStoredLanguage(parsedSettings.language);
-
-        if (storedLanguage) {
-          setLanguageState(storedLanguage);
+        setSettings(getSafeSettings(nextSettings, hasPremiumAccents));
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
         }
 
-        if (parsedSettings.currency) {
-          setCurrencyState(parsedSettings.currency);
+        setSettings(getSafeSettings(defaultSettingsRef.current, hasPremiumAccents));
+      })
+      .finally(() => {
+        if (!isActive) {
+          return;
         }
 
-        if (parsedSettings.theme) {
-          setThemeState(parsedSettings.theme);
-        }
-
-        if (parsedSettings.weekStart) {
-          setWeekStartState(parsedSettings.weekStart);
-        }
-
-        if (typeof parsedSettings.notificationsEnabled === "boolean") {
-          setNotificationsState(parsedSettings.notificationsEnabled ? "enabled" : "disabled");
-        }
-
-        if (parsedSettings.accentColor) {
-          setAccentColorState(getSafeAccentColor(parsedSettings.accentColor, hasPremiumAccents));
-        }
-      } catch {
-        // Keep defaults if local hydration fails.
-      } finally {
         setIsHydrated(true);
-      }
-    };
+      });
 
-    hydrateLocalSettings();
+    return () => {
+      isActive = false;
+    };
   }, [hasPremiumAccents]);
 
   useEffect(() => {
-    if (canUseAccentColor(accentColor, hasPremiumAccents)) {
+    if (!isHydrated) {
       return;
     }
 
-    setAccentColorState(FREE_ACCENT_COLOR);
-  }, [accentColor, hasPremiumAccents]);
+    if (canUseAccentColor(settings.accentColor, hasPremiumAccents)) {
+      return;
+    }
+
+    void enqueueLocalFirstSettingChange(currentUser?.uid, "accentColor", FREE_ACCENT_COLOR)
+      .then((nextSettings) => {
+        setSettings(getSafeSettings(nextSettings, hasPremiumAccents));
+        if (currentUser?.uid) {
+          void retryPendingSettingsSync(currentUser.uid);
+        }
+      })
+      .catch((error) => {
+        logFirestoreError("Settings.enqueue.accentColor.fallback", error, {
+          userId: currentUser?.uid ?? null,
+          accentColor: FREE_ACCENT_COLOR,
+        });
+      });
+  }, [currentUser?.uid, hasPremiumAccents, isHydrated, settings.accentColor]);
 
   useEffect(() => {
-    if (!authIsReady || !isHydrated || !currentUser) {
+    if (!authIsReady || !isHydrated || !currentUser?.uid) {
       return;
     }
-
-    console.log("[Settings] currentUser:available", {
-      uid: currentUser.uid,
-      isAnonymous: currentUser.isAnonymous,
-      email: currentUser.email,
-    });
 
     let isActive = true;
 
-    const defaults = {
-      language,
-      currency,
-      theme,
-      weekStart,
-      notificationsEnabled: notifications === "enabled",
-      accentColor,
-    };
-
-    const syncInitialSettings = async () => {
-      console.log("[Settings] ensureSettingsDocument:start", {
-        userId: currentUser.uid,
-        settings: defaults,
-      });
-      await ensureSettingsDocument(currentUser.uid, defaults);
-      console.log("[Settings] ensureSettingsDocument:success", {
-        userId: currentUser.uid,
-        settings: defaults,
-      });
-    };
-
-    syncInitialSettings().catch((error) => {
-      logFirestoreError("Settings.ensureSettingsDocument", error, {
-        userId: currentUser.uid,
-        settings: defaults,
-      });
-    });
-
     const unsubscribe = subscribeToUserSettings(
       currentUser.uid,
-      (settings) => {
-        if (!isActive || !settings) {
+      (remoteSettings) => {
+        if (!isActive) {
           return;
         }
 
-        if (settings.language) {
-          setLanguageState(settings.language);
+        if (!remoteSettings) {
+          if (missingRemoteSyncStartedRef.current[currentUser.uid]) {
+            return;
+          }
+
+          missingRemoteSyncStartedRef.current[currentUser.uid] = true;
+
+          void enqueueAllLocalFirstSettingsForSync(currentUser.uid, settingsRef.current)
+            .then((nextSettings) => {
+              if (!isActive) {
+                return;
+              }
+
+              setSettings(getSafeSettings(nextSettings, hasPremiumAccents));
+              void retryPendingSettingsSync(currentUser.uid);
+            })
+            .catch((error) => {
+              logFirestoreError("Settings.enqueueAllLocalFirstSettingsForSync", error, {
+                userId: currentUser.uid,
+              });
+            });
+          return;
         }
 
-        if (settings.currency) {
-          setCurrencyState(settings.currency);
-        }
+        void mergeRemoteLocalFirstSettings(currentUser.uid, mapRemoteSettings(remoteSettings))
+          .then((nextSettings) => {
+            if (!isActive) {
+              return;
+            }
 
-        if (settings.theme) {
-          setThemeState(settings.theme);
-        }
-
-        if (settings.weekStart) {
-          setWeekStartState(settings.weekStart);
-        }
-
-        if (typeof settings.notificationsEnabled === "boolean") {
-          setNotificationsState(settings.notificationsEnabled ? "enabled" : "disabled");
-        }
-
-        if (settings.accentColor) {
-          setAccentColorState(getSafeAccentColor(settings.accentColor, hasPremiumAccents));
-        }
+            setSettings(getSafeSettings(nextSettings, hasPremiumAccents));
+          })
+          .catch((error) => {
+            logFirestoreError("Settings.mergeRemoteLocalFirstSettings", error, {
+              userId: currentUser.uid,
+            });
+          });
       },
       (error) => {
         logFirestoreError("Settings.subscribeToUserSettings", error, {
@@ -240,86 +261,59 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       isActive = false;
       unsubscribe();
     };
-  }, [accentColor, authIsReady, currentUser, currency, hasPremiumAccents, isHydrated, language, notifications, theme, weekStart]);
+  }, [authIsReady, currentUser?.uid, hasPremiumAccents, isHydrated]);
 
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
+  const applySettingChange = <T extends keyof LocalFirstAppSettings>(
+    key: T,
+    value: LocalFirstAppSettings[T],
+  ) => {
+    const activeUserId = currentUser?.uid;
+    const optimisticSettings = getSafeSettings(
+      {
+        ...settingsRef.current,
+        [key]: value,
+      },
+      hasPremiumAccents,
+    );
 
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        language,
-        currency,
-        theme,
-        weekStart,
-        notificationsEnabled: notifications === "enabled",
-        accentColor,
-      }),
-    ).catch(() => {
-      // Ignore persistence errors and keep the in-memory app state usable.
-    });
-  }, [accentColor, currency, isHydrated, language, notifications, theme, weekStart]);
+    setSettings(optimisticSettings);
+
+    void enqueueLocalFirstSettingChange(currentUser?.uid, key, value)
+      .then((nextSettings) => {
+        setSettings(getSafeSettings(nextSettings, hasPremiumAccents));
+
+        if (activeUserId) {
+          void retryPendingSettingsSync(activeUserId);
+        }
+      })
+      .catch((error) => {
+        logFirestoreError(`Settings.enqueue.${String(key)}`, error, {
+          userId: activeUserId ?? null,
+          key,
+          value,
+        });
+      },
+    );
+  };
 
   const setLanguage = (value: LanguageOption) => {
-    setLanguageState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { language: value }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.language", error, {
-          userId: currentUser.uid,
-          language: value,
-        });
-      });
-    }
+    applySettingChange("language", value);
   };
 
   const setCurrency = (value: CurrencyOption) => {
-    setCurrencyState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { currency: value }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.currency", error, {
-          userId: currentUser.uid,
-          currency: value,
-        });
-      });
-    }
+    applySettingChange("currency", value);
   };
 
   const setTheme = (value: ThemeOption) => {
-    setThemeState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { theme: value }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.theme", error, {
-          userId: currentUser.uid,
-          theme: value,
-        });
-      });
-    }
+    applySettingChange("theme", value);
   };
 
   const setWeekStart = (value: WeekStartOption) => {
-    setWeekStartState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { weekStart: value }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.weekStart", error, {
-          userId: currentUser.uid,
-          weekStart: value,
-        });
-      });
-    }
+    applySettingChange("weekStart", value);
   };
 
   const setNotifications = (value: NotificationsOption) => {
-    setNotificationsState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { notificationsEnabled: value === "enabled" }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.notificationsEnabled", error, {
-          userId: currentUser.uid,
-          notificationsEnabled: value === "enabled",
-        });
-      });
-    }
+    applySettingChange("notificationsEnabled", value === "enabled");
   };
 
   const setAccentColor = (value: AccentColor) => {
@@ -327,26 +321,18 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
-    setAccentColorState(value);
-    if (currentUser) {
-      updateUserSettings(currentUser.uid, { accentColor: value }).catch((error) => {
-        logFirestoreError("Settings.updateUserSettings.accentColor", error, {
-          userId: currentUser.uid,
-          accentColor: value,
-        });
-      });
-    }
+    applySettingChange("accentColor", value);
   };
 
   const value = useMemo(
     () => ({
-      language,
-      currency,
-      theme,
-      weekStart,
-      notifications,
-      notificationsEnabled: notifications === "enabled",
-      accentColor,
+      language: settings.language,
+      currency: settings.currency,
+      theme: settings.theme,
+      weekStart: settings.weekStart,
+      notifications: (settings.notificationsEnabled ? "enabled" : "disabled") as NotificationsOption,
+      notificationsEnabled: settings.notificationsEnabled,
+      accentColor: settings.accentColor,
       isHydrated,
       setLanguage,
       setCurrency,
@@ -355,7 +341,7 @@ export const AppSettingsProvider = ({ children }: PropsWithChildren) => {
       setNotifications,
       setAccentColor,
     }),
-    [accentColor, currency, isHydrated, language, notifications, theme, weekStart],
+    [isHydrated, settings],
   );
 
   return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;

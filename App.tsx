@@ -12,6 +12,7 @@ import { AppSettingsProvider } from "./src/context/AppSettingsContext";
 import { PurchaseProvider, usePurchases } from "./src/context/PurchaseContext";
 import { useAppSettings } from "./src/context/AppSettingsContext";
 import { DailyDueNotificationsSync } from "./src/context/DailyDueNotificationsSync";
+import { SettingsSyncBootstrap } from "./src/context/SettingsSyncBootstrap";
 import { SubscriptionSyncBootstrap } from "./src/context/SubscriptionSyncBootstrap";
 import { UserStatsMirrorSync } from "./src/context/UserStatsMirrorSync";
 import { useAppTheme } from "./src/hooks/useAppTheme";
@@ -129,6 +130,7 @@ export default function App() {
             <AppSettingsProvider>
               <UserStatsMirrorSync />
               <DailyDueNotificationsSync />
+              <SettingsSyncBootstrap />
               <SubscriptionSyncBootstrap />
               <AppContent />
             </AppSettingsProvider>

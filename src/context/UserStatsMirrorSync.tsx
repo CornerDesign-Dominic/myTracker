@@ -1,14 +1,11 @@
 import { useEffect, useRef } from "react";
 
-import { createSubscriptionService } from "@/application/subscriptions/service";
 import { useAuth } from "@/context/AuthContext";
 import { usePurchases } from "@/context/PurchaseContext";
 import { hasRequiredFirebaseConfig } from "@/firebase/config";
-import { subscriptionRepository } from "@/services/subscriptionRepository";
+import { subscribeUserStatsProjection } from "@/services/subscriptionRepository";
 import { updateUserStatsMirror } from "@/services/firestore/userFirestore";
 import { logFirestoreError } from "@/utils/firestoreDebug";
-
-const subscriptionService = createSubscriptionService(subscriptionRepository);
 
 export const UserStatsMirrorSync = () => {
   const { currentUser, authIsReady } = useAuth();
@@ -21,11 +18,14 @@ export const UserStatsMirrorSync = () => {
       return;
     }
 
-    const unsubscribe = subscriptionService.observeUserSubscriptions(
+    let unsubscribe: (() => void) | null = null;
+    let isActive = true;
+
+    void subscribeUserStatsProjection(
       currentUser.uid,
-      (subscriptions) => {
+      (stats) => {
         const nextPayload = {
-          subscriptionCount: subscriptions.length,
+          subscriptionCount: stats.subscriptionCount,
           isPremium,
         };
         const nextKey = JSON.stringify(nextPayload);
@@ -44,13 +44,29 @@ export const UserStatsMirrorSync = () => {
         });
       },
       (error) => {
-        logFirestoreError("UserStatsMirrorSync.observeUserSubscriptions", error, {
+        logFirestoreError("UserStatsMirrorSync.subscribeUserStatsProjection", error, {
           userId: currentUser.uid,
         });
       },
-    );
+    )
+      .then((nextUnsubscribe) => {
+        if (!isActive) {
+          nextUnsubscribe();
+          return;
+        }
 
-    return unsubscribe;
+        unsubscribe = nextUnsubscribe;
+      })
+      .catch((error) => {
+        logFirestoreError("UserStatsMirrorSync.subscribeUserStatsProjection", error, {
+          userId: currentUser.uid,
+        });
+      });
+
+    return () => {
+      isActive = false;
+      unsubscribe?.();
+    };
   }, [authIsReady, currentUser?.uid, isHydrated, isPremium]);
 
   return null;

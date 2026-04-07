@@ -5,13 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useAuth } from "@/context/AuthContext";
-import { buildHomeDueSections, buildHomeMonthlySummary } from "@/domain/subscriptions/statistics";
+import { buildHomeDueSections } from "@/domain/subscriptions/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { HomeTabScreenProps } from "@/navigation/types";
+import { buildHomeMonthlyCardProjection } from "@/presentation/subscriptions/screenProjections";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
 
@@ -33,19 +34,9 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   );
   const contentOpacity = useRef(new Animated.Value(hasResolvedInitialHomeData ? 1 : 0)).current;
   const dueSections = useMemo(() => buildHomeDueSections(subscriptions), [subscriptions]);
-  const showPasswordPendingNotice = isAnonymous && pendingRegistration?.status === "confirmed";
 
   const monthlySummary = useMemo(() => {
-    const now = new Date();
-
-    const summary = buildHomeMonthlySummary(subscriptions, history, now);
-
-    return {
-      ...summary,
-      monthLabel: new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-        month: "long",
-      }).format(now),
-    };
+    return buildHomeMonthlyCardProjection(subscriptions, history, language);
   }, [history, language, subscriptions]);
 
   useEffect(() => {
@@ -134,35 +125,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           </>
         ) : (
           <>
-            {showPasswordPendingNotice ? (
-              <Animated.View style={{ opacity: contentOpacity }}>
-                <Pressable
-                  style={[surfaces.mainSubtlePanel, styles.passwordPendingCard]}
-                  onPress={() => navigation.navigate("Settings")}
-                >
-                  <View style={styles.passwordPendingHeader}>
-                    <View style={styles.passwordPendingCopy}>
-                      <View style={styles.passwordPendingTitleRow}>
-                        <Ionicons
-                          name="alert-circle-outline"
-                          size={16}
-                          color={colors.accent}
-                        />
-                        <Text style={[typography.meta, styles.passwordPendingTitle]}>
-                          {t("home.passwordPendingTitle")}
-                        </Text>
-                      </View>
-                    </View>
-                    <Ionicons
-                      name="chevron-forward-outline"
-                      size={18}
-                      color={colors.accent}
-                    />
-                  </View>
-                </Pressable>
-              </Animated.View>
-            ) : null}
-
             <Animated.View style={{ opacity: contentOpacity }}>
               <View style={[surfaces.mainPanel, styles.summaryCard]}>
                 <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
@@ -476,31 +438,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       justifyContent: "center",
     },
     monthMarkerText: {
-      color: colors.accent,
-      textTransform: "uppercase",
-    },
-    passwordPendingCard: {
-      minHeight: 56,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
-      justifyContent: "center",
-      borderColor: colors.accent,
-    },
-    passwordPendingHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
-    },
-    passwordPendingCopy: {
-      flex: 1,
-    },
-    passwordPendingTitleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.xs,
-    },
-    passwordPendingTitle: {
       color: colors.accent,
       textTransform: "uppercase",
     },

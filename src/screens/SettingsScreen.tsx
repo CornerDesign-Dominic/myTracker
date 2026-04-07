@@ -700,10 +700,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </View>
           ) : null}
 
-          <View style={[surfaces.panel, styles.groupCard]}>
+        <View style={[surfaces.panel, styles.groupCard]}>
           <View style={styles.cardHeaderRow}>
             <Text style={[typography.cardTitle, styles.groupTitle]}>{t("settings.accentColor")}</Text>
-            <Ionicons name="lock-closed" size={16} color={colors.accent} />
+            <Ionicons
+              name={hasPremiumAccents ? "lock-open-outline" : "lock-closed"}
+              size={16}
+              color={colors.accent}
+            />
           </View>
           <View style={styles.accentGrid}>
             {accentColorOptions.map((option) => {

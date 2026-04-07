@@ -4,31 +4,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
-import {
-  buildSavingsSummary,
-  getTotalSavedAmount,
-} from "@/domain/subscriptionHistory/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
+import {
+  buildMonthlySavingsGroups,
+  buildSavingsOverviewProjection,
+} from "@/presentation/subscriptions/screenProjections";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
-import { parseLocalDateInput } from "@/utils/date";
-
-type MonthlySavingsItem = {
-  subscriptionId: string;
-  subscriptionName: string;
-  amount: number;
-};
-
-type MonthlySavingsGroup = {
-  key: string;
-  label: string;
-  totalAmount: number;
-  items: MonthlySavingsItem[];
-};
 
 export const SavingsScreen = () => {
   const { colors, typography } = useAppTheme();
@@ -43,103 +29,20 @@ export const SavingsScreen = () => {
   );
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
 
-  const skippedEvents = useMemo(
+  const savingsOverview = useMemo(
+    () => buildSavingsOverviewProjection(subscriptions, history, language, t),
+    [history, language, subscriptions, t],
+  );
+  const monthlySavingsGroups = useMemo(
     () =>
-      history
-        .filter((event) => event.type === "payment_skipped_inactive" && !event.deletedAt)
-        .sort((left, right) =>
-          (right.updatedAt ?? right.createdAt).localeCompare(
-            left.updatedAt ?? left.createdAt,
-          ),
-        ),
-    [history],
+      buildMonthlySavingsGroups(
+        subscriptions,
+        savingsOverview.skippedEvents,
+        language,
+        t("common.unavailable"),
+      ),
+    [language, savingsOverview.skippedEvents, subscriptions, t],
   );
-
-  const savingsSummary = useMemo(
-    () => buildSavingsSummary(subscriptions, skippedEvents, new Date()),
-    [skippedEvents, subscriptions],
-  );
-  const totalSavedAmount = useMemo(
-    () => getTotalSavedAmount(skippedEvents),
-    [skippedEvents],
-  );
-
-  const summaryLabels = useMemo(() => {
-    const now = new Date();
-    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const monthFormatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-      month: "long",
-    });
-
-    return {
-      currentYear: String(now.getFullYear()),
-      previousYear: String(now.getFullYear() - 1),
-      currentMonth: monthFormatter.format(now),
-      previousMonth: monthFormatter.format(previousMonth),
-      currentMonthProjection: t("stats.currentMonthProjectedShort", {
-        month: monthFormatter.format(now),
-      }),
-      currentYearProjection: t("stats.currentYearProjectedShort", {
-        year: String(now.getFullYear()),
-      }),
-    };
-  }, [language, t]);
-
-  const monthlySavingsGroups = useMemo<MonthlySavingsGroup[]>(() => {
-    const subscriptionNames = new Map(
-      subscriptions.map((subscription) => [subscription.id, subscription.name]),
-    );
-    const groups = new Map<
-      string,
-      {
-        date: Date;
-        totalAmount: number;
-        items: Map<string, MonthlySavingsItem>;
-      }
-    >();
-    const monthFormatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-      month: "long",
-      year: "numeric",
-    });
-
-    skippedEvents.forEach((event) => {
-      const dueDate = parseLocalDateInput(event.dueDate ?? "");
-      if (!dueDate) {
-        return;
-      }
-
-      const key = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, "0")}`;
-      const existingGroup = groups.get(key) ?? {
-        date: new Date(dueDate.getFullYear(), dueDate.getMonth(), 1),
-        totalAmount: 0,
-        items: new Map<string, MonthlySavingsItem>(),
-      };
-      const existingItem = existingGroup.items.get(event.subscriptionId);
-
-      existingGroup.totalAmount += event.amount ?? 0;
-      if (existingItem) {
-        existingItem.amount += event.amount ?? 0;
-      } else {
-        existingGroup.items.set(event.subscriptionId, {
-          subscriptionId: event.subscriptionId,
-          subscriptionName:
-            subscriptionNames.get(event.subscriptionId) ?? t("common.unavailable"),
-          amount: event.amount ?? 0,
-        });
-      }
-
-      groups.set(key, existingGroup);
-    });
-
-    return Array.from(groups.entries())
-      .map(([key, group]) => ({
-        key,
-        label: monthFormatter.format(group.date),
-        totalAmount: group.totalAmount,
-        items: Array.from(group.items.values()).sort((left, right) => right.amount - left.amount),
-      }))
-      .sort((left, right) => right.key.localeCompare(left.key));
-  }, [language, skippedEvents, subscriptions, t]);
 
   const toggleMonth = (monthKey: string) => {
     setExpandedMonths((current) => ({
@@ -157,7 +60,7 @@ export const SavingsScreen = () => {
               {t("stats.savingsCardTitle")}
             </Text>
           </View>
-          {skippedEvents.length === 0 ? (
+          {savingsOverview.skippedEvents.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
               {t("stats.noSavingsAvailable")}
             </Text>
@@ -168,7 +71,7 @@ export const SavingsScreen = () => {
                   {t("stats.savingsAllTime")}
                 </Text>
                 <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                  {formatCurrency(totalSavedAmount, currency)}
+                  {formatCurrency(savingsOverview.totalSavedAmount, currency)}
                 </Text>
               </View>
               <View style={styles.savedDivider} />
@@ -178,15 +81,19 @@ export const SavingsScreen = () => {
               </Text>
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
-                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentYear}</Text>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {savingsOverview.summaryLabels.currentYear}
+                  </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.currentYearActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentYearActual, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
-                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousYear}</Text>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {savingsOverview.summaryLabels.previousYear}
+                  </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.previousYearActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.previousYearActual, currency)}
                   </Text>
                 </View>
               </View>
@@ -197,15 +104,19 @@ export const SavingsScreen = () => {
               </Text>
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
-                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.currentMonth}</Text>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {savingsOverview.summaryLabels.currentMonth}
+                  </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.currentMonthActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentMonthActual, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
-                  <Text style={[typography.meta, styles.savedLabel]}>{summaryLabels.previousMonth}</Text>
+                  <Text style={[typography.meta, styles.savedLabel]}>
+                    {savingsOverview.summaryLabels.previousMonth}
+                  </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.previousMonthActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.previousMonthActual, currency)}
                   </Text>
                 </View>
               </View>
@@ -217,18 +128,18 @@ export const SavingsScreen = () => {
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {summaryLabels.currentMonthProjection}
+                    {savingsOverview.summaryLabels.currentMonthProjection}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                    {formatCurrency(savingsSummary.currentMonthProjected, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentMonthProjected, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {summaryLabels.currentYearProjection}
+                    {savingsOverview.summaryLabels.currentYearProjection}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                    {formatCurrency(savingsSummary.currentYearProjected, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentYearProjected, currency)}
                   </Text>
                 </View>
               </View>

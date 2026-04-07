@@ -1,5 +1,22 @@
 export type BillingCycle = "monthly" | "quarterly" | "yearly";
 export type SubscriptionStatus = "active" | "paused" | "cancelled";
+export type EntitySyncStatus =
+  | "synced"
+  | "pending"
+  | "syncing"
+  | "syncFailed"
+  | "retryPending"
+  | "localOnly";
+
+export interface EntitySyncState {
+  status: EntitySyncStatus;
+  isPending: boolean;
+  isSyncing: boolean;
+  hasError: boolean;
+  localOnly: boolean;
+  retryPending: boolean;
+  lastError?: string;
+}
 
 export interface Subscription {
   id: string;
@@ -14,6 +31,7 @@ export interface Subscription {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string | null;
+  syncState?: EntitySyncState;
 }
 
 export interface SubscriptionInput {

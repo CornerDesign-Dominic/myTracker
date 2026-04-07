@@ -1,4 +1,9 @@
-import type { BillingCycle, Subscription, SubscriptionStatus } from "./subscription.ts";
+import type {
+  BillingCycle,
+  EntitySyncState,
+  Subscription,
+  SubscriptionStatus,
+} from "./subscription.ts";
 
 export type SubscriptionHistoryEventType =
   | "payment_booked"
@@ -45,6 +50,7 @@ export interface SubscriptionHistoryEvent {
   initialBillingCycle?: BillingCycle;
   initialNextPaymentDate?: string;
   initialStatus?: SubscriptionStatus;
+  syncState?: EntitySyncState;
 }
 
 export type HistoryEventInput = Omit<SubscriptionHistoryEvent, "id" | "createdAt"> & {

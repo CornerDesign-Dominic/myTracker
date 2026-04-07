@@ -29,6 +29,10 @@ import { firestoreDb } from "@/firebase/config";
 import { Subscription, SubscriptionInput } from "@/types/subscription";
 import { HistoryEventInput, SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 import { logFirestoreError } from "@/utils/firestoreDebug";
+import {
+  sanitizeHistoryEventForFirestore,
+  sanitizeSubscriptionInputForFirestore,
+} from "./payloadSanitizer";
 import { serializeTimestamp } from "./userFirestore";
 
 const ensureFirestore = () => {
@@ -115,7 +119,7 @@ const mapHistoryEvent = (
 
 const toHistoryPayload = (event: HistoryEventInput) =>
   removeUndefinedFields({
-    ...event,
+    ...sanitizeHistoryEventForFirestore(event),
     createdAt: serverTimestamp(),
   });
 
@@ -229,6 +233,73 @@ export const createFirestoreHistoryEvent = async (
       userId,
       subscriptionId,
       input: payload,
+    });
+    throw error;
+  }
+};
+
+export const updateFirestoreHistoryEventFromSnapshot = async (
+  userId: string,
+  subscriptionId: string,
+  event: SubscriptionHistoryEvent & {
+    type: "payment_booked" | "payment_skipped_inactive";
+  },
+) => {
+  const sanitizedEvent = sanitizeHistoryEventForFirestore(event);
+
+  try {
+    await updateDoc(historyDoc(userId, subscriptionId, event.id), {
+      type: sanitizedEvent.type,
+      amount: sanitizedEvent.amount,
+      dueDate: sanitizedEvent.dueDate,
+      effectiveDate: sanitizedEvent.effectiveDate ?? sanitizedEvent.dueDate ?? deleteField(),
+      occurredAt: sanitizedEvent.occurredAt ?? sanitizedEvent.dueDate ?? deleteField(),
+      notes: sanitizedEvent.notes ?? deleteField(),
+      metadata: sanitizedEvent.metadata ?? deleteField(),
+      snapshot: sanitizedEvent.snapshot ?? deleteField(),
+      billingCycleSnapshot: sanitizedEvent.billingCycleSnapshot ?? deleteField(),
+      bookedAt:
+        sanitizedEvent.type === "payment_booked"
+          ? sanitizedEvent.bookedAt ?? sanitizedEvent.dueDate ?? deleteField()
+          : deleteField(),
+      reason:
+        sanitizedEvent.type === "payment_skipped_inactive"
+          ? sanitizedEvent.reason ?? "inactive"
+          : deleteField(),
+      source:
+        sanitizedEvent.type === "payment_booked"
+          ? sanitizedEvent.source ?? "manual"
+          : deleteField(),
+      updatedAt: serverTimestamp(),
+      deletedAt: sanitizedEvent.deletedAt ?? deleteField(),
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.updateFirestoreHistoryEventFromSnapshot", error, {
+      path: `users/${userId}/subscriptions/${subscriptionId}/history/${event.id}`,
+      userId,
+      subscriptionId,
+      eventId: event.id,
+    });
+    throw error;
+  }
+};
+
+export const deleteFirestoreHistoryEventDirect = async (
+  userId: string,
+  subscriptionId: string,
+  eventId: string,
+) => {
+  try {
+    await updateDoc(historyDoc(userId, subscriptionId, eventId), {
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.deleteFirestoreHistoryEventDirect", error, {
+      path: `users/${userId}/subscriptions/${subscriptionId}/history/${eventId}`,
+      userId,
+      subscriptionId,
+      eventId,
     });
     throw error;
   }
@@ -365,8 +436,17 @@ export const deleteFirestoreHistoryEvent = async (
   }
 };
 
-export const createFirestoreSubscription = async (userId: string, input: SubscriptionInput) => {
-  const subscriptionRef = doc(subscriptionsCollection(userId));
+export const createFirestoreSubscription = async (
+  userId: string,
+  input: SubscriptionInput,
+  options?: {
+    subscriptionId?: string;
+    skipHistorySync?: boolean;
+  },
+) => {
+  const subscriptionRef = options?.subscriptionId
+    ? subscriptionDoc(userId, options.subscriptionId)
+    : doc(subscriptionsCollection(userId));
   const subscriptionId = subscriptionRef.id;
   const now = new Date().toISOString();
   const subscriptionSnapshot: Subscription = {
@@ -378,7 +458,7 @@ export const createFirestoreSubscription = async (userId: string, input: Subscri
   };
   const batch = writeBatch(ensureFirestore());
   const subscriptionPayload = removeUndefinedFields({
-    ...input,
+    ...sanitizeSubscriptionInputForFirestore(input),
     archivedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -390,13 +470,65 @@ export const createFirestoreSubscription = async (userId: string, input: Subscri
 
   try {
     await batch.commit();
-    await syncFirestoreSubscriptionHistory(userId, subscriptionSnapshot);
+    if (!options?.skipHistorySync) {
+      await syncFirestoreSubscriptionHistory(userId, subscriptionSnapshot);
+    }
   } catch (error) {
     logFirestoreError("subscriptionFirestore.createFirestoreSubscription", error, {
       path: `users/${userId}/subscriptions/${subscriptionId}`,
       userId,
       subscriptionId,
       input: subscriptionPayload,
+    });
+    throw error;
+  }
+};
+
+export const updateFirestoreSubscriptionFromSnapshot = async (
+  userId: string,
+  id: string,
+  input: Partial<SubscriptionInput>,
+  options: {
+    events: HistoryEventInput[];
+    nextSubscription?: Subscription;
+    skipHistorySync?: boolean;
+    historySnapshot?: SubscriptionHistoryEvent[];
+  },
+) => {
+  const payload = removeUndefinedFields({
+    ...sanitizeSubscriptionInputForFirestore(input),
+    updatedAt: serverTimestamp(),
+  });
+  const batch = writeBatch(ensureFirestore());
+
+  batch.update(subscriptionDoc(userId, id), payload);
+
+  options.events.forEach((event, index) => {
+    const eventId =
+      event.id ?? `${event.type}_${event.effectiveDate ?? event.occurredAt ?? Date.now()}_${index}`;
+    batch.set(historyDoc(userId, id, eventId), toHistoryPayload(event));
+  });
+
+  try {
+    await batch.commit();
+
+    if (!options.skipHistorySync && options.nextSubscription) {
+      if (options.historySnapshot) {
+        await syncFirestoreSubscriptionHistoryFromSnapshot(
+          userId,
+          options.nextSubscription,
+          options.historySnapshot,
+        );
+      } else {
+        await syncFirestoreSubscriptionHistory(userId, options.nextSubscription);
+      }
+    }
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.updateFirestoreSubscriptionFromSnapshot", error, {
+      path: `users/${userId}/subscriptions/${id}`,
+      userId,
+      subscriptionId: id,
+      input: payload,
     });
     throw error;
   }
@@ -420,7 +552,7 @@ export const updateFirestoreSubscription = async (
     updatedAt: new Date().toISOString(),
   };
   const payload = removeUndefinedFields({
-    ...input,
+    ...sanitizeSubscriptionInputForFirestore(input),
     updatedAt: serverTimestamp(),
   });
   const events = buildChangeEvents(previousSubscription, nextSubscription, effectiveDate);
@@ -469,6 +601,23 @@ export const syncFirestoreSubscriptionHistory = async (
 ) => {
   try {
     const history = await readSubscriptionHistory(userId, subscription.id);
+    await syncFirestoreSubscriptionHistoryFromSnapshot(userId, subscription, history);
+  } catch (error) {
+    logFirestoreError("subscriptionFirestore.syncFirestoreSubscriptionHistory", error, {
+      path: `users/${userId}/subscriptions/${subscription.id}/history`,
+      userId,
+      subscriptionId: subscription.id,
+    });
+    throw error;
+  }
+};
+
+export const syncFirestoreSubscriptionHistoryFromSnapshot = async (
+  userId: string,
+  subscription: Subscription,
+  history: SubscriptionHistoryEvent[],
+) => {
+  try {
     const createdEvent = buildCreatedEvent(subscription.id, subscription);
     const missingEvents = getMissingPaymentHistoryEvents(subscription, history);
 
@@ -495,7 +644,7 @@ export const syncFirestoreSubscriptionHistory = async (
 
     await batch.commit();
   } catch (error) {
-    logFirestoreError("subscriptionFirestore.syncFirestoreSubscriptionHistory", error, {
+    logFirestoreError("subscriptionFirestore.syncFirestoreSubscriptionHistoryFromSnapshot", error, {
       path: `users/${userId}/subscriptions/${subscription.id}/history`,
       userId,
       subscriptionId: subscription.id,

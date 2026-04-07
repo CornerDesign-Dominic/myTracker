@@ -33,6 +33,14 @@ export const useSubscriptions = () => {
     () => buildSubscriptionMetrics(subscriptions, language),
     [language, subscriptions],
   );
+  const pendingSubscriptionsCount = useMemo(
+    () => subscriptions.filter((subscription) => subscription.syncState?.isPending).length,
+    [subscriptions],
+  );
+  const hasSyncErrors = useMemo(
+    () => subscriptions.some((subscription) => subscription.syncState?.hasError),
+    [subscriptions],
+  );
   const subscriptionCount = useMemo(
     () => getSubscriptionCount(subscriptions),
     [subscriptions],
@@ -49,6 +57,8 @@ export const useSubscriptions = () => {
     subscriptions,
     metrics,
     subscriptionCount,
+    pendingSubscriptionsCount,
+    hasSyncErrors,
     isPremium,
     canCreateSubscription: canCreateSubscription({
       subscriptionCount,

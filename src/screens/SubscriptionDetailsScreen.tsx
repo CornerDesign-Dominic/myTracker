@@ -72,6 +72,17 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   const closeActionsModal = () => setIsActionsModalVisible(false);
   const closeConfirmModal = () => setConfirmAction(null);
   const closePauseInfoModal = () => setIsPauseInfoModalVisible(false);
+  const syncStatusLabel =
+    subscription.syncState?.status === "localOnly"
+      ? t("common.syncLocalOnly")
+      : subscription.syncState?.status === "syncing"
+        ? t("common.syncing")
+        : subscription.syncState?.status === "retryPending" ||
+            subscription.syncState?.status === "syncFailed"
+          ? t("common.syncRetryPending")
+          : subscription.syncState?.status === "pending"
+            ? t("common.syncPending")
+            : null;
 
   const handlePauseSubscription = async () => {
     closePauseInfoModal();
@@ -123,6 +134,46 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
             </View>
           </View>
         </View>
+
+        {syncStatusLabel ? (
+          <View
+            style={[
+              surfaces.subtlePanel,
+              styles.syncNoticeCard,
+              subscription.syncState?.hasError
+                ? styles.syncNoticeCardError
+                : subscription.syncState?.localOnly
+                  ? styles.syncNoticeCardLocalOnly
+                  : styles.syncNoticeCardPending,
+            ]}
+          >
+            <View style={styles.syncNoticeCopy}>
+              <Text
+                style={[
+                  typography.body,
+                  styles.syncNoticeTitle,
+                  subscription.syncState?.hasError
+                    ? styles.syncNoticeTitleError
+                    : subscription.syncState?.localOnly
+                      ? styles.syncNoticeTitleLocalOnly
+                      : styles.syncNoticeTitlePending,
+                ]}
+              >
+                {syncStatusLabel}
+              </Text>
+              <Text style={[typography.secondary, styles.syncNoticeDescription]}>
+                {subscription.syncState?.hasError
+                  ? subscription.syncState.lastError || t("common.actionFailed")
+                  : subscription.syncState?.localOnly
+                    ? t("common.syncLocalOnlyDescription")
+                    : subscription.syncState?.status === "retryPending" ||
+                        subscription.syncState?.status === "syncFailed"
+                      ? t("common.syncRetryPendingDescription")
+                      : t("common.syncPendingDescription")}
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         <View style={[surfaces.panel, styles.summaryCard]}>
           <View style={styles.summaryGridRow}>
@@ -394,6 +445,39 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     },
     card: {
       gap: spacing.md,
+    },
+    syncNoticeCard: {
+      gap: spacing.xs,
+    },
+    syncNoticeCardPending: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    syncNoticeCardLocalOnly: {
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSoft,
+    },
+    syncNoticeCardError: {
+      borderColor: `${colors.danger}40`,
+      backgroundColor: `${colors.danger}12`,
+    },
+    syncNoticeCopy: {
+      gap: spacing.xxs,
+    },
+    syncNoticeTitle: {
+      color: colors.textPrimary,
+    },
+    syncNoticeTitlePending: {
+      color: colors.accent,
+    },
+    syncNoticeTitleLocalOnly: {
+      color: colors.textPrimary,
+    },
+    syncNoticeTitleError: {
+      color: colors.danger,
+    },
+    syncNoticeDescription: {
+      color: colors.textSecondary,
     },
     summaryCard: {
       gap: spacing.md,

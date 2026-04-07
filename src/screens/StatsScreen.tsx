@@ -5,106 +5,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
-import {
-  buildSavingsSummary,
-  getTotalSavedAmount,
-} from "@/domain/subscriptionHistory/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
-import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
-import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useStatsProjection } from "@/hooks/useStatsProjection";
 import { StatsTabScreenProps } from "@/navigation/types";
-import {
-  buildHomeMonthlySummary,
-  getStartedSubscriptionsForStatistics,
-  getBillingStructure,
-  getTopExpensiveSubscriptions,
-} from "@/domain/subscriptions/statistics";
 import { getMonthlyEquivalent } from "@/domain/subscriptions/metrics";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
-import { SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
-import { buildSubscriptionMetrics } from "@/utils/subscriptionMetrics";
 import { localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
-import { parseLocalDateInput } from "@/utils/date";
-
-const getBookedEventYearTotal = (
-  history: SubscriptionHistoryEvent[],
-  year: number,
-) =>
-  history.reduce((sum, event) => {
-    if (event.type !== "payment_booked" || event.deletedAt) {
-      return sum;
-    }
-
-    const eventDate = parseLocalDateInput(event.dueDate ?? event.bookedAt ?? "");
-    if (!eventDate || eventDate.getFullYear() !== year) {
-      return sum;
-    }
-
-    return sum + (event.amount ?? 0);
-  }, 0);
-
-const getBookedMonthlySummaries = (history: SubscriptionHistoryEvent[]) => {
-  const buckets = new Map<string, { totalAmount: number; date: Date }>();
-
-  history.forEach((event) => {
-    if (event.type !== "payment_booked" || event.deletedAt) {
-      return;
-    }
-
-    const eventDate = parseLocalDateInput(event.dueDate ?? event.bookedAt ?? "");
-    if (!eventDate) {
-      return;
-    }
-
-    const key = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, "0")}`;
-    const existing = buckets.get(key);
-
-    if (existing) {
-      existing.totalAmount += event.amount ?? 0;
-      return;
-    }
-
-    buckets.set(key, {
-      totalAmount: event.amount ?? 0,
-      date: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1),
-    });
-  });
-
-  return Array.from(buckets.values()).sort((left, right) => left.date.getTime() - right.date.getTime());
-};
-
-const getSkippedMonthlySummaries = (history: SubscriptionHistoryEvent[]) => {
-  const buckets = new Map<string, { totalAmount: number; date: Date }>();
-
-  history.forEach((event) => {
-    if (event.type !== "payment_skipped_inactive" || event.deletedAt) {
-      return;
-    }
-
-    const eventDate = parseLocalDateInput(event.dueDate ?? "");
-    if (!eventDate) {
-      return;
-    }
-
-    const key = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, "0")}`;
-    const existing = buckets.get(key);
-
-    if (existing) {
-      existing.totalAmount += event.amount ?? 0;
-      return;
-    }
-
-    buckets.set(key, {
-      totalAmount: event.amount ?? 0,
-      date: new Date(eventDate.getFullYear(), eventDate.getMonth(), 1),
-    });
-  });
-
-  return Array.from(buckets.values()).sort((left, right) => left.date.getTime() - right.date.getTime());
-};
 
 export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const { colors, typography } = useAppTheme();
@@ -113,11 +22,16 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
-  const { subscriptions, isLoading } = useSubscriptions();
-  const { history: allHistory, isLoading: isHistoryLoading } = useSubscriptionsHistory(
-    subscriptions.map((subscription) => subscription.id),
-  );
-  const isStatsDataLoading = isLoading || (subscriptions.length > 0 && isHistoryLoading);
+  const {
+    isStatsDataLoading,
+    homeStyleSummary,
+    savingsOverview,
+    yearlyActualSummary,
+    developmentSummary,
+    savingsDevelopmentSummary,
+    statsSubscriptionsProjection,
+    statisticsMetrics,
+  } = useStatsProjection();
   const [hasResolvedInitialStatsData, setHasResolvedInitialStatsData] = useState(
     !isStatsDataLoading,
   );
@@ -125,15 +39,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     new Animated.Value(hasResolvedInitialStatsData ? 1 : 0),
   ).current;
   const [showAllCategories, setShowAllCategories] = useState(false);
-
-  const statisticsSubscriptions = useMemo(
-    () => getStartedSubscriptionsForStatistics(subscriptions, allHistory, new Date()),
-    [allHistory, subscriptions],
-  );
-  const statisticsMetrics = useMemo(
-    () => buildSubscriptionMetrics(statisticsSubscriptions, language),
-    [language, statisticsSubscriptions],
-  );
   const displayedCategoryItems = useMemo(
     () =>
       showAllCategories
@@ -142,127 +47,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     [showAllCategories, statisticsMetrics.byCategory],
   );
   const maxCategoryValue = displayedCategoryItems[0]?.monthlyTotal ?? 1;
-  const billingStructure = useMemo(
-    () => getBillingStructure(statisticsSubscriptions),
-    [statisticsSubscriptions],
-  );
-  const topSubscriptions = useMemo(
-    () => getTopExpensiveSubscriptions(statisticsSubscriptions, 5),
-    [statisticsSubscriptions],
-  );
-  const skippedHistory = useMemo(
-    () =>
-      allHistory.filter(
-        (event) => event.type === "payment_skipped_inactive" && !event.deletedAt,
-      ),
-    [allHistory],
-  );
-  const savingsSummary = useMemo(
-    () => buildSavingsSummary(subscriptions, skippedHistory, new Date()),
-    [skippedHistory, subscriptions],
-  );
-  const totalSavedAmount = useMemo(
-    () => getTotalSavedAmount(skippedHistory),
-    [skippedHistory],
-  );
-  const savingsSummaryLabels = useMemo(() => {
-    const now = new Date();
-    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const monthFormatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-      month: "long",
-    });
-
-    return {
-      currentYear: String(now.getFullYear()),
-      previousYear: String(now.getFullYear() - 1),
-      currentMonth: monthFormatter.format(now),
-      previousMonth: monthFormatter.format(previousMonth),
-      currentMonthProjection: t("stats.currentMonthProjectedShort", {
-        month: monthFormatter.format(now),
-      }),
-      currentYearProjection: t("stats.currentYearProjectedShort", {
-        year: String(now.getFullYear()),
-      }),
-    };
-  }, [language, t]);
-  const homeStyleSummary = useMemo(() => {
-    const now = new Date();
-    const summary = buildHomeMonthlySummary(subscriptions, allHistory, now);
-
-    return {
-      ...summary,
-      monthLabel: new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-        month: "long",
-      }).format(now),
-    };
-  }, [allHistory, language, subscriptions]);
-  const yearlyActualSummary = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-
-    return {
-      currentYear,
-      currentYearTotal: getBookedEventYearTotal(allHistory, currentYear),
-      previousYearTotal: getBookedEventYearTotal(allHistory, currentYear - 1),
-    };
-  }, [allHistory]);
-  const developmentSummary = useMemo(() => {
-    const monthlySummaries = getBookedMonthlySummaries(allHistory);
-    const totalActualAmount = monthlySummaries.reduce(
-      (sum, item) => sum + item.totalAmount,
-      0,
-    );
-    const averageMonthlyActual =
-      monthlySummaries.length > 0 ? totalActualAmount / monthlySummaries.length : 0;
-    const highestActualMonth =
-      monthlySummaries.reduce<{ totalAmount: number; date: Date } | null>((highest, item) => {
-        if (!highest || item.totalAmount > highest.totalAmount) {
-          return item;
-        }
-
-        return highest;
-      }, null);
-
-    return {
-      currentMonthProjected: homeStyleSummary.totalAmount,
-      averageMonthlyActual,
-      highestActualMonth,
-      highestActualMonthLabel: highestActualMonth
-        ? new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-            month: "long",
-            year: "numeric",
-          }).format(highestActualMonth.date)
-        : null,
-    };
-  }, [allHistory, homeStyleSummary.totalAmount, language]);
-  const savingsDevelopmentSummary = useMemo(() => {
-    const monthlySummaries = getSkippedMonthlySummaries(skippedHistory);
-    const totalActualAmount = monthlySummaries.reduce(
-      (sum, item) => sum + item.totalAmount,
-      0,
-    );
-    const averageMonthlyActual =
-      monthlySummaries.length > 0 ? totalActualAmount / monthlySummaries.length : 0;
-    const highestActualMonth =
-      monthlySummaries.reduce<{ totalAmount: number; date: Date } | null>((highest, item) => {
-        if (!highest || item.totalAmount > highest.totalAmount) {
-          return item;
-        }
-
-        return highest;
-      }, null);
-
-    return {
-      currentMonthProjected: savingsSummary.currentMonthProjected,
-      averageMonthlyActual,
-      highestActualMonth,
-      highestActualMonthLabel: highestActualMonth
-        ? new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-US", {
-            month: "long",
-            year: "numeric",
-          }).format(highestActualMonth.date)
-        : null,
-    };
-  }, [language, savingsSummary.currentMonthProjected, skippedHistory]);
 
   useEffect(() => {
     if (hasResolvedInitialStatsData || isStatsDataLoading) {
@@ -362,7 +146,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               {t("stats.savingsCardTitle")}
             </Text>
           </View>
-          {skippedHistory.length === 0 ? (
+          {savingsOverview.skippedEvents.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
               {t("stats.noSavingsAvailable")}
             </Text>
@@ -373,7 +157,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                   {t("stats.savingsAllTime")}
                 </Text>
                 <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                  {formatCurrency(totalSavedAmount, currency)}
+                  {formatCurrency(savingsOverview.totalSavedAmount, currency)}
                 </Text>
               </View>
               <View style={styles.savedDivider} />
@@ -383,18 +167,18 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.currentYear}
+                    {savingsOverview.summaryLabels.currentYear}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.currentYearActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentYearActual, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.previousYear}
+                    {savingsOverview.summaryLabels.previousYear}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.previousYearActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.previousYearActual, currency)}
                   </Text>
                 </View>
               </View>
@@ -405,18 +189,18 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.currentMonth}
+                    {savingsOverview.summaryLabels.currentMonth}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.currentMonthActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentMonthActual, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.previousMonth}
+                    {savingsOverview.summaryLabels.previousMonth}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmount]}>
-                    {formatCurrency(savingsSummary.previousMonthActual, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.previousMonthActual, currency)}
                   </Text>
                 </View>
               </View>
@@ -427,18 +211,18 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               <View style={styles.savedSummaryRow}>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.currentMonthProjection}
+                    {savingsOverview.summaryLabels.currentMonthProjection}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                    {formatCurrency(savingsSummary.currentMonthProjected, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentMonthProjected, currency)}
                   </Text>
                 </View>
                 <View style={styles.savedMetric}>
                   <Text style={[typography.meta, styles.savedLabel]}>
-                    {savingsSummaryLabels.currentYearProjection}
+                    {savingsOverview.summaryLabels.currentYearProjection}
                   </Text>
                   <Text style={[typography.sectionTitle, styles.savedAmountAccent]}>
-                    {formatCurrency(savingsSummary.currentYearProjected, currency)}
+                    {formatCurrency(savingsOverview.savingsSummary.currentYearProjected, currency)}
                   </Text>
                 </View>
               </View>
@@ -597,12 +381,14 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           </View>
           <View style={styles.sectionDivider} />
           <View style={styles.structureList}>
-            {billingStructure.map((item, index) => (
+            {statsSubscriptionsProjection.billingStructure.map((item, index) => (
               <View
                 key={item.cycle}
                 style={[
                   styles.structureRow,
-                  index < billingStructure.length - 1 ? styles.structureDivider : null,
+                  index < statsSubscriptionsProjection.billingStructure.length - 1
+                    ? styles.structureDivider
+                    : null,
                 ]}
               >
                 <View style={styles.structureCopy}>
@@ -623,17 +409,19 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
 
         <View style={[surfaces.panel, styles.card]}>
           <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.topSubscriptions")}</Text>
-          {topSubscriptions.length === 0 ? (
+          {statsSubscriptionsProjection.topSubscriptions.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>{t("stats.noActive")}</Text>
           ) : (
             <View style={styles.topList}>
               <View style={styles.sectionDivider} />
-              {topSubscriptions.map((subscription, index) => (
+              {statsSubscriptionsProjection.topSubscriptions.map((subscription, index) => (
                 <View
                   key={subscription.id}
                   style={[
                     styles.topRow,
-                    index < topSubscriptions.length - 1 ? styles.topDivider : null,
+                    index < statsSubscriptionsProjection.topSubscriptions.length - 1
+                      ? styles.topDivider
+                      : null,
                   ]}
                 >
                   <View style={styles.topMain}>

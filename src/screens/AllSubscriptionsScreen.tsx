@@ -34,7 +34,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const styles = getStyles(colors);
   const inputs = createInputStyles(colors);
   const { currency } = useAppSettings();
-  const { subscriptions, canCreateSubscription, isPremium } = useSubscriptions();
+  const { subscriptions, canCreateSubscription, isPremium, pendingSubscriptionsCount } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLimitModalVisible, setIsLimitModalVisible] = useState(false);
   const [isPlanInfoModalVisible, setIsPlanInfoModalVisible] = useState(false);
@@ -73,6 +73,26 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
     navigation.navigate("SubscriptionForm");
   };
 
+  const getSyncLabel = (status?: string) => {
+    if (status === "localOnly") {
+      return t("common.syncLocalOnly");
+    }
+
+    if (status === "syncing") {
+      return t("common.syncing");
+    }
+
+    if (status === "retryPending" || status === "syncFailed") {
+      return t("common.syncRetryPending");
+    }
+
+    if (status === "pending") {
+      return t("common.syncPending");
+    }
+
+    return null;
+  };
+
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
       <ScrollView
@@ -89,16 +109,23 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
         <View style={[surfaces.mainPanel, styles.summaryCard]}>
           {!isPremium ? (
             <Pressable
-              style={styles.planBadgeButton}
+              style={[styles.planBadgeButton, styles.planBadgeButtonFree]}
               onPress={() => setIsPlanInfoModalVisible(true)}
               hitSlop={8}
             >
-              <Ionicons name="leaf-outline" size={15} color={colors.accent} />
+              <Ionicons name="leaf-outline" size={15} color={colors.textSecondary} />
               <Text style={[typography.meta, styles.planBadgeCounter]}>
                 {subscriptions.length}/{FREE_SUBSCRIPTION_LIMIT}
               </Text>
             </Pressable>
-          ) : null}
+          ) : (
+            <View style={[styles.planBadgeButton, styles.planBadgeButtonPremium]}>
+              <Ionicons name="diamond-outline" size={15} color={colors.textSecondary} />
+              <Text style={[typography.meta, styles.planBadgeCounter, styles.planBadgeInfinity]}>
+                {"\u221E"}
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryCopy}>
             <Text style={[typography.metric, styles.summaryTitle]}>
               {t("allSubscriptions.totalSubscriptions", { count: subscriptions.length })}
@@ -106,6 +133,11 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
             <Text style={[typography.secondary, styles.summaryAmount]}>
               {t("allSubscriptions.pausedSubscriptionsCount", { count: pausedSubscriptionsCount })}
             </Text>
+            {pendingSubscriptionsCount > 0 ? (
+              <Text style={[typography.meta, styles.pendingSummary]}>
+                {t("allSubscriptions.pendingSyncSummary", { count: pendingSubscriptionsCount })}
+              </Text>
+            ) : null}
           </View>
           <View style={[inputs.input, styles.searchField, styles.searchFieldMain]}>
             <TextInput
@@ -150,6 +182,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
               {filteredSubscriptions.map((subscription, index) => (
                 (() => {
                   const statusTone = getSubscriptionStatusTone(subscription.status, colors);
+                  const syncLabel = getSyncLabel(subscription.syncState?.status);
 
                   return (
                 <Pressable
@@ -177,6 +210,32 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                         <Text style={[typography.secondary, styles.subscriptionCategory]}>
                           {localizeCategory(subscription.category, language)}
                         </Text>
+                        {syncLabel ? (
+                          <View
+                            style={[
+                              styles.syncBadge,
+                              subscription.syncState?.hasError
+                                ? styles.syncBadgeError
+                                : subscription.syncState?.localOnly
+                                  ? styles.syncBadgeLocalOnly
+                                  : styles.syncBadgePending,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                typography.meta,
+                                styles.syncBadgeText,
+                                subscription.syncState?.hasError
+                                  ? styles.syncBadgeTextError
+                                  : subscription.syncState?.localOnly
+                                    ? styles.syncBadgeTextLocalOnly
+                                    : styles.syncBadgeTextPending,
+                              ]}
+                            >
+                              {syncLabel}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
                     </View>
                     <View
@@ -359,6 +418,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       fontSize: 17,
       lineHeight: 22,
     },
+    pendingSummary: {
+      color: colors.accent,
+    },
     planBadgeButton: {
       position: "absolute",
       top: spacing.md,
@@ -367,23 +429,31 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: 7,
       borderRadius: radius.md,
-      borderWidth: 1.5,
-      borderColor: colors.accent,
-      backgroundColor: colors.accentSoft,
       alignItems: "center",
       gap: 2,
+    },
+    planBadgeButtonFree: {
+      backgroundColor: "transparent",
       shadowColor: colors.shadow,
-      shadowOpacity: 0.5,
-      shadowRadius: 10,
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
       shadowOffset: {
         width: 0,
         height: 4,
       },
-      elevation: 3,
+      elevation: 2,
+    },
+    planBadgeButtonPremium: {
+      backgroundColor: "transparent",
     },
     planBadgeCounter: {
-      color: colors.accent,
+      color: colors.textSecondary,
       fontWeight: "700",
+    },
+    planBadgeInfinity: {
+      fontSize: 13,
+      lineHeight: 14,
+      opacity: 0.92,
     },
     addButton: {
       width: 56,
@@ -571,6 +641,38 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     subscriptionCategory: {
       color: colors.textSecondary,
     },
+    syncBadge: {
+      alignSelf: "flex-start",
+      marginTop: spacing.xxs,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 4,
+    },
+    syncBadgePending: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    syncBadgeLocalOnly: {
+      backgroundColor: colors.surfaceSoft,
+      borderColor: colors.borderStrong,
+    },
+    syncBadgeError: {
+      backgroundColor: `${colors.danger}14`,
+      borderColor: `${colors.danger}33`,
+    },
+    syncBadgeText: {
+      textTransform: "none",
+    },
+    syncBadgeTextPending: {
+      color: colors.accent,
+    },
+    syncBadgeTextLocalOnly: {
+      color: colors.textSecondary,
+    },
+    syncBadgeTextError: {
+      color: colors.danger,
+    },
     statusBadge: {
       borderRadius: 999,
       paddingHorizontal: spacing.sm,
@@ -597,3 +699,4 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
     },
   });
+

@@ -54,10 +54,15 @@ export const useSubscriptionHistory = (subscriptionId?: string) => {
   }, [authIsReady, currentUser?.uid, subscriptionId, t]);
 
   const summary = useMemo(() => getHistorySyncSummary(history), [history]);
+  const pendingHistoryCount = useMemo(
+    () => history.filter((event) => event.syncState?.isPending).length,
+    [history],
+  );
 
   return {
     history,
     summary,
+    pendingHistoryCount,
     isLoading,
     errorMessage,
   };

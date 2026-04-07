@@ -51,6 +51,17 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
             <View style={styles.historyList}>
               {history.map((event, index) => {
                 const entry = formatHistoryEvent(event, { currency, language });
+                const syncLabel =
+                  event.syncState?.status === "localOnly"
+                    ? t("history.localOnlyBadge")
+                    : event.syncState?.status === "syncing"
+                      ? t("history.syncingBadge")
+                      : event.syncState?.status === "retryPending" ||
+                          event.syncState?.status === "syncFailed"
+                        ? t("history.retryBadge")
+                        : event.syncState?.status === "pending"
+                          ? t("history.pendingBadge")
+                          : null;
                 const row = (
                   <View
                     style={[
@@ -61,6 +72,32 @@ export const SubscriptionHistoryScreen = ({ navigation, route }: Props) => {
                     <View style={styles.historyCopy}>
                       <View style={styles.historyTitleRow}>
                         <Text style={[typography.body, styles.historyTitle]}>{entry.title}</Text>
+                        {syncLabel ? (
+                          <View
+                            style={[
+                              styles.historySyncBadge,
+                              event.syncState?.hasError
+                                ? styles.historySyncBadgeError
+                                : event.syncState?.localOnly
+                                  ? styles.historySyncBadgeLocalOnly
+                                  : styles.historySyncBadgePending,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                typography.meta,
+                                styles.historySyncBadgeText,
+                                event.syncState?.hasError
+                                  ? styles.historySyncBadgeTextError
+                                  : event.syncState?.localOnly
+                                    ? styles.historySyncBadgeTextLocalOnly
+                                    : styles.historySyncBadgeTextPending,
+                              ]}
+                            >
+                              {syncLabel}
+                            </Text>
+                          </View>
+                        ) : null}
                         {entry.canEdit ? (
                           <Ionicons
                             name="pencil-outline"
@@ -160,6 +197,36 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     historyTitle: {
       flexShrink: 1,
       color: colors.textPrimary,
+    },
+    historySyncBadge: {
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    historySyncBadgePending: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    historySyncBadgeLocalOnly: {
+      backgroundColor: colors.surfaceSoft,
+      borderColor: colors.borderStrong,
+    },
+    historySyncBadgeError: {
+      backgroundColor: `${colors.danger}14`,
+      borderColor: `${colors.danger}33`,
+    },
+    historySyncBadgeText: {
+      textTransform: "none",
+    },
+    historySyncBadgeTextPending: {
+      color: colors.accent,
+    },
+    historySyncBadgeTextLocalOnly: {
+      color: colors.textSecondary,
+    },
+    historySyncBadgeTextError: {
+      color: colors.danger,
     },
     historySubtitle: {
       color: colors.textSecondary,

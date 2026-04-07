@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { createSubscriptionService } from "@/application/subscriptions/service";
 import { getSubscriptionErrorMessage, hasUserScope } from "@/application/subscriptions/errors";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/hooks/useI18n";
-import { subscriptionRepository } from "@/services/subscriptionRepository";
+import {
+  subscribePendingHistoryProjection,
+  subscriptionRepository,
+  usingFirebase,
+} from "@/services/subscriptionRepository";
 import { SubscriptionHistoryEvent } from "@/types/subscriptionHistory";
 import { logFirestoreError } from "@/utils/firestoreDebug";
 
@@ -18,6 +22,7 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
   >({});
   const [loadedSubscriptions, setLoadedSubscriptions] = useState<Record<string, true>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const activeUnsubscribersRef = useRef<Record<string, () => void>>({});
 
   const stableSubscriptionIdsKey = useMemo(
     () => [...subscriptionIds].sort().join("|"),
@@ -34,17 +39,88 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
     }
 
     if (!hasUserScope(currentUser?.uid) || stableSubscriptionIds.length === 0) {
+      Object.values(activeUnsubscribersRef.current).forEach((unsubscribe) => unsubscribe());
+      activeUnsubscribersRef.current = {};
       setHistoryBySubscription({});
       setLoadedSubscriptions({});
       return;
     }
 
-    setHistoryBySubscription({});
-    setLoadedSubscriptions({});
-    setErrorMessage(null);
+    if (usingFirebase) {
+      setErrorMessage(null);
+      setLoadedSubscriptions(
+        Object.fromEntries(stableSubscriptionIds.map((subscriptionId) => [subscriptionId, true])),
+      );
 
-    const unsubscribers = stableSubscriptionIds.map((subscriptionId) =>
-      subscriptionService.observeSubscriptionHistory(
+      let unsubscribe: () => void = () => {};
+
+      void subscribePendingHistoryProjection(
+        currentUser.uid,
+        stableSubscriptionIds,
+        (items) => {
+          const nextHistoryBySubscription = stableSubscriptionIds.reduce<
+            Record<string, SubscriptionHistoryEvent[]>
+          >((current, subscriptionId) => {
+            current[subscriptionId] = items.filter(
+              (event) => event.subscriptionId === subscriptionId && !event.deletedAt,
+            );
+            return current;
+          }, {});
+
+          setHistoryBySubscription(nextHistoryBySubscription);
+        },
+        (error) => {
+          logFirestoreError("useSubscriptionsHistory.projection", error, {
+            userId: currentUser.uid,
+            subscriptionIds: stableSubscriptionIds,
+          });
+          setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
+        },
+      )
+        .then((nextUnsubscribe) => {
+          unsubscribe = nextUnsubscribe;
+        })
+        .catch((error) => {
+          logFirestoreError("useSubscriptionsHistory.projection.connect", error, {
+            userId: currentUser.uid,
+            subscriptionIds: stableSubscriptionIds,
+          });
+          setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
+        });
+
+      return () => {
+        unsubscribe();
+      };
+    }
+
+    setErrorMessage(null);
+    const nextIdSet = new Set(stableSubscriptionIds);
+
+    Object.entries(activeUnsubscribersRef.current).forEach(([subscriptionId, unsubscribe]) => {
+      if (nextIdSet.has(subscriptionId)) {
+        return;
+      }
+
+      unsubscribe();
+      delete activeUnsubscribersRef.current[subscriptionId];
+      setHistoryBySubscription((current) => {
+        const next = { ...current };
+        delete next[subscriptionId];
+        return next;
+      });
+      setLoadedSubscriptions((current) => {
+        const next = { ...current };
+        delete next[subscriptionId];
+        return next;
+      });
+    });
+
+    stableSubscriptionIds.forEach((subscriptionId) => {
+      if (activeUnsubscribersRef.current[subscriptionId]) {
+        return;
+      }
+
+      const unsubscribe = subscriptionService.observeSubscriptionHistory(
         currentUser.uid,
         subscriptionId,
         (items) => {
@@ -68,13 +144,20 @@ export const useSubscriptionsHistory = (subscriptionIds: string[]) => {
           });
           setErrorMessage(getSubscriptionErrorMessage(error, t("common.actionFailed")));
         },
-      ),
-    );
+      );
 
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
+      activeUnsubscribersRef.current[subscriptionId] = unsubscribe;
+    });
+
   }, [authIsReady, currentUser?.uid, stableSubscriptionIdsKey, t]);
+
+  useEffect(
+    () => () => {
+      Object.values(activeUnsubscribersRef.current).forEach((unsubscribe) => unsubscribe());
+      activeUnsubscribersRef.current = {};
+    },
+    [],
+  );
 
   const history = useMemo(
     () => Object.values(historyBySubscription).flat(),

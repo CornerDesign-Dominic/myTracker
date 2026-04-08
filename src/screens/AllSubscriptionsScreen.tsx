@@ -42,12 +42,17 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
 
   const filteredSubscriptions = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const sortedSubscriptions = [...subscriptions].sort((left, right) =>
+      left.name.localeCompare(right.name, language === "de" ? "de-DE" : "en-US", {
+        sensitivity: "base",
+      }),
+    );
 
     if (!normalizedQuery) {
-      return subscriptions;
+      return sortedSubscriptions;
     }
 
-    return subscriptions.filter((subscription) => {
+    return sortedSubscriptions.filter((subscription) => {
       const searchableText =
         `${subscription.name} ${localizeCategory(subscription.category, language)}`.toLowerCase();
       return searchableText.includes(normalizedQuery);
@@ -159,7 +164,6 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
                   key={subscription.id}
                   subscription={subscription}
                   statusAboveActionIcon
-                  accentAmount
                   hideNextPaymentDate
                   hideAmountLabel
                   hideBillingCycleLabel

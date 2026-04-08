@@ -18,11 +18,21 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.1.3`
+- Aktuelle Version: `1.1.4`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-09`
 
 ---
+
+## Version 1.1.4
+
+Stand: `2026-04-09`
+
+### Wichtige Aktualisierungen
+
+- Home-Timeline erweitert: Datumsmarker zeigen jetzt pro Datumsblock zusaetzlich die faellige Gesamtsumme im Format `Datum • Summe`.
+- Seite `Alle Abos` weiter verfeinert: Cards alphabetisch sortiert und Layout in Richtung klarer Detailkarten weiter verdichtet.
+- `Alle Abos`-Cards neu geordnet: Status unten links, `Detailsansicht >` als verlinkter Text in derselben unteren Zeile, Faelligkeit aus der Card entfernt und Betrag/Intervall naeher als zusammengehoerige Info gruppiert.
 
 ## Version 1.1.3
 

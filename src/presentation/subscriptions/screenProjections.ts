@@ -32,7 +32,8 @@ export type HomeTimelineListItem =
   | {
       type: "dateMarker";
       key: string;
-      label: string;
+      dateLabel: string;
+      totalAmount: number;
       dueDate: string;
     };
 
@@ -128,10 +129,18 @@ export const buildHomeTimelineListItems = (
       const parsedDate = parseLocalDateInput(dueDate);
 
       if (parsedDate) {
+        const parts = formatter.formatToParts(parsedDate);
+        const day = parts.find((part) => part.type === "day")?.value ?? "";
+        const month = parts.find((part) => part.type === "month")?.value ?? formatter.format(parsedDate);
+        const totalAmount = subscriptions
+          .filter((candidate) => (candidate.homeDueDate ?? candidate.nextPaymentDate) === dueDate)
+          .reduce((sum, candidate) => sum + candidate.amount, 0);
+
         items.push({
           type: "dateMarker",
           key: `marker:${subscription.id}:${dueDate}`,
-          label: formatter.format(parsedDate),
+          dateLabel: `${day}. ${month}`.trim(),
+          totalAmount,
           dueDate,
         });
       }

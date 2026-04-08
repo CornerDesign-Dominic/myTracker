@@ -104,17 +104,6 @@ export const SubscriptionCard = ({
           >
             {statusAboveActionIcon ? (
               <View style={styles.leadingStatusAvatarColumn}>
-                <View style={styles.badgeTopLeft}>
-                  <Text
-                    style={[
-                      typography.meta,
-                      styles.plainStatusText,
-                      { color: statusTone.textColor },
-                    ]}
-                  >
-                    {t(`subscription.status_${subscription.status}`)}
-                  </Text>
-                </View>
                 <SubscriptionAvatar
                   name={subscription.name}
                   category={subscription.category}
@@ -222,17 +211,24 @@ export const SubscriptionCard = ({
         {compact ? null : (
           hideNextPaymentDate ? (
             statusAboveActionIcon ? (
-              <View style={styles.alignedDetailsBlock}>
-                <View style={styles.trailingActionRow}>
+              <View style={styles.statusActionRow}>
+                <View style={styles.statusActionLeading}>
+                  <Text
+                    style={[
+                      typography.meta,
+                      styles.plainStatusText,
+                      { color: statusTone.textColor },
+                    ]}
+                  >
+                    {t(`subscription.status_${subscription.status}`)}
+                  </Text>
+                </View>
+                <View style={styles.statusActionTrailing}>
                   {actionText ? (
                     <Pressable onPress={onPress} hitSlop={10}>
                       <Text style={[typography.body, styles.actionText]}>{actionText}</Text>
                     </Pressable>
-                  ) : (
-                    <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
-                      <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
-                    </Pressable>
-                  )}
+                  ) : null}
                 </View>
               </View>
             ) : stackAmountUnderCategory && hideBillingCycle ? null : (
@@ -357,7 +353,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   leadingStatusAvatarColumn: {
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 4,
   },
   titleBlock: {
     flex: 1,
@@ -374,14 +369,15 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: 0,
     marginBottom: -2,
   },
   stackedAmountValue: {
     color: colors.textPrimary,
     flex: 1,
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: "600",
   },
   stackedChevronButton: {
     width: 32,
@@ -433,15 +429,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   metaGridAligned: {
     paddingLeft: 44 + spacing.md,
   },
-  alignedDetailsBlock: {
-    paddingLeft: 44 + spacing.md,
-    gap: 0,
-  },
   amountIntervalRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "flex-start",
     gap: spacing.lg,
+    marginTop: spacing.xs,
   },
   alignedMetaBlock: {
     minWidth: 0,
@@ -450,8 +443,19 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   intervalMetaBlock: {
     alignItems: "flex-start",
   },
-  trailingActionRow: {
-    alignItems: "flex-end",
+  statusActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  statusActionLeading: {
+    width: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusActionTrailing: {
+    flex: 1,
+    minWidth: 0,
   },
   actionText: {
     color: colors.accent,

@@ -81,7 +81,8 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
         item.type === "dateMarker" ? (
           <HomeTimelineDateMarker
             key={item.key}
-            label={item.label}
+            dateLabel={item.dateLabel}
+            amountLabel={formatCurrency(item.totalAmount, currency)}
             leftOffset={HOME_TIMELINE_LEFT_OFFSET}
           />
         ) : (

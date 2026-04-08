@@ -24,6 +24,9 @@ interface SubscriptionCardProps {
   neutralInactiveStatus?: boolean;
   compact?: boolean;
   hideNextPaymentDate?: boolean;
+  hideBillingCycle?: boolean;
+  hideAmountLabel?: boolean;
+  stackAmountUnderCategory?: boolean;
   denseHeader?: boolean;
   actionIconName?: "pencil-outline" | "chevron-forward-outline";
 }
@@ -63,6 +66,9 @@ export const SubscriptionCard = ({
   neutralInactiveStatus = false,
   compact = false,
   hideNextPaymentDate = false,
+  hideBillingCycle = false,
+  hideAmountLabel = false,
+  stackAmountUnderCategory = false,
   denseHeader = false,
   actionIconName = "pencil-outline",
 }: SubscriptionCardProps) => {
@@ -88,8 +94,26 @@ export const SubscriptionCard = ({
               category={subscription.category}
             />
             <View style={[styles.titleBlock, denseHeader ? styles.titleBlockDense : null]}>
-              <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
+              <Text
+                style={[
+                  typography.cardTitle,
+                  styles.name,
+                  denseHeader ? styles.nameDense : null,
+                ]}
+              >
+                {subscription.name}
+              </Text>
               <Text style={[typography.secondary, styles.category]}>{localizedCategory}</Text>
+              {stackAmountUnderCategory ? (
+                <View style={styles.stackedAmountRow}>
+                  <Text style={[typography.body, styles.stackedAmountValue]}>
+                    {formatCurrency(subscription.amount, currency)}
+                  </Text>
+                  <Pressable style={styles.stackedChevronButton} onPress={onPress} hitSlop={10}>
+                    <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
           </View>
           {compact ? (
@@ -122,40 +146,62 @@ export const SubscriptionCard = ({
 
         {compact ? null : (
           hideNextPaymentDate ? (
-            <View style={styles.compactMetaRow}>
-              <View style={[styles.metaItem, styles.compactMetaItem]}>
-                <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
-                <Text style={[typography.body, styles.metaValue]}>
-                  {formatCurrency(subscription.amount, currency)}
-                </Text>
+            stackAmountUnderCategory && hideBillingCycle ? null : (
+              <View style={styles.compactMetaRow}>
+                <View style={[styles.metaItem, styles.compactMetaItem]}>
+                  {stackAmountUnderCategory ? null : (
+                    <>
+                      {hideAmountLabel ? null : (
+                        <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                      )}
+                      <Text style={[typography.body, styles.metaValue]}>
+                        {formatCurrency(subscription.amount, currency)}
+                      </Text>
+                    </>
+                  )}
+                </View>
+                <View style={[styles.metaItem, styles.compactMetaItem]}>
+                  {hideBillingCycle ? null : (
+                    <>
+                      <Text style={[typography.meta, styles.metaLabel]}>
+                        {t("subscription.formBillingCycle")}
+                      </Text>
+                      <Text style={[typography.body, styles.metaValue]}>
+                        {t(`subscription.billing_${subscription.billingCycle}`)}
+                      </Text>
+                    </>
+                  )}
+                </View>
+                <Pressable style={styles.inlineIconButton} onPress={onPress} hitSlop={10}>
+                  <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
+                </Pressable>
               </View>
-              <View style={[styles.metaItem, styles.compactMetaItem]}>
-                <Text style={[typography.meta, styles.metaLabel]}>
-                  {t("subscription.formBillingCycle")}
-                </Text>
-                <Text style={[typography.body, styles.metaValue]}>
-                  {t(`subscription.billing_${subscription.billingCycle}`)}
-                </Text>
-              </View>
-              <Pressable style={styles.inlineIconButton} onPress={onPress} hitSlop={10}>
-                <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
-              </Pressable>
-            </View>
+            )
           ) : (
             <View style={styles.metaGrid}>
               <View style={styles.metaItem}>
-                <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
-                <Text style={[typography.body, styles.metaValue]}>
-                  {formatCurrency(subscription.amount, currency)}
-                </Text>
+                {stackAmountUnderCategory ? null : (
+                  <>
+                    {hideAmountLabel ? null : (
+                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                    )}
+                    <Text style={[typography.body, styles.metaValue]}>
+                      {formatCurrency(subscription.amount, currency)}
+                    </Text>
+                  </>
+                )}
               </View>
               <View style={styles.metaItem}>
-                <Text style={[typography.meta, styles.metaLabel]}>
-                  {t("subscription.formBillingCycle")}
-                </Text>
-                <Text style={[typography.body, styles.metaValue]}>
-                  {t(`subscription.billing_${subscription.billingCycle}`)}
-                </Text>
+                {hideBillingCycle ? null : (
+                  <>
+                    <Text style={[typography.meta, styles.metaLabel]}>
+                      {t("subscription.formBillingCycle")}
+                    </Text>
+                    <Text style={[typography.body, styles.metaValue]}>
+                      {t(`subscription.billing_${subscription.billingCycle}`)}
+                    </Text>
+                  </>
+                )}
               </View>
               <View style={styles.metaItem}>
                 <Text style={[typography.meta, styles.metaLabel]}>
@@ -207,10 +253,35 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   titleBlockDense: {
     gap: 2,
   },
+  stackedAmountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  stackedAmountValue: {
+    color: colors.textPrimary,
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 23,
+  },
+  stackedChevronButton: {
+    width: 32,
+    height: 32,
+    flexShrink: 0,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   name: {
     color: colors.textPrimary,
     fontSize: 22,
     lineHeight: 28,
+  },
+  nameDense: {
+    fontSize: 20,
+    lineHeight: 26,
   },
   category: {
     color: colors.textSecondary,

@@ -85,14 +85,17 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             leftOffset={HOME_TIMELINE_LEFT_OFFSET}
           />
         ) : (
-          <SubscriptionCard
-            key={item.key}
-            subscription={item.subscription}
-            showStatus={false}
-            hideNextPaymentDate
-            denseHeader
-            actionIconName="chevron-forward-outline"
-            onPress={() =>
+            <SubscriptionCard
+              key={item.key}
+              subscription={item.subscription}
+              showStatus={false}
+              hideNextPaymentDate
+              hideBillingCycle
+              hideAmountLabel
+              stackAmountUnderCategory
+              denseHeader
+              actionIconName="chevron-forward-outline"
+              onPress={() =>
               navigation.navigate("SubscriptionDetails", {
                 subscriptionId: item.subscription.id,
               })

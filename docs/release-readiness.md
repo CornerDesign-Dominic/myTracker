@@ -3,7 +3,7 @@
 ## Aktueller Repo-Stand
 
 - App-Name: `OctoVault`
-- Version: `1.1.4`
+- Version: `1.1.5`
 - Expo-Slug: `subscription-tracker-mvp`
 - Android-Paket: `com.cornerdesign.mytracker`
 - zentrale Native-Konfiguration ueber `app.config.ts`

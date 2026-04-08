@@ -18,11 +18,21 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.1.4`
+- Aktuelle Version: `1.1.5`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-09`
 
 ---
+
+## Version 1.1.5
+
+Stand: `2026-04-09`
+
+### Wichtige Aktualisierungen
+
+- Home-Monatskarte fachlich korrigiert: `Bezahlt` richtet sich jetzt nur noch nach dem eigentlichen Faelligkeitsmonat (`dueDate`) und zaehlt keine heute erfassten Alt-Zahlungen mehr in den aktuellen Monat.
+- Monatsverlauf-Prognose gehaertet: Monatsbetraege und aufgeklappte Monatslisten folgen jetzt derselben wiederkehrenden Faelligkeitslogik inklusive `createdAt`, `endDate` und Ausschluss archivierter Abos.
+- Kalender erweitert: manuell eingepflegte `payment_booked`-Zahlungen markieren jetzt ebenfalls Kalendertage und erscheinen in der zweiten Detail-Card beim ausgewaehlten Datum.
 
 ## Version 1.1.4
 

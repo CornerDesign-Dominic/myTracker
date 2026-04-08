@@ -36,12 +36,14 @@ export const MonthlyCostPreviewScreen = (_props: Props) => {
       items.map((item) => ({
         ...item,
         entries: subscriptions
-          .filter((subscription) => subscription.status === "active")
+          .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
           .map((subscription) => {
             const dueDate = getRecurringDueDateForMonth({
               anchorDate: subscription.nextPaymentDate,
               billingCycle: subscription.billingCycle,
               targetMonth: item.date,
+              startsOn: subscription.createdAt,
+              endsOn: subscription.endDate,
             });
 
             if (!dueDate) {

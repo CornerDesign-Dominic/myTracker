@@ -8,6 +8,7 @@ import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
+import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
 import { CalendarTabScreenProps } from "@/navigation/types";
@@ -109,6 +110,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const surfaces = createSurfaceStyles(colors);
   const styles = getStyles(colors);
   const { subscriptions } = useSubscriptions();
+  const { history } = useSubscriptionsHistory(subscriptions.map((subscription) => subscription.id));
   const [today, setToday] = useState(() => new Date());
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
@@ -146,27 +148,80 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
   const selectedDayLabel = getDisplayDate(selectedDate, language);
   const selectedShortDayLabel = getShortDisplayDate(selectedDate);
   const todayFabLabel = getTodayFabLabel(today);
-  const dueSubscriptions = useMemo(
-    () =>
-      subscriptions.filter(
-        (subscription) => {
-          if (subscription.status !== "active") {
-            return false;
-          }
+  const dueSubscriptions = useMemo(() => {
+    type CalendarDueEntry = {
+      key: string;
+      subscriptionId: string;
+      name: string;
+      category: string;
+      billingCycle?: (typeof subscriptions)[number]["billingCycle"];
+      amount: number;
+      dueDate: string;
+    };
 
-          return (
-            getRecurringDueDateInputForMonth({
-              anchorDate: subscription.nextPaymentDate,
-              billingCycle: subscription.billingCycle,
-              targetMonth: selectedDate,
-              startsOn: subscription.createdAt,
-              endsOn: subscription.endDate,
-            }) === selectedDateKey
-          );
-        },
-      ),
-    [selectedDate, selectedDateKey, subscriptions],
-  );
+    const projectedEntries = subscriptions
+      .filter((subscription) => {
+        if (subscription.status !== "active" || subscription.archivedAt) {
+          return false;
+        }
+
+        return (
+          getRecurringDueDateInputForMonth({
+            anchorDate: subscription.nextPaymentDate,
+            billingCycle: subscription.billingCycle,
+            targetMonth: selectedDate,
+            startsOn: subscription.createdAt,
+            endsOn: subscription.endDate,
+          }) === selectedDateKey
+        );
+      })
+      .map<CalendarDueEntry>((subscription) => ({
+        key: `${subscription.id}:${selectedDateKey}`,
+        subscriptionId: subscription.id,
+        name: subscription.name,
+        category: subscription.category,
+        billingCycle: subscription.billingCycle,
+        amount: subscription.amount,
+        dueDate: selectedDateKey,
+      }));
+
+    const manualEntries = history
+      .filter(
+        (event) =>
+          event.type === "payment_booked" &&
+          !event.deletedAt &&
+          event.dueDate === selectedDateKey,
+      )
+      .map<CalendarDueEntry>((event) => {
+        const subscription = subscriptions.find((item) => item.id === event.subscriptionId);
+
+        return {
+          key: `${event.subscriptionId}:${selectedDateKey}`,
+          subscriptionId: event.subscriptionId,
+          name: subscription?.name ?? t("common.unavailable"),
+          category: subscription?.category ?? "",
+          billingCycle: subscription?.billingCycle,
+          amount: event.amount ?? subscription?.amount ?? 0,
+          dueDate: selectedDateKey,
+        };
+      });
+
+    const mergedEntries = new Map<string, CalendarDueEntry>();
+
+    projectedEntries.forEach((entry) => {
+      mergedEntries.set(entry.key, entry);
+    });
+
+    manualEntries.forEach((entry) => {
+      mergedEntries.set(entry.key, entry);
+    });
+
+    return Array.from(mergedEntries.values()).sort((left, right) =>
+      left.name.localeCompare(right.name, language === "de" ? "de-DE" : "en-US", {
+        sensitivity: "base",
+      }),
+    );
+  }, [history, language, selectedDate, selectedDateKey, subscriptions, t]);
   const dueSubscriptionsTotal = useMemo(
     () => dueSubscriptions.reduce((sum, subscription) => sum + subscription.amount, 0),
     [dueSubscriptions],
@@ -176,7 +231,7 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
       const dueDates = new Set<string>();
 
       subscriptions
-        .filter((subscription) => subscription.status === "active")
+        .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
         .forEach((subscription) => {
           visibleCalendarMonths.forEach((monthDate) => {
             const dueDate = getRecurringDueDateInputForMonth({
@@ -193,9 +248,26 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
           });
         });
 
+      history
+        .filter((event) => event.type === "payment_booked" && !event.deletedAt && event.dueDate)
+        .forEach((event) => {
+          const dueDate = event.dueDate!;
+          const dueMonthDate = new Date(`${dueDate}T00:00:00`);
+
+          if (
+            visibleCalendarMonths.some(
+              (monthDate) =>
+                monthDate.getFullYear() === dueMonthDate.getFullYear() &&
+                monthDate.getMonth() === dueMonthDate.getMonth(),
+            )
+          ) {
+            dueDates.add(dueDate);
+          }
+        });
+
       return dueDates;
     },
-    [subscriptions, visibleCalendarMonths],
+    [history, subscriptions, visibleCalendarMonths],
   );
 
   const changeMonth = (direction: -1 | 1) => {
@@ -316,14 +388,14 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
               <View style={styles.dueListDivider} />
               {dueSubscriptions.map((subscription, index) => (
                 <Pressable
-                  key={subscription.id}
+                  key={subscription.key}
                   style={[
                     styles.dueRow,
                     index < dueSubscriptions.length - 1 ? styles.dueRowDivider : null,
                   ]}
                   onPress={() =>
                     navigation.navigate("SubscriptionDetails", {
-                      subscriptionId: subscription.id,
+                      subscriptionId: subscription.subscriptionId,
                     })
                   }
                 >
@@ -336,7 +408,9 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
                     <View style={styles.dueRowCopy}>
                       <Text style={[typography.body, styles.dueName]}>{subscription.name}</Text>
                       <Text style={[typography.secondary, styles.dueMeta]}>
-                        {localizeCategory(subscription.category, language)}
+                        {subscription.category
+                          ? localizeCategory(subscription.category, language)
+                          : t("common.unavailable")}
                       </Text>
                     </View>
                   </View>
@@ -344,9 +418,11 @@ export const CalendarScreen = ({ navigation }: CalendarTabScreenProps) => {
                     <Text style={[typography.body, styles.dueAmount]}>
                       {formatCurrency(subscription.amount, currency)}
                     </Text>
-                    <Text style={[typography.secondary, styles.dueMeta]}>
-                      {t(`subscription.billing_${subscription.billingCycle}`)}
-                    </Text>
+                    {subscription.billingCycle ? (
+                      <Text style={[typography.secondary, styles.dueMeta]}>
+                        {t(`subscription.billing_${subscription.billingCycle}`)}
+                      </Text>
+                    ) : null}
                   </View>
                 </Pressable>
               ))}

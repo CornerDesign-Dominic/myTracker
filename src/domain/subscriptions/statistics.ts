@@ -82,7 +82,7 @@ const isBookedPaymentEvent = (event: SubscriptionHistoryEvent) =>
   event.type === "payment_booked" && !event.deletedAt;
 
 const getPaymentEventMonthDate = (event: SubscriptionHistoryEvent) =>
-  parseDate(event.dueDate) ?? parseDate(event.bookedAt);
+  parseDate(event.dueDate);
 
 const isWithinCurrentYear = (date: Date, now: Date) => date.getFullYear() === now.getFullYear();
 
@@ -103,10 +103,6 @@ const buildMonthBuckets = (startMonth: Date, endMonth: Date) => {
     };
   });
 };
-
-const isSameOrBeforeMonth = (left: Date, right: Date) =>
-  left.getFullYear() < right.getFullYear() ||
-  (left.getFullYear() === right.getFullYear() && left.getMonth() <= right.getMonth());
 
 const getAllRangeStartMonth = (
   history: SubscriptionHistoryEvent[],
@@ -188,7 +184,6 @@ export const buildHomeMonthlySummary = (
   history: SubscriptionHistoryEvent[],
   now = new Date(),
 ): HomeMonthlySummary => {
-  const todayKey = formatLocalDateInput(now);
   const paidAmount = history
     .filter(isBookedPaymentEvent)
     .filter((event) => {
@@ -197,18 +192,10 @@ export const buildHomeMonthlySummary = (
     })
     .reduce((sum, event) => sum + (event.amount ?? 0), 0);
 
-  const dueAmount = subscriptions
-    .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
-    .filter((subscription) => {
-      const nextPaymentDate = parseDate(subscription.nextPaymentDate);
-
-      return (
-        nextPaymentDate instanceof Date &&
-        isSameMonth(nextPaymentDate, now) &&
-        subscription.nextPaymentDate > todayKey
-      );
-    })
-    .reduce((sum, subscription) => sum + subscription.amount, 0);
+  const dueAmount = buildHomeDueSections(subscriptions, now).currentMonthUpcoming.reduce(
+    (sum, subscription) => sum + subscription.amount,
+    0,
+  );
 
   return {
     paidAmount,
@@ -402,33 +389,23 @@ export const buildUpcomingMonthlyCostPreview = (
   const startMonth = startOfMonth(now);
   const endMonth = new Date(startMonth.getFullYear(), startMonth.getMonth() + monthCount - 1, 1);
   const buckets = buildMonthBuckets(startMonth, endMonth);
-  const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
   subscriptions
-    .filter((subscription) => subscription.status === "active")
+    .filter((subscription) => subscription.status === "active" && !subscription.archivedAt)
     .forEach((subscription) => {
-      const nextPaymentDate = parseDate(subscription.nextPaymentDate);
+      buckets.forEach((bucket) => {
+        const dueDate = getRecurringDueDateInputForMonth({
+          anchorDate: subscription.nextPaymentDate,
+          billingCycle: subscription.billingCycle,
+          targetMonth: bucket.date,
+          startsOn: subscription.createdAt,
+          endsOn: subscription.endDate,
+        });
 
-      if (!nextPaymentDate) {
-        return;
-      }
-
-      const anchorDay = getRecurringAnchorDay(subscription.nextPaymentDate);
-      let cursor = nextPaymentDate;
-
-      while (startOfMonth(cursor) < startMonth) {
-        cursor = shiftRecurringDate(cursor, subscription.billingCycle, 1, anchorDay);
-      }
-
-      while (isSameOrBeforeMonth(startOfMonth(cursor), endMonth)) {
-        const bucket = bucketMap.get(toMonthKey(startOfMonth(cursor)));
-
-        if (bucket) {
+        if (dueDate) {
           bucket.totalAmount += subscription.amount;
         }
-
-        cursor = shiftRecurringDate(cursor, subscription.billingCycle, 1, anchorDay);
-      }
+      });
     });
 
   return buckets.map((bucket) => ({

@@ -40,7 +40,7 @@ import { shouldRequireNextPaymentConfirmation } from "@/domain/subscriptions/for
 import { SubscriptionError } from "@/application/subscriptions/errors";
 import { BillingCycle, SubscriptionInput, SubscriptionStatus } from "@/types/subscription";
 import { localizeCategory } from "@/utils/categories";
-import { formatCurrency } from "@/utils/currency";
+import { formatAmountInputValue, formatCurrency, parseAmountInput, sanitizeAmountInput } from "@/utils/currency";
 import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SubscriptionForm">;
@@ -90,7 +90,6 @@ const toDateValue = (value: string) => {
   return parseLocalDateInput(value) ?? new Date();
 };
 
-const formatAmountInput = (value: string) => value.replace(",", ".");
 const daysInMonth = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
 const clampDay = (year: number, monthIndex: number, day: number) =>
   Math.min(day, daysInMonth(year, monthIndex));
@@ -466,7 +465,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
   };
 
   const openAmountSheet = () => {
-    setDraftAmount(formState.amount ? String(formState.amount) : "");
+    setDraftAmount(formState.amount ? formatAmountInputValue(formState.amount, currency) : "");
     setActiveField("amount");
   };
 
@@ -492,7 +491,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
     }
 
     if (activeField === "amount") {
-      const nextAmount = Number(formatAmountInput(draftAmount));
+      const nextAmount = parseAmountInput(draftAmount, currency);
       updateField("amount", Number.isFinite(nextAmount) ? nextAmount : 0);
       closeSheet();
       return;
@@ -572,7 +571,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
 
   const formatAmountLabel = () =>
     formState.amount
-      ? formatCurrency(formState.amount, currency, language)
+      ? formatCurrency(formState.amount, currency)
       : "";
 
   const openBillingCycleSheet = () => setActiveField("billingCycle");
@@ -868,7 +867,7 @@ export const SubscriptionFormScreen = ({ navigation, route }: Props) => {
       >
         <TextInput
           value={draftAmount}
-          onChangeText={setDraftAmount}
+          onChangeText={(value) => setDraftAmount(sanitizeAmountInput(value, currency))}
           placeholderTextColor={colors.textMuted}
           keyboardType="numeric"
           autoFocus

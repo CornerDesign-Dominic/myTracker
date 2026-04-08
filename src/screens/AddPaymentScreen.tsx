@@ -37,7 +37,7 @@ import {
   radius,
   spacing,
 } from "@/theme";
-import { formatCurrency } from "@/utils/currency";
+import { formatAmountInputValue, formatCurrency, parseAmountInput, sanitizeAmountInput } from "@/utils/currency";
 import { formatDate, formatLocalDateInput, isDateInputValid, parseLocalDateInput } from "@/utils/date";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AddPayment">;
@@ -159,7 +159,9 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
 
   const [activeField, setActiveField] = useState<EditableField>(null);
   const [paymentType, setPaymentType] = useState<EditablePaymentEventType>("payment_booked");
-  const [amountInput, setAmountInput] = useState(subscription ? String(subscription.amount.toFixed(2)) : "");
+  const [amountInput, setAmountInput] = useState(
+    subscription ? formatAmountInputValue(subscription.amount, currency) : "",
+  );
   const [notesInput, setNotesInput] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -169,8 +171,8 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       return;
     }
 
-    setAmountInput(String(subscription.amount.toFixed(2)));
-  }, [subscription]);
+    setAmountInput(formatAmountInputValue(subscription.amount, currency));
+  }, [currency, subscription]);
 
   useEffect(() => {
     if (
@@ -184,7 +186,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
     setPaymentType(existingPayment.type);
 
     if (typeof existingPayment.amount === "number") {
-      setAmountInput(String(existingPayment.amount.toFixed(2)));
+      setAmountInput(formatAmountInputValue(existingPayment.amount, currency));
     }
 
     if (existingPayment.dueDate) {
@@ -192,7 +194,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
     }
 
     setNotesInput(clampNotesLength(existingPayment.notes ?? ""));
-  }, [existingPayment]);
+  }, [currency, existingPayment]);
 
   const dayOptions = useMemo(
     () =>
@@ -261,7 +263,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
   }
 
   const handleSave = async () => {
-    const amount = Number(amountInput.replace(",", "."));
+    const amount = parseAmountInput(amountInput, currency);
 
     if (!Number.isFinite(amount) || amount <= 0) {
       Alert.alert(t("addPayment.checkTitle"), t("addPayment.invalidAmount"));
@@ -365,7 +367,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
           />
           <FormRow
             label={t("subscription.amount")}
-            value={amountInput ? formatCurrency(Number(amountInput.replace(",", ".")) || 0, currency) : ""}
+            value={amountInput ? formatCurrency(parseAmountInput(amountInput, currency) || 0, currency) : ""}
             onPress={() => setActiveField("amount")}
           />
           <FormRow
@@ -450,7 +452,7 @@ export const AddPaymentScreen = ({ navigation, route }: Props) => {
       >
         <TextInput
           value={amountInput}
-          onChangeText={setAmountInput}
+          onChangeText={(value) => setAmountInput(sanitizeAmountInput(value, currency))}
           keyboardType="numeric"
           autoFocus
           style={[inputs.input, styles.sheetInput]}

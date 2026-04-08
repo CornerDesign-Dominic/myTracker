@@ -127,7 +127,7 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
           <>
             <Animated.View style={{ opacity: contentOpacity }}>
               <View style={[surfaces.mainPanel, styles.summaryCard]}>
-                <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.monthLabel}</Text>
+                <Text style={[typography.meta, styles.summaryMonth]}>{monthlySummary.homeDateLabel}</Text>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryPrimaryBlock}>
                     <Text style={[typography.meta, styles.summaryLabel]}>{t("home.total")}</Text>

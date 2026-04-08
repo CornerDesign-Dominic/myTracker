@@ -28,7 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: APP_NAME,
   slug: "subscription-tracker-mvp",
-  version: "1.0.0",
+  version: "1.0.1",
   orientation: "portrait",
   userInterfaceStyle: "light",
   scheme: APP_SCHEME,

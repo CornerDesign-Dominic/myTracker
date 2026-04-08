@@ -25,11 +25,25 @@ export const useSubscriptionHistorySync = ({
 }: Options) => {
   const [lastGlobalSyncAt, setLastGlobalSyncAt] = useState<number | null>(null);
   const isSyncingRef = useRef(false);
-  const hasCompletedInitialSyncRef = useRef(false);
+  const lastSyncedSubscriptionSignatureRef = useRef<string | null>(null);
   const lastAppStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const subscriptionSyncSignature = subscriptions
+    .filter((subscription) => !subscription.archivedAt)
+    .map((subscription) =>
+      [
+        subscription.id,
+        subscription.status,
+        subscription.billingCycle,
+        subscription.nextPaymentDate,
+        subscription.endDate ?? "",
+        subscription.createdAt,
+      ].join(":"),
+    )
+    .sort()
+    .join("|");
 
   useEffect(() => {
-    hasCompletedInitialSyncRef.current = false;
+    lastSyncedSubscriptionSignatureRef.current = null;
     setLastGlobalSyncAt(null);
 
     if (!userId) {
@@ -69,13 +83,17 @@ export const useSubscriptionHistorySync = ({
   };
 
   useEffect(() => {
-    if (!authIsReady || !userId || subscriptions.length === 0 || hasCompletedInitialSyncRef.current) {
+    if (!authIsReady || !userId || subscriptions.length === 0 || !subscriptionSyncSignature) {
       return;
     }
 
-    hasCompletedInitialSyncRef.current = true;
+    if (lastSyncedSubscriptionSignatureRef.current === subscriptionSyncSignature) {
+      return;
+    }
+
+    lastSyncedSubscriptionSignatureRef.current = subscriptionSyncSignature;
     void runGlobalSync();
-  }, [authIsReady, service, subscriptions, userId]);
+  }, [authIsReady, service, subscriptionSyncSignature, subscriptions, userId]);
 
   useEffect(() => {
     if (!authIsReady || !userId) {

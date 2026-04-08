@@ -81,13 +81,18 @@ export const buildHomeMonthlyCardProjection = (
   history: SubscriptionHistoryEvent[],
   language: AppLanguage,
   now = new Date(),
-) => ({
-  ...buildHomeMonthlySummary(subscriptions, history, now),
-  monthLabel: new Intl.DateTimeFormat(getLocale(language), {
-    day: "numeric",
+) => {
+  const monthLabel = new Intl.DateTimeFormat(getLocale(language), {
     month: "long",
-  }).format(now),
-});
+  }).format(now);
+  const homeDateLabel = `${String(now.getDate()).padStart(2, "0")}.${monthLabel}`;
+
+  return {
+    ...buildHomeMonthlySummary(subscriptions, history, now),
+    monthLabel,
+    homeDateLabel,
+  };
+};
 
 export const getSkippedHistoryEvents = (history: SubscriptionHistoryEvent[]) =>
   history

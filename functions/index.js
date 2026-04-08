@@ -259,6 +259,37 @@ const renderEmailLinkBlock = ({ intro, url }) => `
   </div>
 `;
 
+const DEFAULT_EMAIL_FOOTER_LINES = [
+  "OctoVault",
+  "Ein Produkt von CornerDesign",
+  "Verantwortlich: Dominic Franz, Deutschland",
+  "Kontakt: info@corner-design.de",
+];
+
+const EXTENDED_EMAIL_FOOTER_LINES = [
+  "USt-IdNr.: DE460253596",
+  "Kleinunternehmer gemäß §19 UStG",
+];
+
+const renderEmailFooter = ({ extended = false } = {}) => {
+  const lines = extended
+    ? [...DEFAULT_EMAIL_FOOTER_LINES, ...EXTENDED_EMAIL_FOOTER_LINES]
+    : DEFAULT_EMAIL_FOOTER_LINES;
+
+  return `
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb">
+      ${lines
+        .map(
+          (line, index) => `
+            <p style="margin:${index === lines.length - 1 ? "0" : "0 0 6px"};color:#6b7280;font-size:12px;line-height:1.6">
+              ${escapeHtml(line)}
+            </p>`,
+        )
+        .join("")}
+    </div>
+  `;
+};
+
 const renderEmailCard = ({
   eyebrow = "OctoVault",
   title,
@@ -269,6 +300,7 @@ const renderEmailCard = ({
   secondaryLinkIntro,
   secondaryLinkUrl,
   footerNote,
+  useExtendedFooter = false,
 }) => `
   <!doctype html>
   <html lang="de">
@@ -311,6 +343,7 @@ const renderEmailCard = ({
                       ? `<p style="margin:0;padding-top:18px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px;line-height:1.65">${escapeHtml(footerNote)}</p>`
                       : ""
                   }
+                  ${renderEmailFooter({ extended: useExtendedFooter })}
                 </td>
               </tr>
             </table>
@@ -613,6 +646,7 @@ const renderSupportMailHtml = ({
             <div style="margin:0 0 10px;color:#111827;font-size:14px;font-weight:600">Nachricht</div>
             <div style="color:#374151;font-size:14px;line-height:1.7">${escapeHtmlWithBreaks(message)}</div>
           </div>
+          ${renderEmailFooter()}
         </td>
       </tr>
     </table>

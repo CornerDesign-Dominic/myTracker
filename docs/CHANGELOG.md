@@ -18,11 +18,23 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.0.0`
+- Aktuelle Version: `1.0.1`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-08`
 
 ---
+
+## Version 1.0.1
+
+Stand: `2026-04-08`
+
+### Wichtige Aktualisierungen
+
+- Home-Startkarte korrigiert: globales Monatslabel wieder auf nur `MMMM` gesetzt und fuer die erste Card eine eigene Datumsanzeige `00.MMMM` eingefuehrt.
+- Home-Monatssummen werden wieder aktuell gehalten: der History-Sync reagiert jetzt auch auf spaeter nachgeladene Subscription-Staende statt nur auf den ersten Cache-Stand nach App-Start.
+- Daily-Due-Notifications gehaertet: bei Rueckkehr in die App wird die Planung neu aufgebaut, und fehlgeschlagene Planungen blockieren keinen spaeteren Neuversuch mehr.
+- Zahlen- und Waehrungsformat vereinheitlicht: `EUR` nutzt `1.234,56`, `Dollar` nutzt `1,234.56`; das gilt jetzt konsistent fuer Anzeigen und Betragseingaben.
+- Rechtstexte aktualisiert: die vollstaendige Adresse von Dominic Franz wurde in Impressum sowie an den relevanten Anbieter-/Verantwortlichenstellen ergaenzt.
 
 ## Version 1.0.0
 

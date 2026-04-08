@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AppState, AppStateStatus } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
 import { useAppSettings } from "@/context/AppSettingsContext";
@@ -15,6 +16,21 @@ export const DailyDueNotificationsSync = () => {
   const { language } = useI18n();
   const { subscriptions, isLoading } = useSubscriptions();
   const lastSyncSignatureRef = useRef<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState === "active") {
+        setRefreshTick((current) => current + 1);
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!authIsReady || isLoading) {
@@ -75,11 +91,7 @@ export const DailyDueNotificationsSync = () => {
         if (!isCancelled) {
           lastSyncSignatureRef.current = signature;
         }
-      } catch {
-        if (!isCancelled) {
-          lastSyncSignatureRef.current = signature;
-        }
-      }
+      } catch {}
     };
 
     run();
@@ -87,7 +99,7 @@ export const DailyDueNotificationsSync = () => {
     return () => {
       isCancelled = true;
     };
-  }, [authIsReady, currentUser?.uid, isLoading, language, notificationsEnabled, subscriptions]);
+  }, [authIsReady, currentUser?.uid, isLoading, language, notificationsEnabled, refreshTick, subscriptions]);
 
   return null;
 };

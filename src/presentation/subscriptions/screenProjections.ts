@@ -23,6 +23,19 @@ export type MonthlyAmountSummary = {
   date: Date;
 };
 
+export type HomeTimelineListItem =
+  | {
+      type: "subscription";
+      key: string;
+      subscription: Subscription;
+    }
+  | {
+      type: "dateMarker";
+      key: string;
+      label: string;
+      dueDate: string;
+    };
+
 export type YearlyActualProjection = {
   currentYear: number;
   currentYearTotal: number;
@@ -92,6 +105,46 @@ export const buildHomeMonthlyCardProjection = (
     monthLabel,
     homeDateLabel,
   };
+};
+
+export const buildHomeTimelineListItems = (
+  subscriptions: Array<Subscription & { homeDueDate?: string }>,
+  language: AppLanguage,
+): HomeTimelineListItem[] => {
+  const locale = getLocale(language);
+  const formatter = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "long",
+  });
+
+  return subscriptions.reduce<HomeTimelineListItem[]>((items, subscription, index) => {
+    const dueDate = subscription.homeDueDate ?? subscription.nextPaymentDate;
+    const previousDueDate =
+      index > 0
+        ? subscriptions[index - 1]?.homeDueDate ?? subscriptions[index - 1]?.nextPaymentDate
+        : null;
+
+    if (dueDate && (index === 0 || (previousDueDate && dueDate !== previousDueDate))) {
+      const parsedDate = parseLocalDateInput(dueDate);
+
+      if (parsedDate) {
+        items.push({
+          type: "dateMarker",
+          key: `marker:${subscription.id}:${dueDate}`,
+          label: formatter.format(parsedDate),
+          dueDate,
+        });
+      }
+    }
+
+    items.push({
+      type: "subscription",
+      key: `${subscription.id}:${dueDate ?? subscription.updatedAt}`,
+      subscription,
+    });
+
+    return items;
+  }, []);
 };
 
 export const getSkippedHistoryEvents = (history: SubscriptionHistoryEvent[]) =>

@@ -18,11 +18,21 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.0.2`
+- Aktuelle Version: `1.1.0`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-08`
 
 ---
+
+## Version 1.1.0
+
+Stand: `2026-04-08`
+
+### Wichtige Aktualisierungen
+
+- Home-Seite deutlich erweitert: beide Monatsbloecke haben jetzt eine vertikale Timeline zwischen den Abo-Cards, inklusive Datumsmarker nur bei echten Datumswechseln.
+- Die Timeline ist visuell in die App integriert: Akzentfarbe, Datumsmarker rechts der Linie und saubere Begrenzung exakt an den Monats-Cards ohne in diese hineinzuragen.
+- Home-Abo-Cards kompakter gemacht: Faelligkeit aus den einzelnen Cards entfernt, weil diese Information jetzt ueber die Timeline gefuehrt wird.
 
 ## Version 1.0.2
 

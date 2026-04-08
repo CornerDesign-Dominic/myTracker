@@ -23,6 +23,8 @@ interface SubscriptionCardProps {
   showStatus?: boolean;
   neutralInactiveStatus?: boolean;
   compact?: boolean;
+  hideNextPaymentDate?: boolean;
+  denseHeader?: boolean;
   actionIconName?: "pencil-outline" | "chevron-forward-outline";
 }
 
@@ -60,6 +62,8 @@ export const SubscriptionCard = ({
   showStatus = true,
   neutralInactiveStatus = false,
   compact = false,
+  hideNextPaymentDate = false,
+  denseHeader = false,
   actionIconName = "pencil-outline",
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
@@ -83,7 +87,7 @@ export const SubscriptionCard = ({
               name={subscription.name}
               category={subscription.category}
             />
-            <View style={styles.titleBlock}>
+            <View style={[styles.titleBlock, denseHeader ? styles.titleBlockDense : null]}>
               <Text style={[typography.cardTitle, styles.name]}>{subscription.name}</Text>
               <Text style={[typography.secondary, styles.category]}>{localizedCategory}</Text>
             </View>
@@ -117,37 +121,59 @@ export const SubscriptionCard = ({
         </View>
 
         {compact ? null : (
-          <View style={styles.metaGrid}>
-            <View style={styles.metaItem}>
-              <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
-              <Text style={[typography.body, styles.metaValue]}>
-                {formatCurrency(subscription.amount, currency)}
-              </Text>
+          hideNextPaymentDate ? (
+            <View style={styles.compactMetaRow}>
+              <View style={[styles.metaItem, styles.compactMetaItem]}>
+                <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                <Text style={[typography.body, styles.metaValue]}>
+                  {formatCurrency(subscription.amount, currency)}
+                </Text>
+              </View>
+              <View style={[styles.metaItem, styles.compactMetaItem]}>
+                <Text style={[typography.meta, styles.metaLabel]}>
+                  {t("subscription.formBillingCycle")}
+                </Text>
+                <Text style={[typography.body, styles.metaValue]}>
+                  {t(`subscription.billing_${subscription.billingCycle}`)}
+                </Text>
+              </View>
+              <Pressable style={styles.inlineIconButton} onPress={onPress} hitSlop={10}>
+                <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
+              </Pressable>
             </View>
-            <View style={styles.metaItem}>
-              <Text style={[typography.meta, styles.metaLabel]}>
-                {t("subscription.formBillingCycle")}
-              </Text>
-              <Text style={[typography.body, styles.metaValue]}>
-                {t(`subscription.billing_${subscription.billingCycle}`)}
-              </Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Text style={[typography.meta, styles.metaLabel]}>
-                {t("subscription.formNextPaymentDate")}
-              </Text>
-              <Text style={[typography.body, styles.metaValue]}>
-                {formatDate(subscription.nextPaymentDate)}
-              </Text>
-            </View>
-            <View style={styles.metaItem}>
-              <View style={styles.iconMetaItem}>
-                <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
-                  <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
-                </Pressable>
+          ) : (
+            <View style={styles.metaGrid}>
+              <View style={styles.metaItem}>
+                <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                <Text style={[typography.body, styles.metaValue]}>
+                  {formatCurrency(subscription.amount, currency)}
+                </Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={[typography.meta, styles.metaLabel]}>
+                  {t("subscription.formBillingCycle")}
+                </Text>
+                <Text style={[typography.body, styles.metaValue]}>
+                  {t(`subscription.billing_${subscription.billingCycle}`)}
+                </Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={[typography.meta, styles.metaLabel]}>
+                  {t("subscription.formNextPaymentDate")}
+                </Text>
+                <Text style={[typography.body, styles.metaValue]}>
+                  {formatDate(subscription.nextPaymentDate)}
+                </Text>
+              </View>
+              <View style={styles.metaItem}>
+                <View style={styles.iconMetaItem}>
+                  <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
+                    <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
               </View>
             </View>
-          </View>
+          )
         )}
       </Pressable>
     </View>
@@ -178,6 +204,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     flex: 1,
     gap: spacing.xs,
   },
+  titleBlockDense: {
+    gap: 2,
+  },
   name: {
     color: colors.textPrimary,
     fontSize: 22,
@@ -200,9 +229,19 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     flexWrap: "wrap",
     gap: spacing.xs,
   },
+  compactMetaRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: spacing.sm,
+  },
   metaItem: {
     width: "48%",
     gap: 2,
+  },
+  compactMetaItem: {
+    flex: 1,
+    width: undefined,
+    minWidth: 0,
   },
   metaLabel: {
     color: colors.textMuted,
@@ -226,5 +265,14 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
+  },
+  inlineIconButton: {
+    width: 32,
+    height: 32,
+    flexShrink: 0,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: "auto",
   },
   });

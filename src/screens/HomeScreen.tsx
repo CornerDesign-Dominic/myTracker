@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { HomeTimelineDateMarker } from "@/components/HomeTimelineDateMarker";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
-import { useAuth } from "@/context/AuthContext";
 import { buildHomeDueSections } from "@/domain/subscriptions/statistics";
 import { useAppSettings } from "@/context/AppSettingsContext";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -12,9 +12,15 @@ import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptionsHistory } from "@/hooks/useSubscriptionsHistory";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { HomeTabScreenProps } from "@/navigation/types";
-import { buildHomeMonthlyCardProjection } from "@/presentation/subscriptions/screenProjections";
+import {
+  buildHomeMonthlyCardProjection,
+  buildHomeTimelineListItems,
+  HomeTimelineListItem,
+} from "@/presentation/subscriptions/screenProjections";
 import { createScreenLayout, createSurfaceStyles, spacing } from "@/theme";
 import { formatCurrency } from "@/utils/currency";
+
+const HOME_TIMELINE_LEFT_OFFSET = spacing.lg * 2;
 
 export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const { colors, typography } = useAppTheme();
@@ -23,7 +29,6 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const styles = getStyles(colors);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
-  const { isAnonymous, pendingRegistration } = useAuth();
   const { subscriptions, errorMessage, isLoading } = useSubscriptions();
   const { history, isLoading: isHistoryLoading } = useSubscriptionsHistory(
     subscriptions.map((subscription) => subscription.id),
@@ -32,8 +37,18 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
   const [hasResolvedInitialHomeData, setHasResolvedInitialHomeData] = useState(
     !isHomeDataLoading,
   );
+  const [currentMonthMarkerHeight, setCurrentMonthMarkerHeight] = useState(40);
+  const [nextMonthMarkerHeight, setNextMonthMarkerHeight] = useState(40);
   const contentOpacity = useRef(new Animated.Value(hasResolvedInitialHomeData ? 1 : 0)).current;
   const dueSections = useMemo(() => buildHomeDueSections(subscriptions), [subscriptions]);
+  const currentMonthTimelineItems = useMemo(
+    () => buildHomeTimelineListItems(dueSections.currentMonthUpcoming, language),
+    [dueSections.currentMonthUpcoming, language],
+  );
+  const nextMonthTimelineItems = useMemo(
+    () => buildHomeTimelineListItems(dueSections.nextMonthUpcoming, language),
+    [dueSections.nextMonthUpcoming, language],
+  );
 
   const monthlySummary = useMemo(() => {
     return buildHomeMonthlyCardProjection(subscriptions, history, language);
@@ -59,6 +74,34 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
       useNativeDriver: true,
     }).start();
   }, [contentOpacity, hasResolvedInitialHomeData]);
+
+  const renderTimelineItems = (items: HomeTimelineListItem[]) => (
+    <View style={styles.list}>
+      {items.map((item) =>
+        item.type === "dateMarker" ? (
+          <HomeTimelineDateMarker
+            key={item.key}
+            label={item.label}
+            leftOffset={HOME_TIMELINE_LEFT_OFFSET}
+          />
+        ) : (
+          <SubscriptionCard
+            key={item.key}
+            subscription={item.subscription}
+            showStatus={false}
+            hideNextPaymentDate
+            denseHeader
+            actionIconName="chevron-forward-outline"
+            onPress={() =>
+              navigation.navigate("SubscriptionDetails", {
+                subscriptionId: item.subscription.id,
+              })
+            }
+          />
+        ),
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={layout.screen} edges={["top"]}>
@@ -160,76 +203,79 @@ export const HomeScreen = ({ navigation }: HomeTabScreenProps) => {
             </Animated.View>
 
             <Animated.View style={{ opacity: contentOpacity }}>
-              <View style={[surfaces.subtlePanel, styles.monthMarkerCard]}>
-                <Text style={[typography.meta, styles.monthMarkerText]}>
-                  {t("home.currentMonthMarker")}
-                </Text>
+              <View style={styles.timelineStage}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.timelineRail,
+                    {
+                      top: currentMonthMarkerHeight,
+                    },
+                  ]}
+                />
+                <View
+                  style={[surfaces.subtlePanel, styles.monthMarkerCard]}
+                  onLayout={(event) => {
+                    setCurrentMonthMarkerHeight(event.nativeEvent.layout.height);
+                  }}
+                >
+                  <Text style={[typography.meta, styles.monthMarkerText]}>
+                    {t("home.currentMonthMarker")}
+                  </Text>
+                </View>
+
+                {errorMessage ? (
+                  <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
+                ) : null}
+
+                <View style={styles.section}>
+                  {dueSections.currentMonthUpcoming.length === 0 ? (
+                    <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                      <Text style={[typography.secondary, styles.emptySectionText]}>
+                        {t("home.dueFromTodayEmpty")}
+                      </Text>
+                    </View>
+                  ) : (
+                    renderTimelineItems(currentMonthTimelineItems)
+                  )}
+                </View>
               </View>
             </Animated.View>
 
-            {errorMessage ? (
-              <Animated.View style={{ opacity: contentOpacity }}>
-                <Text style={[typography.secondary, styles.errorText]}>{errorMessage}</Text>
-              </Animated.View>
-            ) : null}
-
             <Animated.View style={[styles.sections, { opacity: contentOpacity }]}>
-              <View style={styles.section}>
-                {dueSections.currentMonthUpcoming.length === 0 ? (
-                  <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
-                    <Text style={[typography.secondary, styles.emptySectionText]}>
-                      {t("home.dueFromTodayEmpty")}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.list}>
-                    {dueSections.currentMonthUpcoming.map((subscription) => (
-                      <SubscriptionCard
-                        key={`${subscription.id}:${subscription.homeDueDate}`}
-                        subscription={subscription}
-                        showStatus={false}
-                        actionIconName="chevron-forward-outline"
-                        onPress={() =>
-                          navigation.navigate("SubscriptionDetails", {
-                            subscriptionId: subscription.id,
-                          })
-                        }
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
 
-              <View style={[surfaces.subtlePanel, styles.monthDividerCard]}>
-                <Text style={[typography.meta, styles.monthDividerText]}>
-                  {t("home.nextMonthSection")}
-                </Text>
-              </View>
+              <View style={styles.timelineStage}>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.timelineRail,
+                    {
+                      top: nextMonthMarkerHeight,
+                    },
+                  ]}
+                />
+                <View
+                  style={[surfaces.subtlePanel, styles.monthDividerCard]}
+                  onLayout={(event) => {
+                    setNextMonthMarkerHeight(event.nativeEvent.layout.height);
+                  }}
+                >
+                  <Text style={[typography.meta, styles.monthDividerText]}>
+                    {t("home.nextMonthSection")}
+                  </Text>
+                </View>
 
-              <View style={styles.section}>
-                {dueSections.nextMonthUpcoming.length === 0 ? (
-                  <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
-                    <Text style={[typography.secondary, styles.emptySectionText]}>
-                      {t("home.nextMonthEmpty")}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.list}>
-                    {dueSections.nextMonthUpcoming.map((subscription) => (
-                      <SubscriptionCard
-                        key={`${subscription.id}:${subscription.homeDueDate}`}
-                        subscription={subscription}
-                        showStatus={false}
-                        actionIconName="chevron-forward-outline"
-                        onPress={() =>
-                          navigation.navigate("SubscriptionDetails", {
-                            subscriptionId: subscription.id,
-                          })
-                        }
-                      />
-                    ))}
-                  </View>
-                )}
+                <View style={styles.section}>
+                  {dueSections.nextMonthUpcoming.length === 0 ? (
+                    <View style={[surfaces.subtlePanel, styles.emptySectionRow]}>
+                      <Text style={[typography.secondary, styles.emptySectionText]}>
+                        {t("home.nextMonthEmpty")}
+                      </Text>
+                    </View>
+                  ) : (
+                    renderTimelineItems(nextMonthTimelineItems)
+                  )}
+                </View>
               </View>
 
               <Pressable
@@ -411,11 +457,22 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     sections: {
       gap: spacing.lg,
     },
+    timelineStage: {
+      position: "relative",
+      gap: spacing.lg,
+    },
+    timelineRail: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: HOME_TIMELINE_LEFT_OFFSET,
+      width: 2,
+      borderRadius: 999,
+      backgroundColor: colors.accent,
+      opacity: 0.32,
+    },
     section: {
       gap: spacing.sm,
-    },
-    sectionTitle: {
-      color: colors.textPrimary,
     },
     monthDividerCard: {
       minHeight: 40,

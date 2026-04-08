@@ -25,9 +25,13 @@ interface SubscriptionCardProps {
   compact?: boolean;
   hideNextPaymentDate?: boolean;
   hideBillingCycle?: boolean;
+  hideBillingCycleLabel?: boolean;
   hideAmountLabel?: boolean;
   stackAmountUnderCategory?: boolean;
   denseHeader?: boolean;
+  statusAboveActionIcon?: boolean;
+  accentAmount?: boolean;
+  actionText?: string;
   actionIconName?: "pencil-outline" | "chevron-forward-outline";
 }
 
@@ -67,9 +71,13 @@ export const SubscriptionCard = ({
   compact = false,
   hideNextPaymentDate = false,
   hideBillingCycle = false,
+  hideBillingCycleLabel = false,
   hideAmountLabel = false,
   stackAmountUnderCategory = false,
   denseHeader = false,
+  statusAboveActionIcon = false,
+  accentAmount = false,
+  actionText,
   actionIconName = "pencil-outline",
 }: SubscriptionCardProps) => {
   const { colors, typography } = useAppTheme();
@@ -88,12 +96,43 @@ export const SubscriptionCard = ({
     <View style={[surfaces.panel, styles.card]}>
       <Pressable onPress={onPress} style={styles.contentArea}>
         <View style={styles.topRow}>
-          <View style={styles.headerMain}>
-            <SubscriptionAvatar
-              name={subscription.name}
-              category={subscription.category}
-            />
-            <View style={[styles.titleBlock, denseHeader ? styles.titleBlockDense : null]}>
+          <View
+            style={[
+              styles.headerMain,
+              statusAboveActionIcon ? styles.headerMainTopAligned : null,
+            ]}
+          >
+            {statusAboveActionIcon ? (
+              <View style={styles.leadingStatusAvatarColumn}>
+                <View style={styles.badgeTopLeft}>
+                  <Text
+                    style={[
+                      typography.meta,
+                      styles.plainStatusText,
+                      { color: statusTone.textColor },
+                    ]}
+                  >
+                    {t(`subscription.status_${subscription.status}`)}
+                  </Text>
+                </View>
+                <SubscriptionAvatar
+                  name={subscription.name}
+                  category={subscription.category}
+                />
+              </View>
+            ) : (
+              <SubscriptionAvatar
+                name={subscription.name}
+                category={subscription.category}
+              />
+            )}
+            <View
+              style={[
+                styles.titleBlock,
+                denseHeader ? styles.titleBlockDense : null,
+                statusAboveActionIcon ? styles.titleBlockTight : null,
+              ]}
+            >
               <Text
                 style={[
                   typography.cardTitle,
@@ -104,9 +143,45 @@ export const SubscriptionCard = ({
                 {subscription.name}
               </Text>
               <Text style={[typography.secondary, styles.category]}>{localizedCategory}</Text>
+              {statusAboveActionIcon && hideNextPaymentDate ? (
+                <View style={styles.amountIntervalRow}>
+                  <View style={styles.alignedMetaBlock}>
+                    {hideAmountLabel ? null : (
+                      <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
+                    )}
+                    <Text
+                      style={[
+                        typography.body,
+                        styles.metaValue,
+                        accentAmount ? styles.accentAmountValue : null,
+                      ]}
+                    >
+                      {formatCurrency(subscription.amount, currency)}
+                    </Text>
+                  </View>
+                  {hideBillingCycle ? null : (
+                    <View style={[styles.alignedMetaBlock, styles.intervalMetaBlock]}>
+                      {hideBillingCycleLabel ? null : (
+                        <Text style={[typography.meta, styles.metaLabel]}>
+                          {t("subscription.formBillingCycle")}
+                        </Text>
+                      )}
+                      <Text style={[typography.body, styles.metaValue]}>
+                        {t(`subscription.billing_${subscription.billingCycle}`)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : null}
               {stackAmountUnderCategory ? (
                 <View style={styles.stackedAmountRow}>
-                  <Text style={[typography.body, styles.stackedAmountValue]}>
+                  <Text
+                    style={[
+                      typography.body,
+                      styles.stackedAmountValue,
+                      accentAmount ? styles.accentAmountValue : null,
+                    ]}
+                  >
                     {formatCurrency(subscription.amount, currency)}
                   </Text>
                   <Pressable style={styles.stackedChevronButton} onPress={onPress} hitSlop={10}>
@@ -121,7 +196,7 @@ export const SubscriptionCard = ({
               {formatCurrency(subscription.amount, currency)}
             </Text>
           ) : null}
-          {showStatus && !compact ? (
+          {showStatus && !compact && !statusAboveActionIcon ? (
             <View
               style={[
                 styles.badge,
@@ -146,7 +221,21 @@ export const SubscriptionCard = ({
 
         {compact ? null : (
           hideNextPaymentDate ? (
-            stackAmountUnderCategory && hideBillingCycle ? null : (
+            statusAboveActionIcon ? (
+              <View style={styles.alignedDetailsBlock}>
+                <View style={styles.trailingActionRow}>
+                  {actionText ? (
+                    <Pressable onPress={onPress} hitSlop={10}>
+                      <Text style={[typography.body, styles.actionText]}>{actionText}</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable style={styles.iconButton} onPress={onPress} hitSlop={10}>
+                      <Ionicons name={actionIconName} size={18} color={colors.textPrimary} />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ) : stackAmountUnderCategory && hideBillingCycle ? null : (
               <View style={styles.compactMetaRow}>
                 <View style={[styles.metaItem, styles.compactMetaItem]}>
                   {stackAmountUnderCategory ? null : (
@@ -154,7 +243,13 @@ export const SubscriptionCard = ({
                       {hideAmountLabel ? null : (
                         <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
                       )}
-                      <Text style={[typography.body, styles.metaValue]}>
+                      <Text
+                        style={[
+                          typography.body,
+                          styles.metaValue,
+                          accentAmount ? styles.accentAmountValue : null,
+                        ]}
+                      >
                         {formatCurrency(subscription.amount, currency)}
                       </Text>
                     </>
@@ -163,9 +258,11 @@ export const SubscriptionCard = ({
                 <View style={[styles.metaItem, styles.compactMetaItem]}>
                   {hideBillingCycle ? null : (
                     <>
-                      <Text style={[typography.meta, styles.metaLabel]}>
-                        {t("subscription.formBillingCycle")}
-                      </Text>
+                      {hideBillingCycleLabel ? null : (
+                        <Text style={[typography.meta, styles.metaLabel]}>
+                          {t("subscription.formBillingCycle")}
+                        </Text>
+                      )}
                       <Text style={[typography.body, styles.metaValue]}>
                         {t(`subscription.billing_${subscription.billingCycle}`)}
                       </Text>
@@ -178,14 +275,20 @@ export const SubscriptionCard = ({
               </View>
             )
           ) : (
-            <View style={styles.metaGrid}>
+            <View style={[styles.metaGrid, statusAboveActionIcon ? styles.metaGridAligned : null]}>
               <View style={styles.metaItem}>
                 {stackAmountUnderCategory ? null : (
                   <>
                     {hideAmountLabel ? null : (
                       <Text style={[typography.meta, styles.metaLabel]}>{t("allSubscriptions.amount")}</Text>
                     )}
-                    <Text style={[typography.body, styles.metaValue]}>
+                    <Text
+                      style={[
+                        typography.body,
+                        styles.metaValue,
+                        accentAmount ? styles.accentAmountValue : null,
+                      ]}
+                    >
                       {formatCurrency(subscription.amount, currency)}
                     </Text>
                   </>
@@ -194,9 +297,11 @@ export const SubscriptionCard = ({
               <View style={styles.metaItem}>
                 {hideBillingCycle ? null : (
                   <>
-                    <Text style={[typography.meta, styles.metaLabel]}>
-                      {t("subscription.formBillingCycle")}
-                    </Text>
+                    {hideBillingCycleLabel ? null : (
+                      <Text style={[typography.meta, styles.metaLabel]}>
+                        {t("subscription.formBillingCycle")}
+                      </Text>
+                    )}
                     <Text style={[typography.body, styles.metaValue]}>
                       {t(`subscription.billing_${subscription.billingCycle}`)}
                     </Text>
@@ -246,11 +351,22 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     alignItems: "center",
     gap: spacing.md,
   },
+  headerMainTopAligned: {
+    alignItems: "flex-start",
+  },
+  leadingStatusAvatarColumn: {
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 4,
+  },
   titleBlock: {
     flex: 1,
     gap: spacing.xs,
   },
   titleBlockDense: {
+    gap: 2,
+  },
+  titleBlockTight: {
     gap: 2,
   },
   stackedAmountRow: {
@@ -294,12 +410,51 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     paddingVertical: spacing.xs,
     borderWidth: 1,
   },
+  badgeTrailing: {
+    alignSelf: "flex-end",
+  },
+  badgeTopLeft: {
+    alignItems: "center",
+  },
+  borderlessBadge: {
+    borderWidth: 0,
+  },
   badgeText: {
+  },
+  plainStatusText: {
+    textTransform: "uppercase",
+    textAlign: "center",
   },
   metaGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.xs,
+  },
+  metaGridAligned: {
+    paddingLeft: 44 + spacing.md,
+  },
+  alignedDetailsBlock: {
+    paddingLeft: 44 + spacing.md,
+    gap: 0,
+  },
+  amountIntervalRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    gap: spacing.lg,
+  },
+  alignedMetaBlock: {
+    minWidth: 0,
+    gap: 2,
+  },
+  intervalMetaBlock: {
+    alignItems: "flex-start",
+  },
+  trailingActionRow: {
+    alignItems: "flex-end",
+  },
+  actionText: {
+    color: colors.accent,
   },
   compactMetaRow: {
     flexDirection: "row",
@@ -321,6 +476,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   },
   metaValue: {
     color: colors.textPrimary,
+  },
+  accentAmountValue: {
+    color: colors.accent,
   },
   compactAmount: {
     color: colors.textPrimary,

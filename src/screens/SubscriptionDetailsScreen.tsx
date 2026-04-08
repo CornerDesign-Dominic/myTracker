@@ -189,12 +189,13 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
         ) : null}
 
         <View style={[surfaces.panel, styles.summaryCard]}>
-          <View style={styles.summaryGridRow}>
-            <View style={styles.summaryGridItemWide} />
+          <View style={styles.summaryHeaderRow}>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("subscription.summaryTitle")}</Text>
             <Text style={[typography.body, styles.statusValue]}>
               {t(`subscription.status_${subscription.status}`)}
             </Text>
           </View>
+          <View style={styles.summaryDivider} />
           <View style={styles.summaryGridRow}>
             <View style={styles.summaryGridItem}>
               <Text style={[typography.body, styles.infoValueLeft]}>
@@ -242,7 +243,7 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
 
         <View style={[surfaces.panel, styles.card]}>
           <View style={styles.notesBlock}>
-            <Text style={[typography.meta, styles.infoLabel]}>{t("subscription.note")}</Text>
+            <Text style={[typography.cardTitle, styles.cardTitle]}>{t("subscription.note")}</Text>
             <Text style={[typography.body, styles.notes]}>
               {subscription.notes?.trim() || t("common.none")}
             </Text>
@@ -560,7 +561,8 @@ const InfoRow = ({
 const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
   StyleSheet.create({
     heroCard: {
-      gap: spacing.xs,
+      padding: spacing.md,
+      gap: spacing.xxs,
     },
     headerMenuButton: {
       width: 32,
@@ -572,15 +574,17 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     heroHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     heroHeaderCopy: {
       flex: 1,
-      gap: spacing.xxs,
+      gap: 2,
       minWidth: 0,
     },
     name: {
-      color: colors.textPrimary,
+      color: colors.accent,
+      fontSize: 24,
+      lineHeight: 30,
     },
     heroCategory: {
       color: colors.textSecondary,
@@ -631,6 +635,12 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     summaryGridRow: {
       flexDirection: "row",
       alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: spacing.md,
+    },
+    summaryHeaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
       gap: spacing.md,
     },
@@ -758,7 +768,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.textPrimary,
     },
     infoValueLeft: {
-      color: colors.textPrimary,
+      color: colors.accent,
     },
     infoValueRight: {
       color: colors.textPrimary,

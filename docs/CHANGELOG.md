@@ -18,11 +18,31 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.1.1`
+- Aktuelle Version: `1.1.3`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-09`
 
 ---
+
+## Version 1.1.3
+
+Stand: `2026-04-09`
+
+### Wichtige Aktualisierungen
+
+- Seite `Alle Abos` visuell auf echte einzelne Abo-Cards umgestellt statt einer grossen Sammelliste in einer Gesamt-Card.
+- Card-Layout auf `Alle Abos` neu geordnet: Status sitzt jetzt oben links ueber dem Abo-Icon, Betrag ist in Akzentfarbe direkt unter der Kategorie platziert und das Intervall steht naeher am Betrag in derselben Zeile.
+- Meta-Angaben in den `Alle Abos`-Cards vereinfacht: Ueberschriften fuer Betrag und Intervall sowie die Faelligkeit in der Card entfernt; unten rechts fuehrt jetzt ein verlinkter Text `Detailsansicht >` in die Detailseite.
+
+## Version 1.1.2
+
+Stand: `2026-04-09`
+
+### Wichtige Aktualisierungen
+
+- Abo-Detailseite visuell verfeinert: Haupt-Card kompakter gestaltet, Titel kleiner gesetzt und Titel sowie Hauptbetrag in Akzentfarbe hervorgehoben.
+- Uebersichts-Card auf der Abo-Detailseite klarer strukturiert: neuer Titel `Uebersicht`, Status jetzt in derselben Kopfzeile und darunter eine Trennlinie.
+- Historie-Card in der Abo-Detailseite ausgebaut: zeigt jetzt die letzten drei Eintraege direkt an, inklusive Link `Alle anzeigen & bearbeiten` sowie bereinigter Divider- und Spacing-Logik.
 
 ## Version 1.1.1
 

@@ -4,9 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
-import { getSubscriptionStatusTone } from "@/components/SubscriptionCard";
-import { useAppSettings } from "@/context/AppSettingsContext";
+import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
@@ -21,8 +19,6 @@ import {
   spacing,
 } from "@/theme";
 import { localizeCategory } from "@/utils/categories";
-import { formatCurrency } from "@/utils/currency";
-import { formatDate } from "@/utils/date";
 
 export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreenProps) => {
   const { colors, typography, isDark } = useAppTheme();
@@ -33,7 +29,6 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
   const buttons = createButtonStyles(colors);
   const styles = getStyles(colors);
   const inputs = createInputStyles(colors);
-  const { currency } = useAppSettings();
   const { subscriptions, canCreateSubscription, isPremium, pendingSubscriptionsCount } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLimitModalVisible, setIsLimitModalVisible] = useState(false);
@@ -71,26 +66,6 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
     }
 
     navigation.navigate("SubscriptionForm");
-  };
-
-  const getSyncLabel = (status?: string) => {
-    if (status === "localOnly") {
-      return t("common.syncLocalOnly");
-    }
-
-    if (status === "syncing") {
-      return t("common.syncing");
-    }
-
-    if (status === "retryPending" || status === "syncFailed") {
-      return t("common.syncRetryPending");
-    }
-
-    if (status === "pending") {
-      return t("common.syncPending");
-    }
-
-    return null;
   };
 
   return (
@@ -161,7 +136,7 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
           </View>
         </View>
 
-        <View style={[surfaces.panel, styles.listCard]}>
+        <View style={styles.listSection}>
           {filteredSubscriptions.length === 0 ? (
             subscriptions.length === 0 ? (
               <Text style={[typography.secondary, styles.emptyInlineText]}>
@@ -179,115 +154,23 @@ export const AllSubscriptionsScreen = ({ navigation }: AllSubscriptionsTabScreen
             )
           ) : (
             <View style={styles.subscriptionList}>
-              {filteredSubscriptions.map((subscription, index) => (
-                (() => {
-                  const statusTone = getSubscriptionStatusTone(subscription.status, colors);
-                  const syncLabel = getSyncLabel(subscription.syncState?.status);
-
-                  return (
-                <Pressable
+              {filteredSubscriptions.map((subscription) => (
+                <SubscriptionCard
                   key={subscription.id}
-                  style={[
-                    styles.subscriptionRow,
-                    index < filteredSubscriptions.length - 1 ? styles.rowDivider : null,
-                  ]}
+                  subscription={subscription}
+                  statusAboveActionIcon
+                  accentAmount
+                  hideNextPaymentDate
+                  hideAmountLabel
+                  hideBillingCycleLabel
+                  actionText={t("allSubscriptions.detailsLink")}
+                  actionIconName="chevron-forward-outline"
                   onPress={() =>
                     navigation.navigate("SubscriptionDetails", {
                       subscriptionId: subscription.id,
                     })
                   }
-                >
-                  <View style={styles.rowTop}>
-                    <View style={styles.rowMain}>
-                      <SubscriptionAvatar
-                        name={subscription.name}
-                        category={subscription.category}
-                      />
-                      <View style={styles.rowTitleBlock}>
-                        <Text style={[typography.body, styles.subscriptionName]}>
-                          {subscription.name}
-                        </Text>
-                        <Text style={[typography.secondary, styles.subscriptionCategory]}>
-                          {localizeCategory(subscription.category, language)}
-                        </Text>
-                        {syncLabel ? (
-                          <View
-                            style={[
-                              styles.syncBadge,
-                              subscription.syncState?.hasError
-                                ? styles.syncBadgeError
-                                : subscription.syncState?.localOnly
-                                  ? styles.syncBadgeLocalOnly
-                                  : styles.syncBadgePending,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                typography.meta,
-                                styles.syncBadgeText,
-                                subscription.syncState?.hasError
-                                  ? styles.syncBadgeTextError
-                                  : subscription.syncState?.localOnly
-                                    ? styles.syncBadgeTextLocalOnly
-                                    : styles.syncBadgeTextPending,
-                              ]}
-                            >
-                              {syncLabel}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: statusTone.backgroundColor,
-                          borderColor: statusTone.borderColor,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          typography.meta,
-                          styles.statusText,
-                          { color: statusTone.textColor },
-                        ]}
-                      >
-                        {t(`subscription.status_${subscription.status}`)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.metaGrid}>
-                    <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>
-                        {t("allSubscriptions.amount")}
-                      </Text>
-                      <Text style={[typography.secondary, styles.metaValue]}>
-                        {formatCurrency(subscription.amount, currency)}
-                      </Text>
-                    </View>
-                    <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>
-                        {t("allSubscriptions.billingCycle")}
-                      </Text>
-                      <Text style={[typography.secondary, styles.metaValue]}>
-                        {t(`subscription.billing_${subscription.billingCycle}`)}
-                      </Text>
-                    </View>
-                    <View style={styles.metaItem}>
-                      <Text style={[typography.meta, styles.metaLabel]}>
-                        {t("allSubscriptions.nextPayment")}
-                      </Text>
-                      <Text style={[typography.secondary, styles.metaValue]}>
-                        {formatDate(subscription.nextPaymentDate)}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-                  );
-                })()
+                />
               ))}
             </View>
           )}
@@ -455,25 +338,6 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       lineHeight: 14,
       opacity: 0.92,
     },
-    addButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 999,
-      backgroundColor: colors.accentSoft,
-      borderWidth: 1,
-      borderColor: colors.accent,
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 0,
-      shadowColor: colors.shadow,
-      shadowOpacity: 1,
-      shadowRadius: 18,
-      shadowOffset: {
-        width: 0,
-        height: 10,
-      },
-      elevation: 4,
-    },
     addButtonText: {
       color: colors.accent,
       fontSize: 24,
@@ -591,7 +455,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       borderColor: colors.borderStrong,
       borderRadius: 999,
     },
-    listCard: {
+    listSection: {
       gap: spacing.xs,
     },
     emptyStateWrap: {
@@ -609,94 +473,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       paddingVertical: spacing.sm,
     },
     subscriptionList: {
-      gap: spacing.xs,
-    },
-    subscriptionRow: {
       gap: spacing.md,
-      paddingVertical: spacing.md,
-    },
-    rowDivider: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    rowTop: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      gap: spacing.md,
-    },
-    rowMain: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.md,
-    },
-    rowTitleBlock: {
-      flex: 1,
-      gap: spacing.xxs,
-    },
-    subscriptionName: {
-      color: colors.textPrimary,
-    },
-    subscriptionCategory: {
-      color: colors.textSecondary,
-    },
-    syncBadge: {
-      alignSelf: "flex-start",
-      marginTop: spacing.xxs,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 4,
-    },
-    syncBadgePending: {
-      backgroundColor: colors.accentSoft,
-      borderColor: colors.accent,
-    },
-    syncBadgeLocalOnly: {
-      backgroundColor: colors.surfaceSoft,
-      borderColor: colors.borderStrong,
-    },
-    syncBadgeError: {
-      backgroundColor: `${colors.danger}14`,
-      borderColor: `${colors.danger}33`,
-    },
-    syncBadgeText: {
-      textTransform: "none",
-    },
-    syncBadgeTextPending: {
-      color: colors.accent,
-    },
-    syncBadgeTextLocalOnly: {
-      color: colors.textSecondary,
-    },
-    syncBadgeTextError: {
-      color: colors.danger,
-    },
-    statusBadge: {
-      borderRadius: 999,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
-      borderWidth: 1,
-    },
-    statusText: {
-      textTransform: "capitalize",
-    },
-    metaGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: spacing.md,
-    },
-    metaItem: {
-      minWidth: "30%",
-      gap: spacing.xxs,
-    },
-    metaLabel: {
-      color: colors.textMuted,
-      textTransform: "uppercase",
-    },
-    metaValue: {
-      color: colors.textPrimary,
     },
   });
 

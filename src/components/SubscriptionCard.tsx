@@ -259,12 +259,13 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     justifyContent: "space-between",
     gap: spacing.sm,
     marginTop: spacing.xs,
+    marginBottom: -2,
   },
   stackedAmountValue: {
     color: colors.textPrimary,
     flex: 1,
     fontSize: 16,
-    lineHeight: 23,
+    lineHeight: 20,
   },
   stackedChevronButton: {
     width: 32,

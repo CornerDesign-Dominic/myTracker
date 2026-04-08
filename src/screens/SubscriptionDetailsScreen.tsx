@@ -6,6 +6,7 @@ import { useLayoutEffect, useState } from "react";
 
 import { SubscriptionAvatar } from "@/components/SubscriptionAvatar";
 import { useAppSettings } from "@/context/AppSettingsContext";
+import { formatHistoryEvent } from "@/domain/subscriptionHistory/events";
 import { useSubscriptionHistory } from "@/hooks/useSubscriptionHistory";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/hooks/useI18n";
@@ -55,12 +56,17 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   if (!subscription) {
     return (
       <SafeAreaView style={styles.emptyContainer} edges={["bottom"]}>
-        <Text style={[typography.secondary, styles.emptyText]}>{t("subscription.detailsNotFound")}</Text>
+        <Text style={[typography.secondary, styles.emptyText]}>
+          {t("subscription.detailsNotFound")}
+        </Text>
       </SafeAreaView>
     );
   }
 
-  const bookedPayments = history.filter((event) => event.type === "payment_booked" && !event.deletedAt);
+  const bookedPayments = history.filter(
+    (event) => event.type === "payment_booked" && !event.deletedAt,
+  );
+  const historyPreview = history.slice(0, 3);
   const totalAmount = bookedPayments.reduce((sum, event) => sum + (event.amount ?? 0), 0);
   const isPaused = subscription.status === "paused";
   const firstPaymentDate = [...bookedPayments].sort((left, right) =>
@@ -121,11 +127,18 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
   return (
     <SafeAreaView style={layout.screen} edges={["bottom"]}>
       <ScrollView
-        contentContainerStyle={[layout.content, { paddingBottom: insets.bottom + spacing.xxl + 76 }]}
+        contentContainerStyle={[
+          layout.content,
+          { paddingBottom: insets.bottom + spacing.xxl + 76 },
+        ]}
       >
         <View style={[surfaces.mainPanel, styles.heroCard]}>
           <View style={styles.heroHeader}>
-            <SubscriptionAvatar name={subscription.name} category={subscription.category} size={52} />
+            <SubscriptionAvatar
+              name={subscription.name}
+              category={subscription.category}
+              size={52}
+            />
             <View style={styles.heroHeaderCopy}>
               <Text style={[typography.pageTitle, styles.name]}>{subscription.name}</Text>
               <Text style={[typography.secondary, styles.heroCategory]}>
@@ -196,13 +209,19 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
           </View>
           <View style={styles.summaryGridRow}>
             <View style={styles.summaryGridItemWide}>
-              <Text style={[typography.meta, styles.infoLabel]}>{t("allSubscriptions.nextPayment")}</Text>
+              <Text style={[typography.meta, styles.infoLabel]}>
+                {t("allSubscriptions.nextPayment")}
+              </Text>
             </View>
-            <Text style={[typography.body, styles.infoValueRight]}>{formatDate(subscription.nextPaymentDate)}</Text>
+            <Text style={[typography.body, styles.infoValueRight]}>
+              {formatDate(subscription.nextPaymentDate)}
+            </Text>
           </View>
           <View style={styles.summaryGridRow}>
             <View style={styles.summaryGridItemWide}>
-              <Text style={[typography.meta, styles.infoLabel]}>{t("subscription.oldestPayment")}</Text>
+              <Text style={[typography.meta, styles.infoLabel]}>
+                {t("subscription.oldestPayment")}
+              </Text>
             </View>
             <Text style={[typography.body, styles.infoValueRight]}>
               {formatDate(firstPaymentDate?.dueDate ?? firstPaymentDate?.effectiveDate)}
@@ -230,29 +249,140 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
           </View>
         </View>
 
-        <Pressable
-          style={[surfaces.panel, styles.historyCard]}
-          onPress={() => navigation.navigate("SubscriptionHistory", { subscriptionId: subscription.id })}
-        >
+        <View style={[surfaces.panel, styles.historyCard]}>
           <View style={styles.historyCopy}>
             <Text style={[typography.cardTitle, styles.cardTitle]}>{t("common.history")}</Text>
-            <Text style={[typography.secondary, styles.historyHint]}>
-              {summary.skippedPaymentsCount > 0
-                ? t("subscription.skippedPaymentsSaved", {
-                    count: summary.skippedPaymentsCount,
-                    amount: formatCurrency(summary.skippedPaymentsAmount, currency),
-                  })
-                : t("subscription.historyHint")}
-            </Text>
           </View>
-          <Text style={[typography.body, styles.historyArrow]}>›</Text>
-        </Pressable>
 
+          <View style={styles.historyDivider} />
+
+          {historyPreview.length === 0 ? (
+            <Text style={[typography.secondary, styles.historyEmptyText]}>
+              {t("history.emptyDescription")}
+            </Text>
+          ) : (
+            <View style={styles.historyPreviewList}>
+              {historyPreview.map((event, index) => {
+                const entry = formatHistoryEvent(event, { currency, language });
+                const syncLabel =
+                  event.syncState?.status === "localOnly"
+                    ? t("history.localOnlyBadge")
+                    : event.syncState?.status === "syncing"
+                      ? t("history.syncingBadge")
+                      : event.syncState?.status === "retryPending" ||
+                          event.syncState?.status === "syncFailed"
+                        ? t("history.retryBadge")
+                        : event.syncState?.status === "pending"
+                          ? t("history.pendingBadge")
+                          : null;
+
+                const row = (
+                  <View
+                    style={[
+                      styles.historyPreviewRow,
+                      index < historyPreview.length - 1 ? styles.historyPreviewDivider : null,
+                    ]}
+                  >
+                    <View style={styles.historyPreviewContent}>
+                      <View style={styles.historyPreviewTitleRow}>
+                        <Text style={[typography.body, styles.historyPreviewTitle]}>
+                          {entry.title}
+                        </Text>
+                        {syncLabel ? (
+                          <View
+                            style={[
+                              styles.historySyncBadge,
+                              event.syncState?.hasError
+                                ? styles.historySyncBadgeError
+                                : event.syncState?.localOnly
+                                  ? styles.historySyncBadgeLocalOnly
+                                  : styles.historySyncBadgePending,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                typography.meta,
+                                styles.historySyncBadgeText,
+                                event.syncState?.hasError
+                                  ? styles.historySyncBadgeTextError
+                                  : event.syncState?.localOnly
+                                    ? styles.historySyncBadgeTextLocalOnly
+                                    : styles.historySyncBadgeTextPending,
+                              ]}
+                            >
+                              {syncLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {entry.canEdit ? (
+                          <Ionicons
+                            name="pencil-outline"
+                            size={14}
+                            color={colors.textSecondary}
+                          />
+                        ) : null}
+                      </View>
+                      {entry.subtitle ? (
+                        <Text style={[typography.secondary, styles.historyPreviewSubtitle]}>
+                          {entry.subtitle}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.historyPreviewMeta}>
+                      {entry.amountLabel ? (
+                        <Text style={[typography.body, styles.historyPreviewAmount]}>
+                          {entry.amountLabel}
+                        </Text>
+                      ) : null}
+                      <Text style={[typography.secondary, styles.historyPreviewDate]}>
+                        {entry.dateLabel}
+                      </Text>
+                    </View>
+                  </View>
+                );
+
+                if (entry.canEdit) {
+                  return (
+                    <Pressable
+                      key={event.id}
+                      onPress={() =>
+                        navigation.navigate("AddPayment", {
+                          subscriptionId: subscription.id,
+                          eventId: event.id,
+                        })
+                      }
+                    >
+                      {row}
+                    </Pressable>
+                  );
+                }
+
+                return <View key={event.id}>{row}</View>;
+              })}
+            </View>
+          )}
+
+          <View style={styles.historyDivider} />
+
+          <Pressable
+            style={styles.historyLinkRow}
+            onPress={() =>
+              navigation.navigate("SubscriptionHistory", { subscriptionId: subscription.id })
+            }
+          >
+            <Text style={[typography.secondary, styles.historyLinkText]}>
+              {t("subscription.historyShowAll")}
+            </Text>
+            <Ionicons name="chevron-forward-outline" size={16} color={colors.accent} />
+          </Pressable>
+        </View>
       </ScrollView>
 
       <Pressable
         style={[styles.fabButton, { bottom: Math.max(spacing.lg, insets.bottom + spacing.sm) }]}
-        onPress={() => navigation.navigate("SubscriptionForm", { subscriptionId: subscription.id })}
+        onPress={() =>
+          navigation.navigate("SubscriptionForm", { subscriptionId: subscription.id })
+        }
       >
         <Ionicons name="pencil-outline" size={22} color={colors.accent} />
       </Pressable>
@@ -267,7 +397,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
           <Pressable style={StyleSheet.absoluteFill} onPress={closeActionsModal} />
           <View style={[surfaces.panel, styles.actionsModal]}>
             <View style={styles.actionsHeader}>
-              <Text style={[typography.cardTitle, styles.cardTitle]}>{t("subscription.actionsTitle")}</Text>
+              <Text style={[typography.cardTitle, styles.cardTitle]}>
+                {t("subscription.actionsTitle")}
+              </Text>
               <Pressable onPress={closeActionsModal} hitSlop={10}>
                 <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
@@ -291,7 +423,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
                 setConfirmAction("cancel");
               }}
             >
-              <Text style={[typography.body, styles.actionsRowText]}>{t("subscription.markCancelled")}</Text>
+              <Text style={[typography.body, styles.actionsRowText]}>
+                {t("subscription.markCancelled")}
+              </Text>
             </Pressable>
             <Pressable
               style={styles.actionsRow}
@@ -300,7 +434,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
                 setConfirmAction("delete");
               }}
             >
-              <Text style={[typography.body, styles.actionsDeleteText]}>{t("subscription.deleteAction")}</Text>
+              <Text style={[typography.body, styles.actionsDeleteText]}>
+                {t("subscription.deleteAction")}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -334,7 +470,9 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
                 onPress={handlePauseSubscription}
               >
                 <Text style={[typography.body, styles.confirmPrimaryText]}>
-                  {isPaused ? t("subscription.resumeModalConfirm") : t("subscription.pauseModalConfirm")}
+                  {isPaused
+                    ? t("subscription.resumeModalConfirm")
+                    : t("subscription.pauseModalConfirm")}
                 </Text>
               </Pressable>
             </View>
@@ -374,12 +512,16 @@ export const SubscriptionDetailsScreen = ({ navigation, route }: Props) => {
               </Pressable>
               <Pressable
                 style={[styles.actionsRow, styles.confirmPrimaryRow]}
-                onPress={confirmAction === "cancel" ? handleCancelSubscription : handleDeleteSubscription}
+                onPress={
+                  confirmAction === "cancel" ? handleCancelSubscription : handleDeleteSubscription
+                }
               >
                 <Text
                   style={[
                     typography.body,
-                    confirmAction === "cancel" ? styles.confirmPrimaryText : styles.actionsDeleteText,
+                    confirmAction === "cancel"
+                      ? styles.confirmPrimaryText
+                      : styles.actionsDeleteText,
                   ]}
                 >
                   {confirmAction === "cancel"
@@ -502,22 +644,101 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minWidth: 0,
     },
     historyCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: spacing.md,
+      gap: 0,
     },
     historyCopy: {
       flex: 1,
       gap: spacing.xxs,
+      marginBottom: spacing.md,
     },
-    historyHint: {
+    historyDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    historyEmptyText: {
       color: colors.textSecondary,
     },
-    historyArrow: {
+    historyPreviewList: {
+      gap: 0,
+    },
+    historyPreviewRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    historyPreviewDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    historyPreviewContent: {
+      flex: 1,
+      gap: spacing.xxs,
+    },
+    historyPreviewTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    historyPreviewTitle: {
+      flexShrink: 1,
+      color: colors.textPrimary,
+    },
+    historyPreviewSubtitle: {
       color: colors.textSecondary,
-      fontSize: 22,
-      lineHeight: 22,
+    },
+    historyPreviewMeta: {
+      alignItems: "flex-end",
+      gap: spacing.xxs,
+    },
+    historyPreviewAmount: {
+      color: colors.textPrimary,
+      textAlign: "right",
+    },
+    historyPreviewDate: {
+      color: colors.textSecondary,
+      textAlign: "right",
+    },
+    historySyncBadge: {
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    historySyncBadgePending: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    historySyncBadgeLocalOnly: {
+      backgroundColor: colors.surfaceSoft,
+      borderColor: colors.borderStrong,
+    },
+    historySyncBadgeError: {
+      backgroundColor: `${colors.danger}14`,
+      borderColor: `${colors.danger}33`,
+    },
+    historySyncBadgeText: {
+      textTransform: "none",
+    },
+    historySyncBadgeTextPending: {
+      color: colors.accent,
+    },
+    historySyncBadgeTextLocalOnly: {
+      color: colors.textSecondary,
+    },
+    historySyncBadgeTextError: {
+      color: colors.danger,
+    },
+    historyLinkRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xxs,
+      alignSelf: "flex-start",
+      paddingVertical: spacing.sm,
+    },
+    historyLinkText: {
+      color: colors.accent,
     },
     cardTitle: {
       color: colors.textPrimary,

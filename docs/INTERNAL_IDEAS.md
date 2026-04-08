@@ -12,10 +12,6 @@ Diese Datei dient nur als interner Sammelpunkt fuer Ideen, offene Gedanken, spae
 
 ## Aktuelle Ideen
 
-- Notiz fuer einzelne Zahlungen komplett entfernen.
-  Aus DB, Erfassung, Speichern und Ansichten entfernen.
-  Wichtig: Die Notiz fuer Abos bleibt bestehen.
-
 - Statistik-Seite komplett ueberarbeiten.
   Vorstellung: Jede aktuelle Card wird zu einer seitlich swipebaren Card innerhalb der bestehenden Seite.
   Inhalt der Cards bleibt als Grundlage erstmal erhalten, soll aber spaeter UX-staerker, persoenlicher und emotionaler werden.

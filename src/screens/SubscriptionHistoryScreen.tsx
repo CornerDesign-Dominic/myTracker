@@ -172,7 +172,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       gap: spacing.md,
     },
     historyList: {
-      gap: spacing.xs,
+      gap: 0,
     },
     historyRow: {
       flexDirection: "row",

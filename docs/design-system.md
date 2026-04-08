@@ -1,4 +1,4 @@
-# Tracker Design System
+# Design System
 
 ## Zielbild
 
@@ -23,12 +23,19 @@
 ## Accent-System
 
 - die App nutzt eine kuratierte Accent-Palette
-- Accent-Farben werden zentral ueber das Theme gesteuert
+- Accent-Farben werden zentral ueber Theme und Premium-Freigabe gesteuert
 - Accent wird dezent eingesetzt, vor allem fuer:
 - aktive Zustaende
 - Borders
 - kleine Highlights
 - Icons
+
+## UX-Leitlinie
+
+- klare Card-Struktur
+- wenig visuelles Rauschen
+- kurze, direkt verstaendliche Texte
+- robuste Interaktionen vor dekorativen Spezialloesungen
 
 ## Typografie
 

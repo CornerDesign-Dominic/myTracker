@@ -18,7 +18,7 @@ export const FAQScreen = () => {
   const sections = getFAQSections(language);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() =>
     sections.flatMap((section) => section.items).reduce<Record<string, boolean>>((result, item) => {
-      result[item.id] = true;
+      result[item.id] = false;
       return result;
     }, {}),
   );
@@ -46,7 +46,7 @@ export const FAQScreen = () => {
                 <FAQCard
                   key={item.id}
                   item={item}
-                  expanded={expandedItems[item.id] ?? true}
+                  expanded={expandedItems[item.id] ?? false}
                   onToggle={() => toggleItem(item.id)}
                 />
               ))}

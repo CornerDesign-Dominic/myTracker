@@ -18,11 +18,21 @@ Diese Datei wird fortlaufend von Codex gepflegt und soll bewusst knapp, lesbar u
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Aktuelle Version: `1.0.1`
+- Aktuelle Version: `1.0.2`
 - Expo-Slug: `subscription-tracker-mvp`
 - Letzte Changelog-Pflege: `2026-04-08`
 
 ---
+
+## Version 1.0.2
+
+Stand: `2026-04-08`
+
+### Wichtige Aktualisierungen
+
+- Notification-Berechtigung wird jetzt beim ersten echten App-Start vor dem Onboarding direkt ueber den nativen Systemdialog angefragt.
+- Premium-Button in den Einstellungen an den normalen App-Standard angeglichen; keine gesonderte Textfarbe mehr in der Premium-Card.
+- Interne Ideensammlung als nicht nutzersichtbare Datei ergaenzt, damit kuenftige Produktideen getrennt von Release-Doku und Changelog gepflegt werden koennen.
 
 ## Version 1.0.1
 

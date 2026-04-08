@@ -231,7 +231,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumTitle: "OctoVault Premium",
       premiumDescription: "Free enthält bis zu 10 Abos. OctoVault Premium hebt dieses Limit dauerhaft auf und schaltet zusätzliche Akzentfarben frei.",
       premiumCardTitleFree: "PREMIUM",
-      premiumCardTitlePremium: "OctoVault Premium ist aktiv",
+      premiumCardTitlePremium: "Premium ist aktiv",
       premiumCardDescriptionFree: "Hebe das Limit von 10 Abos auf.\nEinmalig mit OctoVault Premium freischalten.",
       premiumCardDescriptionPremium: "Danke für deine Unterstützung. Genieße dauerhaft alle Premium-Vorteile.",
       premiumPlanBadge: "OctoVault Premium",
@@ -241,7 +241,7 @@ export const translations: Record<AppLanguage, TranslationTree> = {
       premiumLearnMore: "Mehr erfahren",
       premiumViewBenefits: "Vorteile ansehen",
       premiumDebugTitle: "Premium testen",
-      premiumModalTitle: "Mehr mit OctoVault Premium",
+      premiumModalTitle: "Mehr mit Premium",
       premiumModalDescription:
         "Verwalte alle deine Abos ohne Limit.",
       premiumFreeCardTitle: "FREE",

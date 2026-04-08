@@ -19,6 +19,10 @@ import { useAppTheme } from "./src/hooks/useAppTheme";
 import { trackDeepLinkOpen } from "./src/navigation/linking";
 import { analyticsEventNames } from "./src/services/analytics/events";
 import { analyticsService } from "./src/services/analytics/service";
+import {
+  hasSeenInitialNotificationPrompt,
+  markInitialNotificationPromptSeen,
+} from "./src/services/notifications/permissions";
 import { notificationsService } from "./src/services/notifications/service";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { spacing } from "./src/theme";
@@ -29,6 +33,7 @@ function AppContent() {
   const { isHydrated: purchasesHydrated } = usePurchases();
   const { colors, statusBarStyle } = useAppTheme();
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+  const [hasHandledInitialNotificationPrompt, setHasHandledInitialNotificationPrompt] = useState<boolean | null>(null);
   const onboardingScopeKey = currentUser?.uid ?? "guest";
   const hasTrackedAppOpenRef = useRef(false);
 
@@ -89,7 +94,70 @@ function AppContent() {
     };
   }, [onboardingScopeKey]);
 
-  if (!authIsReady || !isHydrated || !purchasesHydrated || hasSeenOnboarding === null) {
+  useEffect(() => {
+    let isActive = true;
+
+    if (!authIsReady || !isHydrated || !purchasesHydrated) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setHasHandledInitialNotificationPrompt(null);
+
+    const run = async () => {
+      try {
+        const [hasSeenOnboardingValue, hasSeenNotificationPrompt] = await Promise.all([
+          readHasSeenOnboarding(onboardingScopeKey),
+          hasSeenInitialNotificationPrompt(),
+        ]);
+
+        await notificationsService.initializeAsync();
+
+        const permissionState = await notificationsService.getPermissionStateAsync();
+
+        if (!hasSeenNotificationPrompt && permissionState !== "undetermined") {
+          await markInitialNotificationPromptSeen();
+          if (isActive) {
+            setHasHandledInitialNotificationPrompt(true);
+          }
+          return;
+        }
+
+        if (!hasSeenOnboardingValue || hasSeenNotificationPrompt || permissionState !== "undetermined") {
+          if (isActive) {
+            setHasHandledInitialNotificationPrompt(true);
+          }
+          return;
+        }
+
+        await notificationsService.requestPermissionAsync();
+        await markInitialNotificationPromptSeen();
+
+        if (isActive) {
+          setHasHandledInitialNotificationPrompt(true);
+        }
+      } catch {
+        if (isActive) {
+          setHasHandledInitialNotificationPrompt(true);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authIsReady, isHydrated, onboardingScopeKey, purchasesHydrated]);
+
+  if (
+    !authIsReady ||
+    !isHydrated ||
+    !purchasesHydrated ||
+    hasSeenOnboarding === null ||
+    hasHandledInitialNotificationPrompt === null
+  ) {
     return (
       <View
         style={{

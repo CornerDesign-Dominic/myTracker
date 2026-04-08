@@ -562,8 +562,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text
               style={[
                 typography.button,
-                styles.purchasePrimaryText,
-                !isPremium && mode === "light" ? styles.premiumLearnMoreLightText : null,
+                styles.premiumCardButtonText,
               ]}
             >
               {isPremium ? t("settings.premiumViewBenefits") : t("settings.premiumLearnMore")}
@@ -624,8 +623,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
             {accentColorOptions.map((option) => {
               const isActive = option === accentColor;
               const accentPreview = getAccentPalette(option, mode);
-                  const isLocked = !canUseAccentColor(option, hasPremiumAccents);
+              const isLocked = !canUseAccentColor(option, hasPremiumAccents);
               const isFree = FREE_ACCENT_COLORS.includes(option);
+              const isPremiumAccent = !isFree;
 
               return (
                   <Pressable
@@ -654,7 +654,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
                         <Ionicons name="leaf-outline" size={12} color={colors.accent} />
                       </View>
                     ) : null}
-                    {isLocked ? (
+                    {isPremiumAccent ? (
                       <View style={styles.accentPremiumIconRow}>
                         <Ionicons name="diamond-outline" size={12} color={colors.accent} />
                       </View>
@@ -1387,8 +1387,8 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     purchasePrimaryText: {
       color: "#FFFFFF",
     },
-    premiumLearnMoreLightText: {
-      color: "#111111",
+    premiumCardButtonText: {
+      color: colors.accent,
     },
     purchaseErrorText: {
       color: colors.danger,

@@ -5,7 +5,7 @@ Kompakter Einstieg in die Projektdokumentation von OctoVault.
 ## Aktueller Stand
 
 - App-Name: `OctoVault`
-- Version: `1.0.1`
+- Version: `1.0.2`
 - Expo-Slug: `subscription-tracker-mvp`
 - Android-Paket: `com.cornerdesign.mytracker`
 

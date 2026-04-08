@@ -1,9 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 
 import { analyticsEventNames } from "@/services/analytics/events";
 import { analyticsService } from "@/services/analytics/service";
 
 import type { NotificationPermissionState } from "./types";
+
+const INITIAL_NOTIFICATION_PROMPT_STORAGE_KEY = "app:notifications-initial-prompted";
 
 const mapPermissionStatus = (
   status: Notifications.PermissionStatus,
@@ -33,4 +36,13 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
   });
 
   return result;
+};
+
+export const hasSeenInitialNotificationPrompt = async () => {
+  const value = await AsyncStorage.getItem(INITIAL_NOTIFICATION_PROMPT_STORAGE_KEY);
+  return value === "true";
+};
+
+export const markInitialNotificationPromptSeen = async () => {
+  await AsyncStorage.setItem(INITIAL_NOTIFICATION_PROMPT_STORAGE_KEY, "true");
 };

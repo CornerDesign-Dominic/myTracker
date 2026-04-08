@@ -37,5 +37,6 @@ const getStyles = (
       textTransform: "capitalize",
       fontSize: 14,
       lineHeight: 20,
+      fontWeight: "700",
     },
   });

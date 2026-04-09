@@ -20,13 +20,13 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, "Account">;
 
 export const AccountScreen = ({ navigation }: Props) => {
-  const { colors, typography } = useAppTheme();
+  const { colors, typography, mode } = useAppTheme();
   const { t } = useI18n();
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
   const inputs = createInputStyles(colors);
-  const styles = getStyles(colors);
+  const styles = getStyles(colors, mode);
   const {
     currentUser,
     isAnonymous,
@@ -384,7 +384,7 @@ export const AccountScreen = ({ navigation }: Props) => {
   );
 };
 
-const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], mode: "light" | "dark") =>
   StyleSheet.create({
     primaryCard: {
       gap: spacing.md,
@@ -437,7 +437,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       textAlign: "right",
     },
     primaryButtonText: {
-      color: colors.accent,
+      color: mode === "dark" ? colors.accentText : colors.accent,
     },
     secondaryButtonText: {
       color: colors.textPrimary,

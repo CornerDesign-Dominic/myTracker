@@ -39,8 +39,8 @@ const OptionGroup = <T extends string>({
   formatLabel?: (value: T) => string;
   onChange: (value: T) => void;
 }) => {
-  const { colors, typography } = useAppTheme();
-  const styles = getStyles(colors);
+  const { colors, typography, mode } = useAppTheme();
+  const styles = getStyles(colors, mode);
   const surfaces = createSurfaceStyles(colors);
   const getLabel = formatLabel ?? ((option: T) => String(option));
 
@@ -71,7 +71,7 @@ const OptionGroup = <T extends string>({
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors, typography, mode } = useAppTheme();
   const { language: uiLanguage, t } = useI18n();
-  const styles = getStyles(colors);
+  const styles = getStyles(colors, mode);
   const layout = createScreenLayout(colors);
   const surfaces = createSurfaceStyles(colors);
   const buttons = createButtonStyles(colors);
@@ -948,7 +948,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   );
 };
 
-const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
+const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], mode: "light" | "dark") =>
   StyleSheet.create({
     contentWithTabBar: {
       minHeight: "100%",
@@ -1210,7 +1210,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: colors.accent,
     },
     actionPrimaryText: {
-      color: colors.accent,
+      color: mode === "dark" ? colors.accentText : colors.accent,
     },
     accentGrid: {
       flexDirection: "row",
@@ -1388,7 +1388,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       color: "#FFFFFF",
     },
     premiumCardButtonText: {
-      color: colors.accent,
+      color: mode === "dark" ? colors.accentText : colors.accent,
     },
     purchaseErrorText: {
       color: colors.danger,

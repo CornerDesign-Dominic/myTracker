@@ -81,12 +81,12 @@ export const createButtonStyles = (colors: AppThemeColors) =>
       borderWidth: 1,
     },
     primaryButton: {
-      backgroundColor: colors.accentSoft,
+      backgroundColor: isDarkTheme(colors) ? colors.accent : colors.accentSoft,
       borderColor: colors.accent,
       ...shadowPresets.soft(colors),
     },
     secondaryButton: {
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : colors.surface,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
     },
     subtleButton: {
@@ -110,7 +110,7 @@ export const createInputStyles = (colors: AppThemeColors) =>
   StyleSheet.create({
     input: {
       minHeight: 54,
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : isLightTheme(colors) ? colors.borderStrong : colors.border,

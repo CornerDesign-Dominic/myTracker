@@ -66,7 +66,7 @@ const darkThemeBase: ThemeBaseTokens = {
   surfaceSoft: "#1B2129",
   surfaceMuted: "#222A34",
   border: "rgba(255,255,255,0.05)",
-  borderStrong: "rgba(255,255,255,0.08)",
+  borderStrong: "rgba(255,255,255,0.10)",
   textPrimary: "#F5F7FA",
   textSecondary: "#98A2AD",
   textMuted: "#7D8793",

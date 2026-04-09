@@ -437,7 +437,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], mode: "ligh
       textAlign: "right",
     },
     primaryButtonText: {
-      color: mode === "dark" ? colors.accentText : colors.accent,
+      color: colors.accent,
     },
     secondaryButtonText: {
       color: colors.textPrimary,

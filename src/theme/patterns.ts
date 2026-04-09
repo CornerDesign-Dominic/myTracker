@@ -81,7 +81,7 @@ export const createButtonStyles = (colors: AppThemeColors) =>
       borderWidth: 1,
     },
     primaryButton: {
-      backgroundColor: isDarkTheme(colors) ? colors.accent : colors.accentSoft,
+      backgroundColor: isDarkTheme(colors) ? colors.accentSoft : colors.accentSoft,
       borderColor: colors.accent,
       ...shadowPresets.soft(colors),
     },

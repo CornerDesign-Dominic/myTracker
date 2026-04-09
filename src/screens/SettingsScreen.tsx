@@ -1210,7 +1210,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], mode: "ligh
       color: colors.accent,
     },
     actionPrimaryText: {
-      color: mode === "dark" ? colors.accentText : colors.accent,
+      color: colors.accent,
     },
     accentGrid: {
       flexDirection: "row",
@@ -1388,7 +1388,7 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"], mode: "ligh
       color: "#FFFFFF",
     },
     premiumCardButtonText: {
-      color: mode === "dark" ? colors.accentText : colors.accent,
+      color: colors.accent,
     },
     purchaseErrorText: {
       color: colors.danger,

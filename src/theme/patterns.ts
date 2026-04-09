@@ -81,23 +81,31 @@ export const createButtonStyles = (colors: AppThemeColors) =>
       borderWidth: 1,
     },
     primaryButton: {
-      backgroundColor: isDarkTheme(colors) ? colors.accentSoft : colors.accentSoft,
+      backgroundColor: colors.accentSoft,
       borderColor: colors.accent,
-      ...shadowPresets.soft(colors),
+      ...(isDarkTheme(colors)
+        ? {
+            ...shadowPresets.soft(colors),
+            shadowColor: colors.accent,
+            shadowOpacity: 0.18,
+            shadowRadius: 16,
+            elevation: 3,
+          }
+        : shadowPresets.soft(colors)),
     },
     secondaryButton: {
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surface,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
     },
     subtleButton: {
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : colors.surfaceSoft,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surfaceSoft,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
     },
     iconButton: {
       width: 48,
       height: 48,
       borderRadius: radius.pill,
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : colors.surface,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
       borderWidth: 1,
       alignItems: "center",
@@ -110,7 +118,7 @@ export const createInputStyles = (colors: AppThemeColors) =>
   StyleSheet.create({
     input: {
       minHeight: 54,
-      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: isDarkTheme(colors) ? colors.borderStrong : isLightTheme(colors) ? colors.borderStrong : colors.border,

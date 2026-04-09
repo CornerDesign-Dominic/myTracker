@@ -62,11 +62,11 @@ const lightThemeBase: ThemeBaseTokens = {
 
 const darkThemeBase: ThemeBaseTokens = {
   background: "#090B0E",
-  surface: "#111418",
-  surfaceSoft: "#171B20",
-  surfaceMuted: "#1D2229",
-  border: "#232A32",
-  borderStrong: "#2E3743",
+  surface: "#141920",
+  surfaceSoft: "#1B2129",
+  surfaceMuted: "#222A34",
+  border: "rgba(255,255,255,0.05)",
+  borderStrong: "rgba(255,255,255,0.08)",
   textPrimary: "#F5F7FA",
   textSecondary: "#98A2AD",
   textMuted: "#7D8793",

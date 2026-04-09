@@ -4,6 +4,7 @@ import { radius, shadowPresets, spacing } from "./tokens";
 import { AppThemeColors } from "./tokens";
 
 const isLightTheme = (colors: AppThemeColors) => colors.background === "#F8FAFD";
+const isDarkTheme = (colors: AppThemeColors) => colors.background === "#090B0E";
 
 export const createScreenLayout = (colors: AppThemeColors) =>
   StyleSheet.create({
@@ -85,19 +86,19 @@ export const createButtonStyles = (colors: AppThemeColors) =>
       ...shadowPresets.soft(colors),
     },
     secondaryButton: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surface,
+      borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
     },
     subtleButton: {
-      backgroundColor: colors.surfaceSoft,
-      borderColor: colors.border,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceMuted : colors.surfaceSoft,
+      borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
     },
     iconButton: {
       width: 48,
       height: 48,
       borderRadius: radius.pill,
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : colors.surface,
+      borderColor: isDarkTheme(colors) ? colors.borderStrong : colors.border,
       borderWidth: 1,
       alignItems: "center",
       justifyContent: "center",
@@ -109,10 +110,10 @@ export const createInputStyles = (colors: AppThemeColors) =>
   StyleSheet.create({
     input: {
       minHeight: 54,
-      backgroundColor: isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
+      backgroundColor: isDarkTheme(colors) ? colors.surfaceSoft : isLightTheme(colors) ? colors.surfaceSoft : colors.surface,
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: isLightTheme(colors) ? colors.borderStrong : colors.border,
+      borderColor: isDarkTheme(colors) ? colors.borderStrong : isLightTheme(colors) ? colors.borderStrong : colors.border,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
     },

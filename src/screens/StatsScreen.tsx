@@ -12,7 +12,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useStatsProjection } from "@/hooks/useStatsProjection";
 import { StatsTabScreenProps } from "@/navigation/types";
 import { createScreenLayout, createSurfaceStyles, radius, spacing } from "@/theme";
-import { localizeCategory } from "@/utils/categories";
+import { getCategoryGroupKey, localizeCategory } from "@/utils/categories";
 import { formatCurrency } from "@/utils/currency";
 
 export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
@@ -24,9 +24,9 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const styles = getStyles(colors);
   const {
     isStatsDataLoading,
+    activeTheoreticalSubscriptions,
     homeStyleSummary,
     savingsOverview,
-    yearlyActualSummary,
     developmentSummary,
     savingsDevelopmentSummary,
     statsSubscriptionsProjection,
@@ -39,6 +39,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     new Animated.Value(hasResolvedInitialStatsData ? 1 : 0),
   ).current;
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllCategoryOverview, setShowAllCategoryOverview] = useState(false);
   const displayedCategoryItems = useMemo(
     () =>
       showAllCategories
@@ -47,6 +48,82 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     [showAllCategories, statisticsMetrics.byCategory],
   );
   const maxCategoryValue = displayedCategoryItems[0]?.monthlyTotal ?? 1;
+  const entertainmentSubscriptions = useMemo(
+    () =>
+      activeTheoreticalSubscriptions
+        .filter((subscription) => getCategoryGroupKey(subscription.category) === "entertainment")
+        .sort((left, right) =>
+          left.name.localeCompare(right.name, language === "de" ? "de-DE" : "en-US", {
+            sensitivity: "base",
+          }),
+        ),
+    [activeTheoreticalSubscriptions, language],
+  );
+  const entertainmentMonthlyTotal = useMemo(
+    () =>
+      entertainmentSubscriptions.reduce(
+        (sum, subscription) => sum + getMonthlyEquivalent(subscription),
+        0,
+      ),
+    [entertainmentSubscriptions],
+  );
+  const entertainmentExamples = useMemo(
+    () => entertainmentSubscriptions.slice(0, 3).map((subscription) => subscription.name).join(", "),
+    [entertainmentSubscriptions],
+  );
+  const categoryOverviewItems = useMemo(
+    () =>
+      showAllCategoryOverview
+        ? statisticsMetrics.byCategory
+        : statisticsMetrics.byCategory.slice(0, 3),
+    [showAllCategoryOverview, statisticsMetrics.byCategory],
+  );
+  const topThreeSubscriptions = useMemo(
+    () => statsSubscriptionsProjection.topSubscriptions.slice(0, 3),
+    [statsSubscriptionsProjection.topSubscriptions],
+  );
+  const yearlySubscriptions = useMemo(
+    () =>
+      activeTheoreticalSubscriptions
+        .filter((subscription) => subscription.billingCycle === "yearly")
+        .sort((left, right) => right.amount - left.amount),
+    [activeTheoreticalSubscriptions],
+  );
+  const quarterlySubscriptions = useMemo(
+    () =>
+      activeTheoreticalSubscriptions
+        .filter((subscription) => subscription.billingCycle === "quarterly")
+        .sort((left, right) => right.amount - left.amount),
+    [activeTheoreticalSubscriptions],
+  );
+  const yearlyTotal = useMemo(
+    () => yearlySubscriptions.reduce((sum, subscription) => sum + subscription.amount, 0),
+    [yearlySubscriptions],
+  );
+  const quarterlyTotal = useMemo(
+    () => quarterlySubscriptions.reduce((sum, subscription) => sum + subscription.amount, 0),
+    [quarterlySubscriptions],
+  );
+  const topYearlySubscriptions = useMemo(
+    () => yearlySubscriptions.slice(0, 2),
+    [yearlySubscriptions],
+  );
+  const topQuarterlySubscriptions = useMemo(
+    () => quarterlySubscriptions.slice(0, 2),
+    [quarterlySubscriptions],
+  );
+  const topThreeShare = useMemo(() => {
+    const topThreeTotal = topThreeSubscriptions.reduce(
+      (sum, subscription) => sum + getMonthlyEquivalent(subscription),
+      0,
+    );
+
+    if (!statisticsMetrics.monthlyTotal) {
+      return 0;
+    }
+
+    return Math.round((topThreeTotal / statisticsMetrics.monthlyTotal) * 100);
+  }, [statisticsMetrics.monthlyTotal, topThreeSubscriptions]);
 
   useEffect(() => {
     if (hasResolvedInitialStatsData || isStatsDataLoading) {
@@ -79,62 +156,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     >
       {content}
     </ScrollView>
-  );
-
-  const summaryPage = wrapPageContent(
-    <Pressable
-      style={[surfaces.mainPanel, styles.summaryCard]}
-      onPress={() => navigation.navigate("MonthlyPreview")}
-    >
-      <Text style={[typography.meta, styles.homeSummaryMonth]}>
-        {homeStyleSummary.monthLabel}
-      </Text>
-      <View style={styles.homeSummaryRow}>
-        <View style={styles.homeSummaryPrimaryBlock}>
-          <Text style={[typography.meta, styles.homeSummaryLabel]}>{t("home.total")}</Text>
-          <Text style={[typography.metric, styles.homeSummaryAmount]}>
-            {formatCurrency(homeStyleSummary.totalAmount, currency)}
-          </Text>
-          <Text style={[typography.secondary, styles.homeSummaryLink]}>
-            {t("home.monthlyPreviewLink")}
-          </Text>
-        </View>
-
-        <View style={styles.homeSummarySecondaryBlock}>
-          <View style={styles.homeSummarySecondaryItem}>
-            <Text style={[typography.meta, styles.homeSummaryLabel]}>{t("home.due")}</Text>
-            <Text style={[typography.body, styles.homeSummaryDueValue]}>
-              {formatCurrency(homeStyleSummary.dueAmount, currency)}
-            </Text>
-          </View>
-          <View style={styles.homeSummarySecondaryItem}>
-            <Text style={[typography.meta, styles.homeSummaryLabel]}>{t("home.paid")}</Text>
-            <Text style={[typography.body, styles.homeSummarySecondaryValue]}>
-              {formatCurrency(homeStyleSummary.paidAmount, currency)}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <View style={styles.homeSummaryDivider} />
-      <View style={styles.homeSummaryYearRow}>
-        <View style={styles.homeSummaryYearItem}>
-          <Text style={[typography.meta, styles.homeSummaryLabel]}>
-            {t("stats.yearActualCurrent", { year: yearlyActualSummary.currentYear })}
-          </Text>
-          <Text style={[typography.body, styles.homeSummarySecondaryValue]}>
-            {formatCurrency(yearlyActualSummary.currentYearTotal, currency)}
-          </Text>
-        </View>
-        <View style={styles.homeSummaryYearItem}>
-          <Text style={[typography.meta, styles.homeSummaryLabel]}>
-            {t("stats.yearActualPrevious", { year: yearlyActualSummary.currentYear - 1 })}
-          </Text>
-          <Text style={[typography.body, styles.homeSummarySecondaryValue]}>
-            {formatCurrency(yearlyActualSummary.previousYearTotal, currency)}
-          </Text>
-        </View>
-      </View>
-    </Pressable>,
   );
 
   const savingsPage = wrapPageContent(
@@ -268,9 +289,18 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 <Text style={[typography.body, styles.chartLabel]}>
                   {localizeCategory(item.category, language)}
                 </Text>
-                <Text style={[typography.secondary, styles.chartValue]}>
-                  {formatCurrency(item.monthlyTotal, currency)}
-                </Text>
+                <View style={styles.chartValueGroup}>
+                  <Text style={[typography.secondary, styles.chartPercentage]}>
+                    {`${Math.round(
+                      statisticsMetrics.monthlyTotal > 0
+                        ? (item.monthlyTotal / statisticsMetrics.monthlyTotal) * 100
+                        : 0,
+                    )}%`}
+                  </Text>
+                  <Text style={[typography.secondary, styles.chartValue]}>
+                    {formatCurrency(item.monthlyTotal, currency)}
+                  </Text>
+                </View>
               </View>
               <View style={styles.chartTrack}>
                 <View
@@ -388,49 +418,136 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       </View>
       <View style={styles.sectionDivider} />
       <View style={styles.structureList}>
-        {statsSubscriptionsProjection.billingStructure.map((item, index) => (
-          <View
-            key={item.cycle}
-            style={[
-              styles.structureRow,
-              index < statsSubscriptionsProjection.billingStructure.length - 1
-                ? styles.structureDivider
-                : null,
-            ]}
-          >
-            <View style={styles.structureCopy}>
-              <Text style={[typography.body, styles.structureTitle]}>
-                {t(`subscription.billing_${item.cycle}`)}
-              </Text>
+        <View style={styles.billingSection}>
+          <Text style={[typography.body, styles.structureTitle]}>
+            {t("subscription.billing_yearly")}
+          </Text>
+          <Text style={[typography.secondary, styles.infoSecondary]}>
+            {t("stats.billingYearlySummary", {
+              count: yearlySubscriptions.length,
+              amount: formatCurrency(yearlyTotal, currency),
+            })}
+          </Text>
+          {topYearlySubscriptions.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noActive")}
+            </Text>
+          ) : (
+            <View style={styles.topList}>
+              <View style={styles.sectionDivider} />
+              {topYearlySubscriptions.map((subscription, index) => (
+                <View
+                  key={subscription.id}
+                  style={[
+                    styles.topRow,
+                    index < topYearlySubscriptions.length - 1 ? styles.topDivider : null,
+                  ]}
+                >
+                  <View style={styles.topMain}>
+                    <SubscriptionAvatar
+                      name={subscription.name}
+                      category={subscription.category}
+                      size={40}
+                    />
+                    <View style={styles.topCopy}>
+                      <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
+                    </View>
+                  </View>
+                  <Text style={[typography.body, styles.topValue]}>
+                    {formatCurrency(subscription.amount, currency)}
+                  </Text>
+                </View>
+              ))}
             </View>
-            <Text style={[typography.secondary, styles.structureMeta]}>
-              {item.count} {t("stats.subscriptionsCount")}
+          )}
+        </View>
+        <View style={styles.savedDivider} />
+        <View style={styles.billingSection}>
+          <Text style={[typography.body, styles.structureTitle]}>
+            {t("subscription.billing_quarterly")}
+          </Text>
+          <Text style={[typography.secondary, styles.infoSecondary]}>
+            {t("stats.billingQuarterlySummary", {
+              count: quarterlySubscriptions.length,
+              amount: formatCurrency(quarterlyTotal, currency),
+            })}
+          </Text>
+          {topQuarterlySubscriptions.length === 0 ? (
+            <Text style={[typography.secondary, styles.helperText]}>
+              {t("stats.noActive")}
             </Text>
-            <Text style={[typography.body, styles.structureValue]}>
-              {formatCurrency(item.totalAmount, currency)}
-            </Text>
-          </View>
-        ))}
+          ) : (
+            <View style={styles.topList}>
+              <View style={styles.sectionDivider} />
+              {topQuarterlySubscriptions.map((subscription, index) => (
+                <View
+                  key={subscription.id}
+                  style={[
+                    styles.topRow,
+                    index < topQuarterlySubscriptions.length - 1 ? styles.topDivider : null,
+                  ]}
+                >
+                  <View style={styles.topMain}>
+                    <SubscriptionAvatar
+                      name={subscription.name}
+                      category={subscription.category}
+                      size={40}
+                    />
+                    <View style={styles.topCopy}>
+                      <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
+                    </View>
+                  </View>
+                  <Text style={[typography.body, styles.topValue]}>
+                    {formatCurrency(subscription.amount, currency)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
     </Pressable>,
   );
 
-  const topSubscriptionsPage = wrapPageContent(
+  const entertainmentPage = wrapPageContent(
     <View style={[surfaces.panel, styles.card]}>
-      <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.topSubscriptions")}</Text>
-      {statsSubscriptionsProjection.topSubscriptions.length === 0 ? (
+      <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.entertainmentTitle")}</Text>
+      {entertainmentSubscriptions.length === 0 ? (
+        <Text style={[typography.secondary, styles.helperText]}>{t("stats.entertainmentEmpty")}</Text>
+      ) : (
+        <View style={styles.infoList}>
+          <Text style={[typography.body, styles.infoPrimary]}>
+            {t("stats.entertainmentCount", { count: entertainmentSubscriptions.length })}
+          </Text>
+          <Text style={[typography.secondary, styles.infoSecondary]}>
+            {t("stats.entertainmentExamples", { examples: entertainmentExamples })}
+          </Text>
+          <View style={styles.savedDivider} />
+          <Text style={[typography.body, styles.infoPrimary]}>
+            {t("stats.entertainmentSavingsHint")}
+          </Text>
+          <Text style={[typography.secondary, styles.infoSecondary]}>
+            {t("stats.entertainmentAverageHint")}
+          </Text>
+        </View>
+      )}
+    </View>,
+  );
+
+  const topSubscriptionsExtraPage = wrapPageContent(
+    <View style={[surfaces.panel, styles.card]}>
+      <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.topSubscriptionsExtraTitle")}</Text>
+      {topThreeSubscriptions.length === 0 ? (
         <Text style={[typography.secondary, styles.helperText]}>{t("stats.noActive")}</Text>
       ) : (
         <View style={styles.topList}>
           <View style={styles.sectionDivider} />
-          {statsSubscriptionsProjection.topSubscriptions.map((subscription, index) => (
+          {topThreeSubscriptions.map((subscription, index) => (
             <View
               key={subscription.id}
               style={[
                 styles.topRow,
-                index < statsSubscriptionsProjection.topSubscriptions.length - 1
-                  ? styles.topDivider
-                  : null,
+                index < topThreeSubscriptions.length - 1 ? styles.topDivider : null,
               ]}
             >
               <View style={styles.topMain}>
@@ -441,16 +558,17 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
                 />
                 <View style={styles.topCopy}>
                   <Text style={[typography.body, styles.topName]}>{subscription.name}</Text>
-                  <Text style={[typography.secondary, styles.topMeta]}>
-                    {localizeCategory(subscription.category, language)}
-                  </Text>
                 </View>
               </View>
               <Text style={[typography.body, styles.topValue]}>
-                {`${formatCurrency(getMonthlyEquivalent(subscription), currency)} ${t("stats.perMonth")}`}
+                {formatCurrency(getMonthlyEquivalent(subscription), currency)}
               </Text>
             </View>
           ))}
+          <View style={styles.sectionDivider} />
+          <Text style={[typography.secondary, styles.infoSecondary]}>
+            {t("stats.topSubscriptionsShare", { percent: `${topThreeShare}%` })}
+          </Text>
         </View>
       )}
     </View>,
@@ -459,21 +577,32 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const carouselPages = useMemo<StatsCarouselPage[]>(
     () => [
       {
-        key: "summary",
-        headerClaim: t("stats.summaryClaim", {
-          amount: formatCurrency(homeStyleSummary.totalAmount, currency),
+        key: "development",
+        badgeLabel: "alt",
+        headerClaim: t("stats.developmentAverageClaim", {
+          amount: formatCurrency(developmentSummary.averageMonthlyActual, currency),
         }),
-        content: summaryPage,
+        content: developmentPage,
       },
       {
         key: "savings",
+        badgeLabel: "alt",
         headerClaim: t("stats.savingsClaim", {
           amount: formatCurrency(savingsOverview.totalSavedAmount, currency),
         }),
         content: savingsPage,
       },
       {
+        key: "entertainment",
+        badgeLabel: "neu",
+        headerClaim: t("stats.entertainmentClaim", {
+          amount: formatCurrency(entertainmentMonthlyTotal, currency),
+        }),
+        content: entertainmentPage,
+      },
+      {
         key: "categories",
+        badgeLabel: "alt",
         headerClaim: t("stats.categoriesClaim", {
           label:
             statisticsMetrics.byCategory[0]
@@ -483,50 +612,38 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         content: categoriesPage,
       },
       {
-        key: "development",
-        headerClaim: t("stats.developmentClaim", {
-          amount: formatCurrency(developmentSummary.currentMonthProjected, currency),
-        }),
-        content: developmentPage,
-      },
-      {
         key: "billing",
-        headerClaim: t("stats.billingClaim", {
-          count: String(
-            statsSubscriptionsProjection.billingStructure.reduce(
-              (sum, item) => sum + item.count,
-              0,
-            ),
-          ),
-        }),
+        badgeLabel: "alt",
+        headerClaim: t("stats.billingRareClaim"),
         content: billingPage,
       },
       {
-        key: "top-subscriptions",
-        headerClaim: t("stats.topSubscriptionsClaim", {
-          name:
-            statsSubscriptionsProjection.topSubscriptions[0]?.name ??
-            t("stats.noActive"),
-        }),
-        content: topSubscriptionsPage,
+        key: "top-subscriptions-extra",
+        badgeLabel: "neu",
+        headerClaim: t("stats.topSubscriptionsExtraTitle"),
+        content: topSubscriptionsExtraPage,
       },
     ],
     [
       categoriesPage,
       currency,
-      developmentPage,
-      developmentSummary.currentMonthProjected,
-      homeStyleSummary.totalAmount,
+      entertainmentMonthlyTotal,
+      entertainmentPage,
       language,
       billingPage,
       savingsOverview.totalSavedAmount,
       savingsPage,
-      statsSubscriptionsProjection.billingStructure,
-      statsSubscriptionsProjection.topSubscriptions,
       statisticsMetrics.byCategory,
-      summaryPage,
+      developmentPage,
+      developmentSummary.averageMonthlyActual,
       t,
-      topSubscriptionsPage,
+      quarterlySubscriptions.length,
+      quarterlyTotal,
+      topQuarterlySubscriptions,
+      topSubscriptionsExtraPage,
+      yearlySubscriptions.length,
+      yearlyTotal,
+      topYearlySubscriptions,
     ],
   );
 
@@ -847,10 +964,21 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     chartHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
+      alignItems: "center",
       gap: spacing.md,
+    },
+    chartValueGroup: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
     },
     chartLabel: {
       color: colors.textPrimary,
+    },
+    chartPercentage: {
+      color: colors.accent,
+      minWidth: 36,
+      textAlign: "right",
     },
     chartValue: {
       color: colors.textPrimary,
@@ -868,8 +996,28 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       backgroundColor: colors.accent,
       borderRadius: radius.pill,
     },
+    infoList: {
+      gap: spacing.md,
+    },
+    billingSection: {
+      gap: spacing.sm,
+    },
+    infoPrimary: {
+      color: colors.textPrimary,
+    },
+    infoSecondary: {
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
     structureList: {
       gap: spacing.xs,
+    },
+    categoriesOverviewTitleText: {
+      color: colors.textPrimary,
+    },
+    expandLabel: {
+      color: colors.accent,
+      paddingTop: spacing.sm,
     },
     structureRow: {
       flexDirection: "row",

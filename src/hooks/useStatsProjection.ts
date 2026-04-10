@@ -71,6 +71,7 @@ export const useStatsProjection = () => {
 
   return {
     isStatsDataLoading,
+    activeTheoreticalSubscriptions,
     homeStyleSummary,
     savingsOverview,
     yearlyActualSummary,

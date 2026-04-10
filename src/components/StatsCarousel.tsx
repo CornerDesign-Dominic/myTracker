@@ -15,6 +15,7 @@ import { createSurfaceStyles, radius, spacing } from "@/theme";
 export type StatsCarouselPage = {
   key: string;
   headerClaim: string;
+  badgeLabel: string;
   content: ReactNode;
 };
 
@@ -63,6 +64,7 @@ export const StatsCarousel = ({ pages }: StatsCarouselProps) => {
             renderItem={({ item }) => (
               <View style={[styles.page, { width: pageWidth }]}>
                 <View style={[surfaces.mainSubtlePanel, styles.headerCard]}>
+                  <Text style={[typography.meta, styles.badgeLabel]}>{item.badgeLabel}</Text>
                   <Text style={[typography.cardTitle, styles.headerClaim]}>{item.headerClaim}</Text>
                 </View>
                 <View style={styles.mainCardSlot}>{item.content}</View>
@@ -105,6 +107,11 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
       minHeight: 84,
       justifyContent: "center",
       paddingVertical: spacing.md,
+      gap: spacing.xxs,
+    },
+    badgeLabel: {
+      color: colors.accent,
+      textTransform: "uppercase",
     },
     headerClaim: {
       color: colors.textPrimary,

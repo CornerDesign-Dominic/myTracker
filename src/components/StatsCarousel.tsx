@@ -64,7 +64,9 @@ export const StatsCarousel = ({ pages }: StatsCarouselProps) => {
             renderItem={({ item }) => (
               <View style={[styles.page, { width: pageWidth }]}>
                 <View style={[surfaces.mainSubtlePanel, styles.headerCard]}>
-                  <Text style={[typography.meta, styles.badgeLabel]}>{item.badgeLabel}</Text>
+                  {item.badgeLabel ? (
+                    <Text style={[typography.meta, styles.badgeLabel]}>{item.badgeLabel}</Text>
+                  ) : null}
                   <Text style={[typography.cardTitle, styles.headerClaim]}>{item.headerClaim}</Text>
                 </View>
                 <View style={styles.mainCardSlot}>{item.content}</View>

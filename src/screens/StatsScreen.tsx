@@ -38,48 +38,13 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   const contentOpacity = useRef(
     new Animated.Value(hasResolvedInitialStatsData ? 1 : 0),
   ).current;
-  const [showAllCategories, setShowAllCategories] = useState(false);
-  const [showAllCategoryOverview, setShowAllCategoryOverview] = useState(false);
   const displayedCategoryItems = useMemo(
-    () =>
-      showAllCategories
-        ? statisticsMetrics.byCategory
-        : statisticsMetrics.byCategory.slice(0, 3),
-    [showAllCategories, statisticsMetrics.byCategory],
+    () => statisticsMetrics.byCategory,
+    [statisticsMetrics.byCategory],
   );
   const maxCategoryValue = displayedCategoryItems[0]?.monthlyTotal ?? 1;
-  const entertainmentSubscriptions = useMemo(
-    () =>
-      activeTheoreticalSubscriptions
-        .filter((subscription) => getCategoryGroupKey(subscription.category) === "entertainment")
-        .sort((left, right) =>
-          left.name.localeCompare(right.name, language === "de" ? "de-DE" : "en-US", {
-            sensitivity: "base",
-          }),
-        ),
-    [activeTheoreticalSubscriptions, language],
-  );
-  const entertainmentMonthlyTotal = useMemo(
-    () =>
-      entertainmentSubscriptions.reduce(
-        (sum, subscription) => sum + getMonthlyEquivalent(subscription),
-        0,
-      ),
-    [entertainmentSubscriptions],
-  );
-  const entertainmentExamples = useMemo(
-    () => entertainmentSubscriptions.slice(0, 3).map((subscription) => subscription.name).join(", "),
-    [entertainmentSubscriptions],
-  );
-  const categoryOverviewItems = useMemo(
-    () =>
-      showAllCategoryOverview
-        ? statisticsMetrics.byCategory
-        : statisticsMetrics.byCategory.slice(0, 3),
-    [showAllCategoryOverview, statisticsMetrics.byCategory],
-  );
-  const topThreeSubscriptions = useMemo(
-    () => statsSubscriptionsProjection.topSubscriptions.slice(0, 3),
+  const topFiveSubscriptions = useMemo(
+    () => statsSubscriptionsProjection.topSubscriptions.slice(0, 5),
     [statsSubscriptionsProjection.topSubscriptions],
   );
   const yearlySubscriptions = useMemo(
@@ -112,8 +77,8 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     () => quarterlySubscriptions.slice(0, 2),
     [quarterlySubscriptions],
   );
-  const topThreeShare = useMemo(() => {
-    const topThreeTotal = topThreeSubscriptions.reduce(
+  const topFiveShare = useMemo(() => {
+    const topFiveTotal = topFiveSubscriptions.reduce(
       (sum, subscription) => sum + getMonthlyEquivalent(subscription),
       0,
     );
@@ -122,8 +87,8 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       return 0;
     }
 
-    return Math.round((topThreeTotal / statisticsMetrics.monthlyTotal) * 100);
-  }, [statisticsMetrics.monthlyTotal, topThreeSubscriptions]);
+    return Math.round((topFiveTotal / statisticsMetrics.monthlyTotal) * 100);
+  }, [statisticsMetrics.monthlyTotal, topFiveSubscriptions]);
 
   useEffect(() => {
     if (hasResolvedInitialStatsData || isStatsDataLoading) {
@@ -264,19 +229,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
   );
 
   const categoriesPage = wrapPageContent(
-    <Pressable
-      style={[surfaces.panel, styles.card]}
-      onPress={() => setShowAllCategories((current) => !current)}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.byCategory")}</Text>
-        <Ionicons
-          name={showAllCategories ? "chevron-up-outline" : "chevron-down-outline"}
-          size={18}
-          color={colors.textSecondary}
-        />
-      </View>
-
+    <View style={[surfaces.panel, styles.card]}>
       {statisticsMetrics.byCategory.length === 0 ? (
         <Text style={[typography.secondary, styles.helperText]}>
           {t("stats.noSubscriptionsAvailable")}
@@ -316,7 +269,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           ))}
         </View>
       )}
-    </Pressable>,
+    </View>,
   );
 
   const developmentPage = wrapPageContent(
@@ -404,29 +357,10 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
       style={[surfaces.panel, styles.card]}
       onPress={() => navigation.navigate("BillingFrequency")}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderCopy}>
-          <Text style={[typography.cardTitle, styles.cardTitle]}>
-            {t("stats.billingStructure")}
-          </Text>
-        </View>
-        <Ionicons
-          name="chevron-forward-outline"
-          size={18}
-          color={colors.textSecondary}
-        />
-      </View>
-      <View style={styles.sectionDivider} />
       <View style={styles.structureList}>
         <View style={styles.billingSection}>
           <Text style={[typography.body, styles.structureTitle]}>
             {t("subscription.billing_yearly")}
-          </Text>
-          <Text style={[typography.secondary, styles.infoSecondary]}>
-            {t("stats.billingYearlySummary", {
-              count: yearlySubscriptions.length,
-              amount: formatCurrency(yearlyTotal, currency),
-            })}
           </Text>
           {topYearlySubscriptions.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
@@ -466,12 +400,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
           <Text style={[typography.body, styles.structureTitle]}>
             {t("subscription.billing_quarterly")}
           </Text>
-          <Text style={[typography.secondary, styles.infoSecondary]}>
-            {t("stats.billingQuarterlySummary", {
-              count: quarterlySubscriptions.length,
-              amount: formatCurrency(quarterlyTotal, currency),
-            })}
-          </Text>
           {topQuarterlySubscriptions.length === 0 ? (
             <Text style={[typography.secondary, styles.helperText]}>
               {t("stats.noActive")}
@@ -509,45 +437,22 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     </Pressable>,
   );
 
-  const entertainmentPage = wrapPageContent(
-    <View style={[surfaces.panel, styles.card]}>
-      <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.entertainmentTitle")}</Text>
-      {entertainmentSubscriptions.length === 0 ? (
-        <Text style={[typography.secondary, styles.helperText]}>{t("stats.entertainmentEmpty")}</Text>
-      ) : (
-        <View style={styles.infoList}>
-          <Text style={[typography.body, styles.infoPrimary]}>
-            {t("stats.entertainmentCount", { count: entertainmentSubscriptions.length })}
-          </Text>
-          <Text style={[typography.secondary, styles.infoSecondary]}>
-            {t("stats.entertainmentExamples", { examples: entertainmentExamples })}
-          </Text>
-          <View style={styles.savedDivider} />
-          <Text style={[typography.body, styles.infoPrimary]}>
-            {t("stats.entertainmentSavingsHint")}
-          </Text>
-          <Text style={[typography.secondary, styles.infoSecondary]}>
-            {t("stats.entertainmentAverageHint")}
-          </Text>
-        </View>
-      )}
-    </View>,
-  );
-
   const topSubscriptionsExtraPage = wrapPageContent(
     <View style={[surfaces.panel, styles.card]}>
-      <Text style={[typography.cardTitle, styles.cardTitle]}>{t("stats.topSubscriptionsExtraTitle")}</Text>
-      {topThreeSubscriptions.length === 0 ? (
+      {topFiveSubscriptions.length === 0 ? (
         <Text style={[typography.secondary, styles.helperText]}>{t("stats.noActive")}</Text>
       ) : (
         <View style={styles.topList}>
+          <Text style={[typography.secondary, styles.topShareText]}>
+            {t("stats.topSubscriptionsShare", { percent: `${topFiveShare}%` })}
+          </Text>
           <View style={styles.sectionDivider} />
-          {topThreeSubscriptions.map((subscription, index) => (
+          {topFiveSubscriptions.map((subscription, index) => (
             <View
               key={subscription.id}
               style={[
                 styles.topRow,
-                index < topThreeSubscriptions.length - 1 ? styles.topDivider : null,
+                index < topFiveSubscriptions.length - 1 ? styles.topDivider : null,
               ]}
             >
               <View style={styles.topMain}>
@@ -565,10 +470,6 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
               </Text>
             </View>
           ))}
-          <View style={styles.sectionDivider} />
-          <Text style={[typography.secondary, styles.infoSecondary]}>
-            {t("stats.topSubscriptionsShare", { percent: `${topThreeShare}%` })}
-          </Text>
         </View>
       )}
     </View>,
@@ -580,7 +481,7 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         key: "development",
         badgeLabel: "alt",
         headerClaim: t("stats.developmentAverageClaim", {
-          amount: formatCurrency(developmentSummary.averageMonthlyActual, currency),
+          amount: formatCurrency(statisticsMetrics.monthlyTotal, currency),
         }),
         content: developmentPage,
       },
@@ -593,33 +494,20 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
         content: savingsPage,
       },
       {
-        key: "entertainment",
-        badgeLabel: "neu",
-        headerClaim: t("stats.entertainmentClaim", {
-          amount: formatCurrency(entertainmentMonthlyTotal, currency),
-        }),
-        content: entertainmentPage,
-      },
-      {
         key: "categories",
-        badgeLabel: "alt",
-        headerClaim: t("stats.categoriesClaim", {
-          label:
-            statisticsMetrics.byCategory[0]
-              ? localizeCategory(statisticsMetrics.byCategory[0].category, language)
-              : t("stats.noCategories"),
-        }),
+        badgeLabel: "",
+        headerClaim: t("stats.categoriesOverviewClaim"),
         content: categoriesPage,
       },
       {
         key: "billing",
-        badgeLabel: "alt",
+        badgeLabel: "",
         headerClaim: t("stats.billingRareClaim"),
         content: billingPage,
       },
       {
         key: "top-subscriptions-extra",
-        badgeLabel: "neu",
+        badgeLabel: "",
         headerClaim: t("stats.topSubscriptionsExtraTitle"),
         content: topSubscriptionsExtraPage,
       },
@@ -627,22 +515,18 @@ export const StatsScreen = ({ navigation }: StatsTabScreenProps) => {
     [
       categoriesPage,
       currency,
-      entertainmentMonthlyTotal,
-      entertainmentPage,
       language,
       billingPage,
       savingsOverview.totalSavedAmount,
       savingsPage,
       statisticsMetrics.byCategory,
+      statisticsMetrics.monthlyTotal,
       developmentPage,
-      developmentSummary.averageMonthlyActual,
       t,
-      quarterlySubscriptions.length,
-      quarterlyTotal,
       topQuarterlySubscriptions,
+      topFiveShare,
+      topFiveSubscriptions,
       topSubscriptionsExtraPage,
-      yearlySubscriptions.length,
-      yearlyTotal,
       topYearlySubscriptions,
     ],
   );
@@ -1081,5 +965,9 @@ const getStyles = (colors: ReturnType<typeof useAppTheme>["colors"]) =>
     topValue: {
       color: colors.textPrimary,
       textAlign: "right",
+    },
+    topShareText: {
+      color: colors.accent,
+      lineHeight: 22,
     },
   });

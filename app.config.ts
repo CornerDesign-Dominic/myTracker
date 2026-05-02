@@ -92,9 +92,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       notificationDebugEnabled: process.env.EXPO_PUBLIC_NOTIFICATIONS_DEBUG === "1",
     },
   },
-  runtimeVersion: {
-    policy: "appVersion",
-  },
+  runtimeVersion: "1.1.5",
   updates: {
     url: "https://u.expo.dev/4ede4e45-de83-4081-bfe5-ae4d812d6256",
   },
